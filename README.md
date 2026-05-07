@@ -14,21 +14,13 @@ Saynow backend service built with Java 21 and Spring Boot 4.
 
 ## Local Configuration
 
-The local profile uses a local PostgreSQL database. Copy the example env file:
+The local profile uses a local PostgreSQL database configured in `application-local.yml`.
 
-```bash
-cp .env.example .env
+```text
+jdbc:postgresql://localhost:5432/postgres
+username: postgres
+password: postgres
 ```
-
-Then load it before running the app:
-
-```bash
-set -a
-source .env
-set +a
-```
-
-`.env` is ignored by Git. Commit only `.env.example`.
 
 ## Production Configuration
 
@@ -41,7 +33,7 @@ DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<database-password>
 ```
 
-Do not commit production env files or credentials.
+Use `.env.example` as a template when you need an env file locally for deployment testing. Do not commit production env files or credentials.
 
 Run the application:
 
