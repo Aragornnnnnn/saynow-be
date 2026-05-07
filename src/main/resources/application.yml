@@ -3,3 +3,13 @@ spring:
     name: saynow-be
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+
+springdoc:
+  paths-to-match: /api/v1/**
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true

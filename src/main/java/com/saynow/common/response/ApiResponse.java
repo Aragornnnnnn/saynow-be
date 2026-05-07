@@ -2,11 +2,18 @@ package com.saynow.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.saynow.common.exception.ErrorCode;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
+@Schema(description = "공통 API 응답 객체")
 public record ApiResponse<T>(
+        @Schema(description = "요청 처리 성공 여부", example = "true")
         boolean success,
+
+        @Schema(description = "성공 응답 데이터. 실패 시 null입니다.")
         T data,
+
+        @Schema(description = "실패 오류 정보. 성공 시 null입니다.")
         ErrorResponse error
 ) {
 
