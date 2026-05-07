@@ -1,4 +1,4 @@
-package com.saynow.practice.service.ai;
+package com.saynow.practice.infrastructure.ai;
 
 import com.saynow.practice.domain.PromptType;
 import com.saynow.practice.domain.SessionStatus;

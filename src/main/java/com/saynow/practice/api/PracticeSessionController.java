@@ -1,15 +1,15 @@
-package com.saynow.practice.controller;
+package com.saynow.practice.api;
 
-import com.saynow.practice.controller.dto.ExitSessionRequest;
-import com.saynow.practice.controller.dto.ExitSessionResponse;
-import com.saynow.practice.controller.dto.MicReadyRequest;
-import com.saynow.practice.controller.dto.MicReadyResponse;
-import com.saynow.practice.controller.dto.SessionStartResponse;
-import com.saynow.practice.controller.dto.SessionStatusResponse;
-import com.saynow.practice.controller.dto.StartSessionRequest;
-import com.saynow.practice.controller.dto.SubmitTurnRequest;
-import com.saynow.practice.controller.dto.TurnSubmitResponse;
-import com.saynow.practice.service.PracticeSessionService;
+import com.saynow.practice.api.dto.ExitSessionRequest;
+import com.saynow.practice.api.dto.ExitSessionResponse;
+import com.saynow.practice.api.dto.MicReadyRequest;
+import com.saynow.practice.api.dto.MicReadyResponse;
+import com.saynow.practice.api.dto.SessionStartResponse;
+import com.saynow.practice.api.dto.SessionStatusResponse;
+import com.saynow.practice.api.dto.StartSessionRequest;
+import com.saynow.practice.api.dto.SubmitTurnRequest;
+import com.saynow.practice.api.dto.TurnSubmitResponse;
+import com.saynow.practice.application.PracticeSessionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

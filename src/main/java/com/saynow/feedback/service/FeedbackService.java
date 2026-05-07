@@ -10,7 +10,7 @@ import com.saynow.feedback.repository.TurnFeedbackRepository;
 import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
-import com.saynow.practice.repository.PracticeSessionRepository;
+import com.saynow.practice.infrastructure.PracticeSessionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

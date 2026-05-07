@@ -1,4 +1,4 @@
-package com.saynow.practice.repository;
+package com.saynow.practice.infrastructure;
 
 import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.SessionSlotValue;

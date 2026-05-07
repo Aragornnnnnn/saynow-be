@@ -1,4 +1,4 @@
-package com.saynow.practice.service;
+package com.saynow.practice.application;
 
 import com.saynow.feedback.domain.FeedbackStatus;
 import com.saynow.feedback.domain.SessionFeedback;
@@ -8,7 +8,7 @@ import com.saynow.feedback.repository.TurnFeedbackRepository;
 import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
-import com.saynow.practice.repository.PracticeTurnRepository;
+import com.saynow.practice.infrastructure.PracticeTurnRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

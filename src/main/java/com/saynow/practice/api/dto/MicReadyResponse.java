@@ -1,4 +1,4 @@
-package com.saynow.practice.controller.dto;
+package com.saynow.practice.api.dto;
 
 public record MicReadyResponse(
         String sessionId,

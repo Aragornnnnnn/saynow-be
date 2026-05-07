@@ -1,4 +1,4 @@
-package com.saynow.practice.controller.dto;
+package com.saynow.practice.api.dto;
 
 import com.saynow.practice.domain.InputType;
 import jakarta.validation.constraints.DecimalMax;

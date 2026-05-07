@@ -1,4 +1,4 @@
-package com.saynow.practice.service.ai;
+package com.saynow.practice.infrastructure.ai;
 
 public record AiFilledSlot(
         String slotKey,

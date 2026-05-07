@@ -1,18 +1,17 @@
-package com.saynow.practice.controller.dto;
+package com.saynow.practice.api.dto;
 
 import com.saynow.practice.domain.SessionStatus;
 
-import java.util.List;
-
-public record SessionStatusResponse(
+public record TurnSubmitResponse(
         String sessionId,
-        String scenarioId,
+        Long turnId,
+        int turnIndex,
+        String transcript,
         SessionStatus status,
         String babsaeText,
         String babsaeTtsUrl,
         long followUpCount,
         int maxFollowUpCount,
-        Long micReadyLatencyMs,
-        List<TurnHistoryResponse> turns
+        boolean feedbackAvailable
 ) {
 }
