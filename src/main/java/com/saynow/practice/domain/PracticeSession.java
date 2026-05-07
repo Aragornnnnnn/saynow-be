@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -25,6 +27,7 @@ public class PracticeSession {
     private Long id;
 
     @Column(name = "public_id", nullable = false, unique = true, length = 36, columnDefinition = "char(36)")
+    @JdbcTypeCode(SqlTypes.CHAR)
     private String publicId;
 
     @Column(name = "user_id")
