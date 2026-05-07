@@ -1,4 +1,4 @@
-package com.saynow.feedback.controller.dto;
+package com.saynow.feedback.api.dto;
 
 import com.saynow.practice.domain.SessionStatus;
 

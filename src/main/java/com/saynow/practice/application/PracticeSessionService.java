@@ -1,7 +1,7 @@
 package com.saynow.practice.application;
 
 import com.saynow.common.exception.ApiException;
-import com.saynow.feedback.repository.SessionFeedbackRepository;
+import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
 import com.saynow.practice.api.dto.ExitSessionRequest;
 import com.saynow.practice.api.dto.ExitSessionResponse;
 import com.saynow.practice.api.dto.MicReadyRequest;

@@ -1,4 +1,4 @@
-package com.saynow.feedback.repository;
+package com.saynow.feedback.infrastructure;
 
 import com.saynow.feedback.domain.SessionFeedback;
 import com.saynow.practice.domain.PracticeSession;

@@ -1,12 +1,12 @@
-package com.saynow.feedback.service;
+package com.saynow.feedback.application;
 
 import com.saynow.common.exception.ApiException;
-import com.saynow.feedback.controller.dto.FeedbackResponse;
-import com.saynow.feedback.controller.dto.TurnFeedbackResponse;
+import com.saynow.feedback.api.dto.FeedbackResponse;
+import com.saynow.feedback.api.dto.TurnFeedbackResponse;
 import com.saynow.feedback.domain.FeedbackStatus;
 import com.saynow.feedback.domain.SessionFeedback;
-import com.saynow.feedback.repository.SessionFeedbackRepository;
-import com.saynow.feedback.repository.TurnFeedbackRepository;
+import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
+import com.saynow.feedback.infrastructure.TurnFeedbackRepository;
 import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;

@@ -1,7 +1,7 @@
-package com.saynow.feedback.controller;
+package com.saynow.feedback.api;
 
-import com.saynow.feedback.controller.dto.FeedbackResponse;
-import com.saynow.feedback.service.FeedbackService;
+import com.saynow.feedback.api.dto.FeedbackResponse;
+import com.saynow.feedback.application.FeedbackService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,4 +1,4 @@
-package com.saynow.feedback.controller.dto;
+package com.saynow.feedback.api.dto;
 
 public record TurnFeedbackResponse(
         Long turnId,
