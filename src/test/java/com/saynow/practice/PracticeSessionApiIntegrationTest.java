@@ -6,11 +6,13 @@ import com.saynow.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,22 +38,17 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.micReadyLatencyMs").value(1240));
 
-        mockMvc.perform(post("/api/v1/sessions/{sessionId}/turns", sessionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "transcript": "I want iced americano",
-                                  "inputType": "AUDIO",
-                                  "speechStartedAfterMs": 2100,
-                                  "recordingDurationMs": 3600,
-                                  "sttConfidence": 0.86
-                                }
-                                """))
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.webm", "I want iced americano"))
+                        .param("inputType", "AUDIO")
+                        .param("speechStartedAfterMs", "2100")
+                        .param("recordingDurationMs", "3600"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.turnId").value(1))
                 .andExpect(jsonPath("$.turnIndex").value(1))
                 .andExpect(jsonPath("$.transcript").value("I want iced americano"))
+                .andExpect(jsonPath("$.sttConfidence").value(0.86))
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.babsaeText").value("What size would you like?"))
                 .andExpect(jsonPath("$.followUpCount").value(1))
@@ -60,19 +57,16 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.filledSlots").doesNotExist())
                 .andExpect(jsonPath("$.missingSlots").doesNotExist());
 
-        mockMvc.perform(post("/api/v1/sessions/{sessionId}/turns", sessionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "transcript": "Small for here, please.",
-                                  "inputType": "TEXT",
-                                  "speechStartedAfterMs": 1200,
-                                  "recordingDurationMs": 1600
-                                }
-                                """))
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-2.webm", "Small for here, please."))
+                        .param("inputType", "AUDIO")
+                        .param("speechStartedAfterMs", "1200")
+                        .param("recordingDurationMs", "1600"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.turnId").value(2))
                 .andExpect(jsonPath("$.turnIndex").value(2))
+                .andExpect(jsonPath("$.transcript").value("Small for here, please."))
+                .andExpect(jsonPath("$.sttConfidence").value(0.92))
                 .andExpect(jsonPath("$.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.babsaeText").value("Scenario cleared."))
                 .andExpect(jsonPath("$.followUpCount").value(1))
@@ -102,13 +96,33 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.turnFeedback[0].speechStartedAfterSeconds").value(2.1))
                 .andExpect(jsonPath("$.turnFeedback[0].heardAs").isNotEmpty());
 
-        mockMvc.perform(post("/api/v1/sessions/{sessionId}/turns", sessionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"transcript":"Another answer","inputType":"TEXT"}
-                                """))
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-3.webm", "Another answer"))
+                        .param("inputType", "AUDIO"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SESSION_ALREADY_ENDED"));
+    }
+
+    @Test
+    void rejectsTurnSubmitWithoutAudio() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .param("inputType", "AUDIO")
+                        .param("speechStartedAfterMs", "2100")
+                        .param("recordingDurationMs", "3600"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsUnsupportedAudioType() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(new MockMultipartFile("audio", "turn-1.txt", MediaType.TEXT_PLAIN_VALUE, "I want iced americano".getBytes()))
+                        .param("inputType", "AUDIO"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_TYPE"));
     }
 
     @Test
@@ -150,5 +164,9 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
         return body.get("sessionId").asText();
+    }
+
+    private MockMultipartFile audio(String filename, String transcript) {
+        return new MockMultipartFile("audio", filename, "audio/webm", transcript.getBytes());
     }
 }

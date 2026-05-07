@@ -5,6 +5,8 @@ import com.saynow.practice.domain.SessionStatus;
 import com.saynow.scenario.domain.ScenarioSlot;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,7 +18,9 @@ import java.util.Set;
 public class LocalAiPracticeClient {
 
     public AiTurnEvaluationResult evaluateTurn(AiTurnEvaluationRequest request) {
-        List<AiFilledSlot> filledSlots = detectFilledSlots(request.transcript(), request.scenarioSlots(), request.currentFilledSlotKeys());
+        String transcript = transcribe(request.audioContent());
+        BigDecimal sttConfidence = confidenceFor(transcript);
+        List<AiFilledSlot> filledSlots = detectFilledSlots(transcript, request.scenarioSlots(), request.currentFilledSlotKeys());
         Set<String> filledAfterTurn = new LinkedHashSet<>(request.currentFilledSlotKeys());
         filledSlots.stream()
                 .map(AiFilledSlot::slotKey)
@@ -29,6 +33,8 @@ public class LocalAiPracticeClient {
 
         if (firstMissingRequiredSlot.isEmpty()) {
             return new AiTurnEvaluationResult(
+                    transcript,
+                    sttConfidence,
                     SessionStatus.SUCCESS,
                     filledSlots,
                     null,
@@ -37,6 +43,8 @@ public class LocalAiPracticeClient {
 
         if (request.followUpCount() >= request.maxFollowUpCount()) {
             return new AiTurnEvaluationResult(
+                    transcript,
+                    sttConfidence,
                     SessionStatus.FAILURE,
                     filledSlots,
                     null,
@@ -45,10 +53,27 @@ public class LocalAiPracticeClient {
 
         ScenarioSlot missingSlot = firstMissingRequiredSlot.get();
         return new AiTurnEvaluationResult(
+                transcript,
+                sttConfidence,
                 SessionStatus.IN_PROGRESS,
                 filledSlots,
                 new AiPrompt(PromptType.FOLLOW_UP, promptFor(missingSlot.getSlotKey()), null),
                 null);
+    }
+
+    private String transcribe(byte[] audioContent) {
+        return new String(audioContent, StandardCharsets.UTF_8).trim();
+    }
+
+    private BigDecimal confidenceFor(String transcript) {
+        String normalized = transcript.toLowerCase(Locale.ROOT);
+        if (normalized.contains("don't know")) {
+            return new BigDecimal("0.71");
+        }
+        if (containsAny(normalized, "small", "for here", "to go")) {
+            return new BigDecimal("0.92");
+        }
+        return new BigDecimal("0.86");
     }
 
     private List<AiFilledSlot> detectFilledSlots(String transcript, List<ScenarioSlot> slots, Set<String> currentFilledSlotKeys) {

@@ -1,7 +1,6 @@
 package com.saynow.practice.application;
 
 import com.saynow.common.exception.ApiException;
-import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
 import com.saynow.practice.api.dto.ExitSessionRequest;
 import com.saynow.practice.api.dto.ExitSessionResponse;
 import com.saynow.practice.api.dto.MicReadyRequest;
@@ -12,6 +11,7 @@ import com.saynow.practice.api.dto.StartSessionRequest;
 import com.saynow.practice.api.dto.SubmitTurnRequest;
 import com.saynow.practice.api.dto.TurnHistoryResponse;
 import com.saynow.practice.api.dto.TurnSubmitResponse;
+import com.saynow.practice.domain.InputType;
 import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.PromptType;
@@ -51,6 +51,16 @@ import java.util.stream.Collectors;
 @Service
 public class PracticeSessionService {
 
+    private static final long MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+    private static final Set<String> SUPPORTED_AUDIO_CONTENT_TYPES = Set.of(
+            "audio/webm",
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mpeg",
+            "audio/mp4",
+            "audio/x-m4a"
+    );
+
     private final ScenarioRepository scenarioRepository;
     private final ScenarioSlotRepository scenarioSlotRepository;
     private final PracticeSessionRepository sessionRepository;
@@ -58,7 +68,6 @@ public class PracticeSessionService {
     private final SessionMetricRepository metricRepository;
     private final PracticeTurnRepository turnRepository;
     private final SessionSlotValueRepository slotValueRepository;
-    private final SessionFeedbackRepository feedbackRepository;
     private final LocalAiPracticeClient aiPracticeClient;
     private final FeedbackCreationService feedbackCreationService;
 
@@ -70,7 +79,6 @@ public class PracticeSessionService {
             SessionMetricRepository metricRepository,
             PracticeTurnRepository turnRepository,
             SessionSlotValueRepository slotValueRepository,
-            SessionFeedbackRepository feedbackRepository,
             LocalAiPracticeClient aiPracticeClient,
             FeedbackCreationService feedbackCreationService
     ) {
@@ -81,7 +89,6 @@ public class PracticeSessionService {
         this.metricRepository = metricRepository;
         this.turnRepository = turnRepository;
         this.slotValueRepository = slotValueRepository;
-        this.feedbackRepository = feedbackRepository;
         this.aiPracticeClient = aiPracticeClient;
         this.feedbackCreationService = feedbackCreationService;
     }
@@ -135,24 +142,14 @@ public class PracticeSessionService {
     }
 
     @Transactional
-    public TurnSubmitResponse submitTurn(String sessionId, SubmitTurnRequest request) {
+    public TurnSubmitResponse submitTurn(String sessionId, SubmittedAudio audio, SubmitTurnRequest request) {
         PracticeSession session = findSession(sessionId);
         assertInProgress(session);
+        validateTurnSubmitRequest(audio, request);
 
         LocalDateTime now = LocalDateTime.now();
         SessionPrompt currentPrompt = latestPrompt(session);
         int turnIndex = Math.toIntExact(turnRepository.countBySession(session) + 1);
-        PracticeTurn turn = turnRepository.save(new PracticeTurn(
-                session,
-                currentPrompt,
-                turnIndex,
-                request.transcript().trim(),
-                request.inputType(),
-                request.speechStartedAfterMs(),
-                request.recordingDurationMs(),
-                request.sttConfidence(),
-                now));
-
         long followUpCountBeforeEvaluation = followUpCount(session);
         List<ScenarioSlot> scenarioSlots = scenarioSlotRepository.findByScenarioOrderBySlotOrderAsc(session.getScenario());
         Set<String> currentFilledSlotKeys = slotValueRepository.findBySession(session).stream()
@@ -160,11 +157,28 @@ public class PracticeSessionService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         AiTurnEvaluationResult evaluation = aiPracticeClient.evaluateTurn(new AiTurnEvaluationRequest(
-                turn.getUserTranscript(),
+                audio.filename(),
+                audio.contentType(),
+                audio.content(),
+                request.inputType(),
+                request.speechStartedAfterMs(),
+                request.recordingDurationMs(),
                 scenarioSlots,
                 currentFilledSlotKeys,
                 followUpCountBeforeEvaluation,
                 session.getMaxFollowUpCount()));
+        validateAiEvaluationResult(evaluation);
+
+        PracticeTurn turn = turnRepository.save(new PracticeTurn(
+                session,
+                currentPrompt,
+                turnIndex,
+                evaluation.transcript().trim(),
+                request.inputType(),
+                request.speechStartedAfterMs(),
+                request.recordingDurationMs(),
+                evaluation.sttConfidence(),
+                now));
 
         Set<String> filledAfterTurn = saveFilledSlots(session, turn, scenarioSlots, evaluation.filledSlots(), currentFilledSlotKeys, now);
         SessionStatus nextStatus = decideNextStatus(session, scenarioSlots, filledAfterTurn, followUpCountBeforeEvaluation, evaluation);
@@ -182,6 +196,7 @@ public class PracticeSessionService {
                 turn.getId(),
                 turn.getTurnIndex(),
                 turn.getUserTranscript(),
+                evaluation.sttConfidence(),
                 session.getStatus(),
                 responsePrompt.getPromptText(),
                 responsePrompt.getTtsUrl(),
@@ -248,6 +263,31 @@ public class PracticeSessionService {
 
     private long followUpCount(PracticeSession session) {
         return promptRepository.countBySessionAndPromptType(session, PromptType.FOLLOW_UP);
+    }
+
+    private void validateTurnSubmitRequest(SubmittedAudio audio, SubmitTurnRequest request) {
+        if (request.inputType() != InputType.AUDIO) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_INPUT_TYPE", "MVP에서는 AUDIO 입력만 지원합니다.");
+        }
+        if (audio == null || audio.size() <= 0 || audio.content() == null || audio.content().length == 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "AUDIO_REQUIRED", "음성 파일이 필요합니다.");
+        }
+        if (audio.size() > MAX_AUDIO_BYTES) {
+            throw new ApiException(HttpStatus.CONTENT_TOO_LARGE, "AUDIO_TOO_LARGE", "음성 파일 크기 제한을 초과했습니다.");
+        }
+        if (audio.contentType() == null || !SUPPORTED_AUDIO_CONTENT_TYPES.contains(audio.contentType())) {
+            throw new ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_AUDIO_TYPE", "지원하지 않는 음성 파일 형식입니다.");
+        }
+    }
+
+    private void validateAiEvaluationResult(AiTurnEvaluationResult evaluation) {
+        if (evaluation.transcript() == null || evaluation.transcript().isBlank()) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_STT_FAILED", "AI 서버가 transcript를 반환하지 않았습니다.");
+        }
+        if (evaluation.sttConfidence() != null
+                && (evaluation.sttConfidence().signum() < 0 || evaluation.sttConfidence().compareTo(java.math.BigDecimal.ONE) > 0)) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_RESPONSE_INVALID", "AI 서버 응답이 올바르지 않습니다.");
+        }
     }
 
     private Set<String> saveFilledSlots(
