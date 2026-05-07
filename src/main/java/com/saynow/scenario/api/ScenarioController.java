@@ -1,9 +1,9 @@
-package com.saynow.scenario.controller;
+package com.saynow.scenario.api;
 
-import com.saynow.scenario.controller.dto.CategoryListResponse;
-import com.saynow.scenario.controller.dto.ScenarioDetailResponse;
-import com.saynow.scenario.controller.dto.ScenarioListResponse;
-import com.saynow.scenario.service.ScenarioService;
+import com.saynow.scenario.api.dto.CategoryListResponse;
+import com.saynow.scenario.api.dto.ScenarioDetailResponse;
+import com.saynow.scenario.api.dto.ScenarioListResponse;
+import com.saynow.scenario.application.ScenarioService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

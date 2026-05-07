@@ -1,4 +1,4 @@
-package com.saynow.scenario.repository;
+package com.saynow.scenario.infrastructure;
 
 import com.saynow.scenario.domain.ContentStatus;
 import com.saynow.scenario.domain.Scenario;

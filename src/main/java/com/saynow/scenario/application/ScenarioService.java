@@ -1,16 +1,16 @@
-package com.saynow.scenario.service;
+package com.saynow.scenario.application;
 
 import com.saynow.common.exception.ApiException;
-import com.saynow.scenario.controller.dto.CategoryListResponse;
-import com.saynow.scenario.controller.dto.CategoryResponse;
-import com.saynow.scenario.controller.dto.ScenarioDetailResponse;
-import com.saynow.scenario.controller.dto.ScenarioListItemResponse;
-import com.saynow.scenario.controller.dto.ScenarioListResponse;
+import com.saynow.scenario.api.dto.CategoryListResponse;
+import com.saynow.scenario.api.dto.CategoryResponse;
+import com.saynow.scenario.api.dto.ScenarioDetailResponse;
+import com.saynow.scenario.api.dto.ScenarioListItemResponse;
+import com.saynow.scenario.api.dto.ScenarioListResponse;
 import com.saynow.scenario.domain.ContentStatus;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
-import com.saynow.scenario.repository.ScenarioCategoryRepository;
-import com.saynow.scenario.repository.ScenarioRepository;
+import com.saynow.scenario.infrastructure.ScenarioCategoryRepository;
+import com.saynow.scenario.infrastructure.ScenarioRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

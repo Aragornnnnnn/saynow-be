@@ -1,4 +1,4 @@
-package com.saynow.scenario.controller.dto;
+package com.saynow.scenario.api.dto;
 
 public record ScenarioListItemResponse(
         String scenarioId,
