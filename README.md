@@ -17,10 +17,18 @@ Saynow backend service built with Java 21 and Spring Boot 4.
 The local profile reads database settings from environment variables.
 
 ```bash
-export DB_URL="jdbc:postgresql://<supabase-host>:5432/postgres"
-export DB_USERNAME="<supabase-user>"
-export DB_PASSWORD="<supabase-password>"
+cp .env.example .env
 ```
+
+Fill `.env` with your Supabase Session pooler values. Then load it before running the app:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+`.env` is ignored by Git. Commit only `.env.example`.
 
 Run the application:
 
