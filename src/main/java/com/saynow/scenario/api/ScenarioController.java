@@ -1,5 +1,6 @@
 package com.saynow.scenario.api;
 
+import com.saynow.common.response.ApiResponse;
 import com.saynow.scenario.api.dto.CategoryListResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
 import com.saynow.scenario.api.dto.ScenarioListResponse;
@@ -20,17 +21,17 @@ public class ScenarioController {
     }
 
     @GetMapping("/categories")
-    public CategoryListResponse getCategories() {
-        return scenarioService.getCategories();
+    public ApiResponse<CategoryListResponse> getCategories() {
+        return ApiResponse.success(scenarioService.getCategories());
     }
 
     @GetMapping("/categories/{categoryId}/scenarios")
-    public ScenarioListResponse getScenariosByCategory(@PathVariable String categoryId) {
-        return scenarioService.getScenariosByCategory(categoryId);
+    public ApiResponse<ScenarioListResponse> getScenariosByCategory(@PathVariable String categoryId) {
+        return ApiResponse.success(scenarioService.getScenariosByCategory(categoryId));
     }
 
     @GetMapping("/scenarios/{scenarioId}")
-    public ScenarioDetailResponse getScenarioDetail(@PathVariable String scenarioId) {
-        return scenarioService.getScenarioDetail(scenarioId);
+    public ApiResponse<ScenarioDetailResponse> getScenarioDetail(@PathVariable String scenarioId) {
+        return ApiResponse.success(scenarioService.getScenarioDetail(scenarioId));
     }
 }

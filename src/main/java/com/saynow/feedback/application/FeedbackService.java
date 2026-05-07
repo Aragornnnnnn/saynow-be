@@ -1,6 +1,7 @@
 package com.saynow.feedback.application;
 
 import com.saynow.common.exception.ApiException;
+import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.dto.FeedbackResponse;
 import com.saynow.feedback.api.dto.TurnFeedbackResponse;
 import com.saynow.feedback.domain.FeedbackStatus;
@@ -11,7 +12,6 @@ import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.practice.infrastructure.PracticeSessionRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,20 +35,20 @@ public class FeedbackService {
 
     public FeedbackResponse getFeedback(String sessionId) {
         PracticeSession session = sessionRepository.findByPublicId(sessionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "세션을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
 
         if (session.getStatus() == SessionStatus.IN_PROGRESS) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "SESSION_IN_PROGRESS", "아직 진행 중인 세션입니다.");
+            throw new ApiException(ErrorCode.SESSION_IN_PROGRESS);
         }
 
         SessionFeedback sessionFeedback = sessionFeedbackRepository.findBySession(session)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "FEEDBACK_NOT_FOUND", "피드백을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.FEEDBACK_NOT_FOUND));
 
         if (sessionFeedback.getFeedbackStatus() == FeedbackStatus.GENERATING) {
-            throw new ApiException(HttpStatus.ACCEPTED, "FEEDBACK_GENERATING", "피드백을 생성 중입니다.");
+            throw new ApiException(ErrorCode.FEEDBACK_GENERATING);
         }
         if (sessionFeedback.getFeedbackStatus() == FeedbackStatus.FAILED) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "FEEDBACK_FAILED", "피드백 생성에 실패했습니다.");
+            throw new ApiException(ErrorCode.FEEDBACK_FAILED);
         }
 
         return new FeedbackResponse(

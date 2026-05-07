@@ -1,6 +1,7 @@
 package com.saynow.scenario.application;
 
 import com.saynow.common.exception.ApiException;
+import com.saynow.common.exception.ErrorCode;
 import com.saynow.scenario.api.dto.CategoryListResponse;
 import com.saynow.scenario.api.dto.CategoryResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
@@ -11,7 +12,6 @@ import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
 import com.saynow.scenario.infrastructure.ScenarioCategoryRepository;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,7 @@ public class ScenarioService {
 
     public ScenarioListResponse getScenariosByCategory(String categoryId) {
         ScenarioCategory category = categoryRepository.findByCategoryKeyAndStatus(categoryId, ContentStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
 
         return new ScenarioListResponse(category.getCategoryKey(), scenarioRepository.findByCategoryAndStatusOrderBySortOrderAsc(category, ContentStatus.ACTIVE)
                 .stream()
@@ -51,7 +51,7 @@ public class ScenarioService {
 
     public ScenarioDetailResponse getScenarioDetail(String scenarioId) {
         Scenario scenario = scenarioRepository.findByScenarioKeyAndStatus(scenarioId, ContentStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SCENARIO_NOT_FOUND", "시나리오를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
 
         return new ScenarioDetailResponse(
                 scenario.getScenarioKey(),

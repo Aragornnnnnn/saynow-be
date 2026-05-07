@@ -1,6 +1,8 @@
 package com.saynow.practice.api;
 
 import com.saynow.common.exception.ApiException;
+import com.saynow.common.exception.ErrorCode;
+import com.saynow.common.response.ApiResponse;
 import com.saynow.practice.api.dto.ExitSessionRequest;
 import com.saynow.practice.api.dto.ExitSessionResponse;
 import com.saynow.practice.api.dto.MicReadyRequest;
@@ -42,39 +44,39 @@ public class PracticeSessionController {
     }
 
     @PostMapping
-    public ResponseEntity<SessionStartResponse> startSession(@Valid @RequestBody StartSessionRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(practiceSessionService.startSession(request));
+    public ResponseEntity<ApiResponse<SessionStartResponse>> startSession(@Valid @RequestBody StartSessionRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(practiceSessionService.startSession(request)));
     }
 
     @GetMapping("/{sessionId}")
-    public SessionStatusResponse getSession(@PathVariable String sessionId) {
-        return practiceSessionService.getSession(sessionId);
+    public ApiResponse<SessionStatusResponse> getSession(@PathVariable String sessionId) {
+        return ApiResponse.success(practiceSessionService.getSession(sessionId));
     }
 
     @PutMapping("/{sessionId}/metrics/micReady")
-    public MicReadyResponse recordMicReady(@PathVariable String sessionId, @Valid @RequestBody MicReadyRequest request) {
-        return practiceSessionService.recordMicReady(sessionId, request);
+    public ApiResponse<MicReadyResponse> recordMicReady(@PathVariable String sessionId, @Valid @RequestBody MicReadyRequest request) {
+        return ApiResponse.success(practiceSessionService.recordMicReady(sessionId, request));
     }
 
     @PostMapping(value = "/{sessionId}/turns", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public TurnSubmitResponse submitTurn(
+    public ApiResponse<TurnSubmitResponse> submitTurn(
             @PathVariable String sessionId,
             @RequestPart("audio") MultipartFile audio,
             @Valid @ModelAttribute SubmitTurnRequest request
     ) {
-        return practiceSessionService.submitTurn(sessionId, toSubmittedAudio(audio), request);
+        return ApiResponse.success(practiceSessionService.submitTurn(sessionId, toSubmittedAudio(audio), request));
     }
 
     @PostMapping("/{sessionId}/exit")
-    public ExitSessionResponse exitSession(@PathVariable String sessionId, @Valid @RequestBody ExitSessionRequest request) {
-        return practiceSessionService.exitSession(sessionId, request);
+    public ApiResponse<ExitSessionResponse> exitSession(@PathVariable String sessionId, @Valid @RequestBody ExitSessionRequest request) {
+        return ApiResponse.success(practiceSessionService.exitSession(sessionId, request));
     }
 
     private SubmittedAudio toSubmittedAudio(MultipartFile audio) {
         try {
             return new SubmittedAudio(audio.getOriginalFilename(), audio.getContentType(), audio.getSize(), audio.getBytes());
         } catch (IOException exception) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "AUDIO_READ_FAILED", "음성 파일을 읽을 수 없습니다.");
+            throw new ApiException(ErrorCode.AUDIO_READ_FAILED);
         }
     }
 }

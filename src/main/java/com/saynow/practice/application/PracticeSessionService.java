@@ -1,6 +1,7 @@
 package com.saynow.practice.application;
 
 import com.saynow.common.exception.ApiException;
+import com.saynow.common.exception.ErrorCode;
 import com.saynow.practice.api.dto.ExitSessionRequest;
 import com.saynow.practice.api.dto.ExitSessionResponse;
 import com.saynow.practice.api.dto.MicReadyRequest;
@@ -34,7 +35,6 @@ import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioSlot;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,7 +96,7 @@ public class PracticeSessionService {
     @Transactional
     public SessionStartResponse startSession(StartSessionRequest request) {
         Scenario scenario = scenarioRepository.findByScenarioKeyAndStatus(request.scenarioId(), ContentStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SCENARIO_NOT_FOUND", "시나리오를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
         PracticeSession session = sessionRepository.save(new PracticeSession(UUID.randomUUID().toString(), scenario, now));
@@ -247,18 +247,18 @@ public class PracticeSessionService {
 
     private PracticeSession findSession(String sessionId) {
         return sessionRepository.findByPublicId(sessionId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "세션을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
     }
 
     private void assertInProgress(PracticeSession session) {
         if (!session.isInProgress()) {
-            throw new ApiException(HttpStatus.CONFLICT, "SESSION_ALREADY_ENDED", "이미 종료된 세션입니다.");
+            throw new ApiException(ErrorCode.SESSION_ALREADY_ENDED);
         }
     }
 
     private SessionPrompt latestPrompt(PracticeSession session) {
         return promptRepository.findFirstBySessionOrderByPromptIndexDesc(session)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PROMPT_NOT_FOUND", "세션 질문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.PROMPT_NOT_FOUND));
     }
 
     private long followUpCount(PracticeSession session) {
@@ -267,26 +267,26 @@ public class PracticeSessionService {
 
     private void validateTurnSubmitRequest(SubmittedAudio audio, SubmitTurnRequest request) {
         if (request.inputType() != InputType.AUDIO) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "UNSUPPORTED_INPUT_TYPE", "MVP에서는 AUDIO 입력만 지원합니다.");
+            throw new ApiException(ErrorCode.UNSUPPORTED_INPUT_TYPE);
         }
         if (audio == null || audio.size() <= 0 || audio.content() == null || audio.content().length == 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "AUDIO_REQUIRED", "음성 파일이 필요합니다.");
+            throw new ApiException(ErrorCode.AUDIO_REQUIRED);
         }
         if (audio.size() > MAX_AUDIO_BYTES) {
-            throw new ApiException(HttpStatus.CONTENT_TOO_LARGE, "AUDIO_TOO_LARGE", "음성 파일 크기 제한을 초과했습니다.");
+            throw new ApiException(ErrorCode.AUDIO_TOO_LARGE);
         }
         if (audio.contentType() == null || !SUPPORTED_AUDIO_CONTENT_TYPES.contains(audio.contentType())) {
-            throw new ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_AUDIO_TYPE", "지원하지 않는 음성 파일 형식입니다.");
+            throw new ApiException(ErrorCode.UNSUPPORTED_AUDIO_TYPE);
         }
     }
 
     private void validateAiEvaluationResult(AiTurnEvaluationResult evaluation) {
         if (evaluation.transcript() == null || evaluation.transcript().isBlank()) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_STT_FAILED", "AI 서버가 transcript를 반환하지 않았습니다.");
+            throw new ApiException(ErrorCode.AI_STT_FAILED);
         }
         if (evaluation.sttConfidence() != null
                 && (evaluation.sttConfidence().signum() < 0 || evaluation.sttConfidence().compareTo(java.math.BigDecimal.ONE) > 0)) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_RESPONSE_INVALID", "AI 서버 응답이 올바르지 않습니다.");
+            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
     }
 
@@ -347,7 +347,7 @@ public class PracticeSessionService {
         if (nextStatus == SessionStatus.IN_PROGRESS) {
             AiPrompt nextPrompt = evaluation.nextPrompt();
             if (nextPrompt == null) {
-                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_RESPONSE_INVALID", "다음 질문을 생성할 수 없습니다.");
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "다음 질문을 생성할 수 없습니다.");
             }
             return promptRepository.save(new SessionPrompt(
                     session,

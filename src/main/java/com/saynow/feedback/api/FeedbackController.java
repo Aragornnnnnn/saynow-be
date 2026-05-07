@@ -1,5 +1,6 @@
 package com.saynow.feedback.api;
 
+import com.saynow.common.response.ApiResponse;
 import com.saynow.feedback.api.dto.FeedbackResponse;
 import com.saynow.feedback.application.FeedbackService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,7 @@ public class FeedbackController {
     }
 
     @GetMapping("/{sessionId}/feedback")
-    public FeedbackResponse getFeedback(@PathVariable String sessionId) {
-        return feedbackService.getFeedback(sessionId);
+    public ApiResponse<FeedbackResponse> getFeedback(@PathVariable String sessionId) {
+        return ApiResponse.success(feedbackService.getFeedback(sessionId));
     }
 }

@@ -1,4 +1,4 @@
-package com.saynow.common.exception;
+package com.saynow.common.response;
 
 public record ErrorResponse(
         String code,
