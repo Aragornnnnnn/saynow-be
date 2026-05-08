@@ -85,6 +85,7 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "${EC2_SSH_KEY}" | tr -d '\r' > ~/.ssh/saynow_prod
           chmod 600 ~/.ssh/saynow_prod
+          ssh-keygen -y -f ~/.ssh/saynow_prod >/dev/null
           ssh-keyscan -H -p "${EC2_PORT}" "${EC2_HOST}" >> ~/.ssh/known_hosts
 
       - name: Upload jar to EC2
