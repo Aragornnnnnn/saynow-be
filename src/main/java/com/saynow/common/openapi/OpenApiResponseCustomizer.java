@@ -40,7 +40,7 @@ public class OpenApiResponseCustomizer {
                             "scenarios", List.of(objectMap(
                                     "scenarioId", "cafe_iced_americano",
                                     "title", "아이스 아메리카노 주문하기",
-                                    "difficulty", "EASY",
+                                    "difficulty", "쉬움",
                                     "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                                     "thumbnailUrl", null))
                     )),
@@ -50,12 +50,13 @@ public class OpenApiResponseCustomizer {
                             "scenarioId", "cafe_iced_americano",
                             "categoryId", "cafe",
                             "title", "아이스 아메리카노 주문하기",
-                            "difficulty", "EASY",
+                            "difficulty", "쉬움",
                             "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
                             "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                             "openingBabsaeText", "Hi! What would you like to order?",
                             "openingTtsUrl", null,
-                            "maxFollowUpCount", 5
+                            "maxFollowUpCount", 5,
+                            "thumbnailUrl", null
                     )),
                     errors(error(ErrorCode.SCENARIO_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(PracticeSessionController.class, "startSession",

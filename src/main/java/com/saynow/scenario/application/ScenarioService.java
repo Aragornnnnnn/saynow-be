@@ -42,7 +42,7 @@ public class ScenarioService {
                 .map(scenario -> new ScenarioListItemResponse(
                         scenario.getScenarioKey(),
                         scenario.getTitle(),
-                        scenario.getDifficulty(),
+                        scenario.getDifficulty().getDisplayName(),
                         scenario.getSuccessGoal(),
                         scenario.getThumbnailUrl()))
                 .toList());
@@ -56,11 +56,12 @@ public class ScenarioService {
                 scenario.getScenarioKey(),
                 scenario.getCategory().getCategoryKey(),
                 scenario.getTitle(),
-                scenario.getDifficulty(),
+                scenario.getDifficulty().getDisplayName(),
                 scenario.getSituationDescription(),
                 scenario.getSuccessGoal(),
                 scenario.getOpeningBabsaeText(),
                 scenario.getOpeningTtsUrl(),
-                scenario.getMaxFollowUpCount());
+                scenario.getMaxFollowUpCount(),
+                scenario.getThumbnailUrl());
     }
 }
