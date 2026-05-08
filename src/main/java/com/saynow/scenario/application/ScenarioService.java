@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ScenarioService {
 
+    private static final String ALL_CATEGORY_ID = "all";
+
     private final ScenarioCategoryRepository categoryRepository;
     private final ScenarioRepository scenarioRepository;
 
@@ -33,18 +35,20 @@ public class ScenarioService {
                 .toList());
     }
 
-    public ScenarioListResponse getScenariosByCategory(String categoryId) {
+    public ScenarioListResponse getScenarios(String categoryId) {
+        if (categoryId == null || ALL_CATEGORY_ID.equals(categoryId)) {
+            return new ScenarioListResponse(categoryId, scenarioRepository.findAllByOrderByIdAsc()
+                    .stream()
+                    .map(this::toListItemResponse)
+                    .toList());
+        }
+
         ScenarioCategory category = categoryRepository.findByCategoryKey(categoryId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
 
         return new ScenarioListResponse(category.getCategoryKey(), scenarioRepository.findByCategoryOrderByIdAsc(category)
                 .stream()
-                .map(scenario -> new ScenarioListItemResponse(
-                        scenario.getScenarioKey(),
-                        scenario.getTitle(),
-                        scenario.getDifficulty(),
-                        scenario.getSuccessGoal(),
-                        scenario.getThumbnailUrl()))
+                .map(this::toListItemResponse)
                 .toList());
     }
 
@@ -62,5 +66,14 @@ public class ScenarioService {
                 scenario.getOpeningBabsaeText(),
                 scenario.getOpeningTtsUrl(),
                 scenario.getMaxFollowUpCount());
+    }
+
+    private ScenarioListItemResponse toListItemResponse(Scenario scenario) {
+        return new ScenarioListItemResponse(
+                scenario.getScenarioKey(),
+                scenario.getTitle(),
+                scenario.getDifficulty(),
+                scenario.getSuccessGoal(),
+                scenario.getThumbnailUrl());
     }
 }

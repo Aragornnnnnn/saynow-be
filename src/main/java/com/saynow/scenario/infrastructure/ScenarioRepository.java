@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface ScenarioRepository extends JpaRepository<Scenario, Long> {
 
+    List<Scenario> findAllByOrderByIdAsc();
+
     List<Scenario> findByCategoryOrderByIdAsc(ScenarioCategory category);
 
     Optional<Scenario> findByScenarioKey(String scenarioKey);

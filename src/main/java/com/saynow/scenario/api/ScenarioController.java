@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,10 +30,10 @@ public class ScenarioController {
         return ApiResponse.success(scenarioService.getCategories());
     }
 
-    @GetMapping("/categories/{categoryId}/scenarios")
-    @Operation(summary = "카테고리별 시나리오 목록 조회", description = "카테고리에 속한 시나리오 목록을 조회합니다.")
-    public ApiResponse<ScenarioListResponse> getScenariosByCategory(@PathVariable String categoryId) {
-        return ApiResponse.success(scenarioService.getScenariosByCategory(categoryId));
+    @GetMapping("/scenarios")
+    @Operation(summary = "시나리오 목록 조회", description = "categoryId가 있으면 해당 카테고리의 시나리오를, 없으면 전체 시나리오를 조회합니다.")
+    public ApiResponse<ScenarioListResponse> getScenarios(@RequestParam(required = false) String categoryId) {
+        return ApiResponse.success(scenarioService.getScenarios(categoryId));
     }
 
     @GetMapping("/scenarios/{scenarioId}")

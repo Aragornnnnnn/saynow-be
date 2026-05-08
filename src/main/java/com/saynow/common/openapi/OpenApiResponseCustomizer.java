@@ -34,8 +34,8 @@ public class OpenApiResponseCustomizer {
                             "categories", List.of(objectMap("categoryId", "cafe", "name", "카페"))
                     )),
                     errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(ScenarioController.class, "getScenariosByCategory",
-                    success(HttpStatus.OK, "카테고리별 시나리오 목록 조회 성공", objectMap(
+            endpoint(ScenarioController.class, "getScenarios",
+                    success(HttpStatus.OK, "시나리오 목록 조회 성공", objectMap(
                             "categoryId", "cafe",
                             "scenarios", List.of(objectMap(
                                     "scenarioId", "cafe_iced_americano",

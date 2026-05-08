@@ -31,7 +31,8 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void listsScenariosForCategoryWithoutInternalSlotData() throws Exception {
-        mockMvc.perform(get("/api/v1/categories/cafe/scenarios"))
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "cafe"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.categoryId").value("cafe"))
                 .andExpect(jsonPath("$.data.scenarios", hasSize(2)))
@@ -43,6 +44,25 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.scenarios[0].sortOrder").doesNotExist())
                 .andExpect(jsonPath("$.data.scenarios[0].filledSlots").doesNotExist())
                 .andExpect(jsonPath("$.data.scenarios[0].missingSlots").doesNotExist());
+    }
+
+    @Test
+    void listsAllScenariosWhenCategoryIdIsMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/scenarios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.categoryId").value(nullValue()))
+                .andExpect(jsonPath("$.data.scenarios", hasSize(10)))
+                .andExpect(jsonPath("$.data.scenarios[0].scenarioId").value("airport_immigration"))
+                .andExpect(jsonPath("$.data.scenarios[9].scenarioId").value("taxi_card_payment"));
+    }
+
+    @Test
+    void listsAllScenariosWhenCategoryIdIsAll() throws Exception {
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.categoryId").value("all"))
+                .andExpect(jsonPath("$.data.scenarios", hasSize(10)));
     }
 
     @Test
@@ -65,7 +85,8 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void returnsNotFoundForUnknownCategory() throws Exception {
-        mockMvc.perform(get("/api/v1/categories/unknown/scenarios"))
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "unknown"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.data").value(nullValue()))
