@@ -46,3 +46,21 @@ DB_PASSWORD=<database-password>
 ```bash
 ./gradlew test
 ```
+
+## 운영 배포
+
+GitHub Actions의 `Deploy Prod EC2` workflow를 수동 실행해 선택한 브랜치를 운영 EC2에 배포합니다.
+
+GitHub `prod` Environment에는 아래 값을 설정합니다.
+
+- Secret: `EC2_SSH_KEY`
+- Variable: `EC2_HOST`
+- Variable: `EC2_USER`
+
+애플리케이션 런타임 환경변수는 EC2 IAM Role로 AWS SSM Parameter Store의 `/saynow/prod` 경로에서 읽어 `/opt/saynow/.env`로 생성합니다.
+
+필수 SSM 파라미터:
+
+- `/saynow/prod/DB_URL`
+- `/saynow/prod/DB_USERNAME`
+- `/saynow/prod/DB_PASSWORD`
