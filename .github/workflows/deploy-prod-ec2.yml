@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: deploy-prod-ec2
@@ -40,6 +41,37 @@ jobs:
 
       - name: Build application
         run: ./gradlew clean build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: saynow-be-${{ github.run_id }}
+
+      - name: Authorize runner SSH ingress
+        id: runner-ip
+        env:
+          EC2_SECURITY_GROUP_ID: ${{ vars.EC2_SECURITY_GROUP_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${EC2_SECURITY_GROUP_ID}"
+
+          RUNNER_IP="$(curl -fsS https://checkip.amazonaws.com | tr -d '\n')"
+          test -n "${RUNNER_IP}"
+          echo "cidr=${RUNNER_IP}/32" >> "${GITHUB_OUTPUT}"
+
+          error_file="$(mktemp)"
+          if ! aws ec2 authorize-security-group-ingress \
+            --group-id "${EC2_SECURITY_GROUP_ID}" \
+            --ip-permissions "IpProtocol=tcp,FromPort=${EC2_PORT},ToPort=${EC2_PORT},IpRanges=[{CidrIp=${RUNNER_IP}/32,Description=github-actions-${{ github.run_id }}}]" 2>"${error_file}"; then
+            if grep -q "InvalidPermission.Duplicate" "${error_file}"; then
+              cat "${error_file}"
+            else
+              cat "${error_file}" >&2
+              exit 1
+            fi
+          fi
 
       - name: Prepare SSH key
         env:
@@ -178,3 +210,15 @@ jobs:
           sudo journalctl -u "${SERVICE_NAME}" -n 120 --no-pager
           exit 1
           REMOTE
+
+      - name: Revoke runner SSH ingress
+        if: always() && steps.runner-ip.outputs.cidr != ''
+        env:
+          EC2_SECURITY_GROUP_ID: ${{ vars.EC2_SECURITY_GROUP_ID }}
+        run: |
+          set -euo pipefail
+          test -n "${EC2_SECURITY_GROUP_ID}"
+
+          aws ec2 revoke-security-group-ingress \
+            --group-id "${EC2_SECURITY_GROUP_ID}" \
+            --ip-permissions "IpProtocol=tcp,FromPort=${EC2_PORT},ToPort=${EC2_PORT},IpRanges=[{CidrIp=${{ steps.runner-ip.outputs.cidr }},Description=github-actions-${{ github.run_id }}}]" || true
