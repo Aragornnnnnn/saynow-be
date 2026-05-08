@@ -4,7 +4,6 @@ import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.dto.FeedbackResponse;
 import com.saynow.feedback.api.dto.TurnFeedbackResponse;
-import com.saynow.feedback.domain.FeedbackStatus;
 import com.saynow.feedback.domain.SessionFeedback;
 import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
 import com.saynow.feedback.infrastructure.TurnFeedbackRepository;
@@ -44,26 +43,18 @@ public class FeedbackService {
         SessionFeedback sessionFeedback = sessionFeedbackRepository.findBySession(session)
                 .orElseThrow(() -> new ApiException(ErrorCode.FEEDBACK_NOT_FOUND));
 
-        if (sessionFeedback.getFeedbackStatus() == FeedbackStatus.GENERATING) {
-            throw new ApiException(ErrorCode.FEEDBACK_GENERATING);
-        }
-        if (sessionFeedback.getFeedbackStatus() == FeedbackStatus.FAILED) {
-            throw new ApiException(ErrorCode.FEEDBACK_FAILED);
-        }
-
         return new FeedbackResponse(
                 session.getPublicId(),
                 sessionFeedback.getScenarioResult(),
                 sessionFeedback.getTotalUnderstoodScore(),
                 sessionFeedback.getSummary(),
-                sessionFeedback.getAverageScoreDelta(),
                 turnFeedbackRepository.findBySessionFeedbackOrderByTurnTurnIndexAsc(sessionFeedback).stream()
                         .map(turnFeedback -> {
                             PracticeTurn turn = turnFeedback.getTurn();
                             return new TurnFeedbackResponse(
                                     turn.getId(),
                                     turn.getTurnIndex(),
-                                    turn.getPrompt().getPromptText(),
+                                    turn.getQuestionText(),
                                     turn.getUserTranscript(),
                                     turn.getSpeechStartedAfterMs(),
                                     toSeconds(turn.getSpeechStartedAfterMs()),

@@ -1,5 +1,6 @@
 package com.saynow.practice.domain;
 
+import com.saynow.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,11 +14,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "practice_turns")
-public class PracticeTurn {
+public class PracticeTurn extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,12 +27,14 @@ public class PracticeTurn {
     @JoinColumn(name = "session_id", nullable = false)
     private PracticeSession session;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "prompt_id", nullable = false)
-    private SessionPrompt prompt;
-
     @Column(name = "turn_index", nullable = false)
     private int turnIndex;
+
+    @Column(name = "question_text", nullable = false, length = 500)
+    private String questionText;
+
+    @Column(name = "question_tts_url", length = 500)
+    private String questionTtsUrl;
 
     @Column(name = "user_transcript", nullable = false, columnDefinition = "text")
     private String userTranscript;
@@ -53,44 +55,45 @@ public class PracticeTurn {
     @Column(name = "audio_object_key", length = 500)
     private String audioObjectKey;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
     protected PracticeTurn() {
     }
 
     public PracticeTurn(
             PracticeSession session,
-            SessionPrompt prompt,
             int turnIndex,
+            String questionText,
+            String questionTtsUrl,
             String userTranscript,
             InputType inputType,
             Integer speechStartedAfterMs,
             Integer recordingDurationMs,
-            BigDecimal sttConfidence,
-            LocalDateTime createdAt
+            BigDecimal sttConfidence
     ) {
         this.session = session;
-        this.prompt = prompt;
         this.turnIndex = turnIndex;
+        this.questionText = questionText;
+        this.questionTtsUrl = questionTtsUrl;
         this.userTranscript = userTranscript;
         this.inputType = inputType;
         this.speechStartedAfterMs = speechStartedAfterMs;
         this.recordingDurationMs = recordingDurationMs;
         this.sttConfidence = sttConfidence;
-        this.createdAt = createdAt;
     }
 
     public Long getId() {
         return id;
     }
 
-    public SessionPrompt getPrompt() {
-        return prompt;
-    }
-
     public int getTurnIndex() {
         return turnIndex;
+    }
+
+    public String getQuestionText() {
+        return questionText;
+    }
+
+    public String getQuestionTtsUrl() {
+        return questionTtsUrl;
     }
 
     public String getUserTranscript() {
@@ -105,7 +108,7 @@ public class PracticeTurn {
         return recordingDurationMs;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public BigDecimal getSttConfidence() {
+        return sttConfidence;
     }
 }

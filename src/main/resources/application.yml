@@ -13,3 +13,7 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
+
+saynow:
+  ai:
+    base-url: ${SAYNOW_AI_BASE_URL:http://43.202.146.182:8080}

@@ -9,7 +9,6 @@ public record FeedbackResponse(
         SessionStatus scenarioResult,
         int totalUnderstoodScore,
         String summary,
-        int averageScoreDelta,
         List<TurnFeedbackResponse> turnFeedback
 ) {
 }

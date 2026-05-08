@@ -1,6 +1,5 @@
 package com.saynow.practice.application;
 
-import com.saynow.feedback.domain.FeedbackStatus;
 import com.saynow.feedback.domain.SessionFeedback;
 import com.saynow.feedback.domain.TurnFeedback;
 import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
@@ -11,7 +10,6 @@ import com.saynow.practice.domain.SessionStatus;
 import com.saynow.practice.infrastructure.PracticeTurnRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,7 +29,7 @@ public class FeedbackCreationService {
         this.turnRepository = turnRepository;
     }
 
-    public void createReadyFeedback(PracticeSession session, LocalDateTime now) {
+    public void createReadyFeedback(PracticeSession session) {
         if (sessionFeedbackRepository.existsBySession(session)) {
             return;
         }
@@ -43,11 +41,7 @@ public class FeedbackCreationService {
                 success ? 85 : 60,
                 success
                         ? "대화 전체를 보면 필요한 정보가 전달되어 시나리오를 완료했어요."
-                        : "대화 전체를 보면 필요한 정보가 충분히 전달되지 않아 시나리오를 완료하지 못했어요.",
-                success ? 8 : 12,
-                FeedbackStatus.READY,
-                now,
-                now));
+                        : "대화 전체를 보면 필요한 정보가 충분히 전달되지 않아 시나리오를 완료하지 못했어요."));
 
         List<PracticeTurn> turns = turnRepository.findBySessionOrderByTurnIndexAsc(session);
         for (PracticeTurn turn : turns) {
@@ -63,8 +57,7 @@ public class FeedbackCreationService {
                     Math.min(100, understoodScore + scoreDelta),
                     turn.getTurnIndex() == 1
                             ? "주문 상황에서는 'I'd like'를 쓰면 더 자연스럽게 들려요."
-                            : "이미 충분히 자연스럽게 답했어요.",
-                    now));
+                            : "이미 충분히 자연스럽게 답했어요."));
         }
     }
 }

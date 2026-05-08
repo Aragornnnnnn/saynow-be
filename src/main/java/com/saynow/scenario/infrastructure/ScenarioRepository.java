@@ -1,6 +1,5 @@
 package com.saynow.scenario.infrastructure;
 
-import com.saynow.scenario.domain.ContentStatus;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +9,7 @@ import java.util.Optional;
 
 public interface ScenarioRepository extends JpaRepository<Scenario, Long> {
 
-    List<Scenario> findByCategoryAndStatusOrderBySortOrderAsc(ScenarioCategory category, ContentStatus status);
+    List<Scenario> findByCategoryOrderByIdAsc(ScenarioCategory category);
 
-    Optional<Scenario> findByScenarioKeyAndStatus(String scenarioKey, ContentStatus status);
+    Optional<Scenario> findByScenarioKey(String scenarioKey);
 }

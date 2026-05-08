@@ -25,7 +25,7 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.categories", hasSize(5)))
                 .andExpect(jsonPath("$.data.categories[0].categoryId").value("airport"))
                 .andExpect(jsonPath("$.data.categories[0].name").value("공항"))
-                .andExpect(jsonPath("$.data.categories[0].sortOrder").value(1))
+                .andExpect(jsonPath("$.data.categories[0].sortOrder").doesNotExist())
                 .andExpect(jsonPath("$.data.categories[4].categoryId").value("taxi"));
     }
 
@@ -37,8 +37,10 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.scenarios", hasSize(2)))
                 .andExpect(jsonPath("$.data.scenarios[0].scenarioId").value("cafe_iced_americano"))
                 .andExpect(jsonPath("$.data.scenarios[0].title").value("아이스 아메리카노 주문하기"))
+                .andExpect(jsonPath("$.data.scenarios[0].difficulty").value("EASY"))
                 .andExpect(jsonPath("$.data.scenarios[0].successGoal").value("아이스 아메리카노 주문에 성공하세요."))
                 .andExpect(jsonPath("$.data.scenarios[0].thumbnailUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.scenarios[0].sortOrder").doesNotExist())
                 .andExpect(jsonPath("$.data.scenarios[0].filledSlots").doesNotExist())
                 .andExpect(jsonPath("$.data.scenarios[0].missingSlots").doesNotExist());
     }
@@ -50,6 +52,7 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.scenarioId").value("cafe_iced_americano"))
                 .andExpect(jsonPath("$.data.categoryId").value("cafe"))
                 .andExpect(jsonPath("$.data.title").value("아이스 아메리카노 주문하기"))
+                .andExpect(jsonPath("$.data.difficulty").value("EASY"))
                 .andExpect(jsonPath("$.data.situationDescription").value("카페에서 원하는 음료를 주문해야 합니다."))
                 .andExpect(jsonPath("$.data.successGoal").value("아이스 아메리카노 주문에 성공하세요."))
                 .andExpect(jsonPath("$.data.openingBabsaeText").value("Hi! What would you like to order?"))

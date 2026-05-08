@@ -1,6 +1,5 @@
 package com.saynow.practice.infrastructure.ai;
 
-import com.saynow.practice.domain.PromptType;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.scenario.domain.ScenarioSlot;
 import org.springframework.stereotype.Component;
@@ -20,14 +19,14 @@ public class LocalAiPracticeClient {
     public AiTurnEvaluationResult evaluateTurn(AiTurnEvaluationRequest request) {
         String transcript = transcribe(request.audioContent());
         BigDecimal sttConfidence = confidenceFor(transcript);
-        List<AiFilledSlot> filledSlots = detectFilledSlots(transcript, request.scenarioSlots(), request.currentFilledSlotKeys());
-        Set<String> filledAfterTurn = new LinkedHashSet<>(request.currentFilledSlotKeys());
+        Set<String> currentFilledSlotKeys = request.currentFilledSlots().keySet();
+        List<AiFilledSlot> filledSlots = detectFilledSlots(transcript, request.scenarioSlots(), currentFilledSlotKeys);
+        Set<String> filledAfterTurn = new LinkedHashSet<>(currentFilledSlotKeys);
         filledSlots.stream()
                 .map(AiFilledSlot::slotKey)
                 .forEach(filledAfterTurn::add);
 
         Optional<ScenarioSlot> firstMissingRequiredSlot = request.scenarioSlots().stream()
-                .filter(ScenarioSlot::isRequired)
                 .filter(slot -> !filledAfterTurn.contains(slot.getSlotKey()))
                 .findFirst();
 
@@ -38,7 +37,7 @@ public class LocalAiPracticeClient {
                     SessionStatus.SUCCESS,
                     filledSlots,
                     null,
-                    new AiPrompt(PromptType.RESULT, "Scenario cleared.", null));
+                    new AiPrompt("Scenario cleared.", null));
         }
 
         if (request.followUpCount() >= request.maxFollowUpCount()) {
@@ -48,7 +47,7 @@ public class LocalAiPracticeClient {
                     SessionStatus.FAILURE,
                     filledSlots,
                     null,
-                    new AiPrompt(PromptType.RESULT, "The scenario was not cleared in time.", null));
+                    new AiPrompt("The scenario was not cleared in time.", null));
         }
 
         ScenarioSlot missingSlot = firstMissingRequiredSlot.get();
@@ -57,7 +56,7 @@ public class LocalAiPracticeClient {
                 sttConfidence,
                 SessionStatus.IN_PROGRESS,
                 filledSlots,
-                new AiPrompt(PromptType.FOLLOW_UP, promptFor(missingSlot.getSlotKey()), null),
+                new AiPrompt(promptFor(missingSlot.getSlotKey()), null),
                 null);
     }
 

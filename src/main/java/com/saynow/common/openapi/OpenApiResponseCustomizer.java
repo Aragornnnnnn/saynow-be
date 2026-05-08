@@ -31,7 +31,7 @@ public class OpenApiResponseCustomizer {
     private static final Map<String, EndpointDoc> ENDPOINT_DOCS = Map.ofEntries(
             endpoint(ScenarioController.class, "getCategories",
                     success(HttpStatus.OK, "카테고리 목록 조회 성공", objectMap(
-                            "categories", List.of(objectMap("categoryId", "cafe", "name", "카페", "sortOrder", 3))
+                            "categories", List.of(objectMap("categoryId", "cafe", "name", "카페"))
                     )),
                     errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenariosByCategory",
@@ -40,9 +40,9 @@ public class OpenApiResponseCustomizer {
                             "scenarios", List.of(objectMap(
                                     "scenarioId", "cafe_iced_americano",
                                     "title", "아이스 아메리카노 주문하기",
+                                    "difficulty", "EASY",
                                     "successGoal", "아이스 아메리카노 주문에 성공하세요.",
-                                    "thumbnailUrl", null,
-                                    "sortOrder", 1))
+                                    "thumbnailUrl", null))
                     )),
                     errors(error(ErrorCode.CATEGORY_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenarioDetail",
@@ -50,6 +50,7 @@ public class OpenApiResponseCustomizer {
                             "scenarioId", "cafe_iced_americano",
                             "categoryId", "cafe",
                             "title", "아이스 아메리카노 주문하기",
+                            "difficulty", "EASY",
                             "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
                             "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                             "openingBabsaeText", "Hi! What would you like to order?",
@@ -93,7 +94,6 @@ public class OpenApiResponseCustomizer {
                     )),
                     errors(
                             error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.PROMPT_NOT_FOUND),
                             error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(PracticeSessionController.class, "recordMicReady",
                     success(HttpStatus.OK, "마이크 준비 지연 기록 성공", objectMap(
@@ -101,7 +101,6 @@ public class OpenApiResponseCustomizer {
                             "micReadyLatencyMs", 1240
                     )),
                     errors(
-                            error(ErrorCode.VALIDATION_FAILED),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.SESSION_ALREADY_ENDED),
                             error(ErrorCode.INTERNAL_SERVER_ERROR))),
@@ -125,7 +124,6 @@ public class OpenApiResponseCustomizer {
                             error(ErrorCode.AUDIO_REQUIRED),
                             error(ErrorCode.AUDIO_READ_FAILED),
                             error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.PROMPT_NOT_FOUND),
                             error(ErrorCode.SESSION_ALREADY_ENDED),
                             error(ErrorCode.AUDIO_TOO_LARGE),
                             error(ErrorCode.UNSUPPORTED_AUDIO_TYPE),
@@ -149,7 +147,6 @@ public class OpenApiResponseCustomizer {
                             "scenarioResult", "SUCCESS",
                             "totalUnderstoodScore", 85,
                             "summary", "주문 의도가 명확했고 핵심 표현을 잘 전달했습니다.",
-                            "averageScoreDelta", 8,
                             "turnFeedback", List.of(objectMap(
                                     "turnId", 1,
                                     "turnIndex", 1,
@@ -168,8 +165,6 @@ public class OpenApiResponseCustomizer {
                             error(ErrorCode.SESSION_IN_PROGRESS),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.FEEDBACK_NOT_FOUND),
-                            error(ErrorCode.FEEDBACK_FAILED),
-                            error(ErrorCode.FEEDBACK_GENERATING),
                             error(ErrorCode.INTERNAL_SERVER_ERROR)))
     );
 
