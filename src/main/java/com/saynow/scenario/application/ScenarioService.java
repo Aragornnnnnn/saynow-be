@@ -5,8 +5,6 @@ import com.saynow.common.exception.ErrorCode;
 import com.saynow.scenario.api.dto.CategoryListResponse;
 import com.saynow.scenario.api.dto.CategoryResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
-import com.saynow.scenario.api.dto.ScenarioListItemResponse;
-import com.saynow.scenario.api.dto.ScenarioListResponse;
 import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
 import com.saynow.scenario.api.dto.ScenarioSummaryResponse;
 import com.saynow.scenario.domain.Scenario;
@@ -19,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class ScenarioService {
+
+    private static final String ALL_CATEGORY_ID = "all";
 
     private final ScenarioCategoryRepository categoryRepository;
     private final ScenarioRepository scenarioRepository;
@@ -35,31 +35,20 @@ public class ScenarioService {
                 .toList());
     }
 
-    public ScenarioListResponse getScenariosByCategory(String categoryId) {
+    public ScenarioSummaryListResponse getScenarios(String categoryId) {
+        if (categoryId == null || ALL_CATEGORY_ID.equals(categoryId)) {
+            return new ScenarioSummaryListResponse(scenarioRepository.findAllByOrderByIdAsc()
+                    .stream()
+                    .map(this::toSummaryResponse)
+                    .toList());
+        }
+
         ScenarioCategory category = categoryRepository.findByCategoryKey(categoryId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        return new ScenarioListResponse(category.getCategoryKey(), scenarioRepository.findByCategoryOrderByIdAsc(category)
+        return new ScenarioSummaryListResponse(scenarioRepository.findByCategoryOrderByIdAsc(category)
                 .stream()
-                .map(scenario -> new ScenarioListItemResponse(
-                        scenario.getScenarioKey(),
-                        scenario.getTitle(),
-                        scenario.getDifficulty().getDisplayName(),
-                        scenario.getSuccessGoal(),
-                        scenario.getThumbnailUrl()))
-                .toList());
-    }
-
-    public ScenarioSummaryListResponse getScenarios() {
-        return new ScenarioSummaryListResponse(scenarioRepository.findAllByOrderByIdAsc()
-                .stream()
-                .map(scenario -> new ScenarioSummaryResponse(
-                        scenario.getScenarioKey(),
-                        scenario.getCategory().getCategoryKey(),
-                        scenario.getTitle(),
-                        scenario.getDifficulty().getDisplayName(),
-                        scenario.getSuccessGoal(),
-                        scenario.getThumbnailUrl()))
+                .map(this::toSummaryResponse)
                 .toList());
     }
 
@@ -77,6 +66,16 @@ public class ScenarioService {
                 scenario.getOpeningBabsaeText(),
                 scenario.getOpeningTtsUrl(),
                 scenario.getMaxFollowUpCount(),
+                scenario.getThumbnailUrl());
+    }
+
+    private ScenarioSummaryResponse toSummaryResponse(Scenario scenario) {
+        return new ScenarioSummaryResponse(
+                scenario.getScenarioKey(),
+                scenario.getCategory().getCategoryKey(),
+                scenario.getTitle(),
+                scenario.getDifficulty().getDisplayName(),
+                scenario.getSuccessGoal(),
                 scenario.getThumbnailUrl());
     }
 }

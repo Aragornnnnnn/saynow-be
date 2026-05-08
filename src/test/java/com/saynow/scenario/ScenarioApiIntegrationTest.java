@@ -31,11 +31,12 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void listsScenariosForCategoryWithoutInternalSlotData() throws Exception {
-        mockMvc.perform(get("/api/v1/categories/cafe/scenarios"))
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "cafe"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.categoryId").value("cafe"))
                 .andExpect(jsonPath("$.data.scenarios", hasSize(2)))
                 .andExpect(jsonPath("$.data.scenarios[0].scenarioId").value("cafe_iced_americano"))
+                .andExpect(jsonPath("$.data.scenarios[0].categoryId").value("cafe"))
                 .andExpect(jsonPath("$.data.scenarios[0].title").value("아이스 아메리카노 주문하기"))
                 .andExpect(jsonPath("$.data.scenarios[0].difficulty").value("쉬움"))
                 .andExpect(jsonPath("$.data.scenarios[0].successGoal").value("아이스 아메리카노 주문에 성공하세요."))
@@ -61,6 +62,16 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void listsAllScenariosWhenCategoryIdIsAll() throws Exception {
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.scenarios", hasSize(10)))
+                .andExpect(jsonPath("$.data.scenarios[0].categoryId").value("airport"))
+                .andExpect(jsonPath("$.data.scenarios[9].scenarioId").value("taxi_card_payment"));
+    }
+
+    @Test
     void returnsScenarioDetailForModalOnly() throws Exception {
         mockMvc.perform(get("/api/v1/scenarios/cafe_iced_americano"))
                 .andExpect(status().isOk())
@@ -81,7 +92,8 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void returnsNotFoundForUnknownCategory() throws Exception {
-        mockMvc.perform(get("/api/v1/categories/unknown/scenarios"))
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .param("categoryId", "unknown"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.data").value(nullValue()))

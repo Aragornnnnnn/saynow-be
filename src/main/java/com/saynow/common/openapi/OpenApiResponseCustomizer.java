@@ -34,28 +34,17 @@ public class OpenApiResponseCustomizer {
                             "categories", List.of(objectMap("categoryId", "cafe", "name", "카페"))
                     )),
                     errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(ScenarioController.class, "getScenariosByCategory",
-                    success(HttpStatus.OK, "카테고리별 시나리오 목록 조회 성공", objectMap(
-                            "categoryId", "cafe",
+            endpoint(ScenarioController.class, "getScenarios",
+                    success(HttpStatus.OK, "시나리오 목록 조회 성공", objectMap(
                             "scenarios", List.of(objectMap(
                                     "scenarioId", "cafe_iced_americano",
+                                    "categoryId", "cafe",
                                     "title", "아이스 아메리카노 주문하기",
                                     "difficulty", "쉬움",
                                     "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                                     "thumbnailUrl", null))
                     )),
                     errors(error(ErrorCode.CATEGORY_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(ScenarioController.class, "getScenarios",
-                    success(HttpStatus.OK, "전체 시나리오 목록 조회 성공", objectMap(
-                            "scenarios", List.of(objectMap(
-                                    "scenarioId", "airport_immigration",
-                                    "categoryId", "airport",
-                                    "title", "입국 심사 통과하기",
-                                    "difficulty", "보통",
-                                    "successGoal", "여행 목적과 체류 기간을 말하고 입국 심사를 통과하세요.",
-                                    "thumbnailUrl", null))
-                    )),
-                    errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenarioDetail",
                     success(HttpStatus.OK, "시나리오 상세 조회 성공", objectMap(
                             "scenarioId", "cafe_iced_americano",
