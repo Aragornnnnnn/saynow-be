@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface ScenarioSlotRepository extends JpaRepository<ScenarioSlot, Long> {
 
-    List<ScenarioSlot> findByScenarioOrderBySlotOrderAsc(Scenario scenario);
+    List<ScenarioSlot> findByScenarioOrderByIdAsc(Scenario scenario);
 }

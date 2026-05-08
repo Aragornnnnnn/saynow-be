@@ -1,5 +1,6 @@
 package com.saynow.scenario.domain;
 
+import com.saynow.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,11 +13,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "scenarios")
-public class Scenario {
+public class Scenario extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +30,10 @@ public class Scenario {
 
     @Column(nullable = false, length = 100)
     private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ScenarioDifficulty difficulty;
 
     @Column(name = "situation_description", nullable = false, columnDefinition = "text")
     private String situationDescription;
@@ -50,19 +53,6 @@ public class Scenario {
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
-    @Column(name = "sort_order", nullable = false)
-    private int sortOrder;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ContentStatus status;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     protected Scenario() {
     }
 
@@ -80,6 +70,10 @@ public class Scenario {
 
     public String getTitle() {
         return title;
+    }
+
+    public ScenarioDifficulty getDifficulty() {
+        return difficulty;
     }
 
     public String getSituationDescription() {
@@ -106,11 +100,4 @@ public class Scenario {
         return thumbnailUrl;
     }
 
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public ContentStatus getStatus() {
-        return status;
-    }
 }

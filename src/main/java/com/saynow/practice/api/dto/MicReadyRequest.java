@@ -4,6 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record MicReadyRequest(
-        @NotNull @PositiveOrZero Long latencyMs
+        @NotNull @PositiveOrZero Integer latencyMs
 ) {
 }

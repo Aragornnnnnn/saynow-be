@@ -12,7 +12,7 @@ public record SessionStatusResponse(
         String babsaeTtsUrl,
         long followUpCount,
         int maxFollowUpCount,
-        Long micReadyLatencyMs,
+        Integer micReadyLatencyMs,
         List<TurnHistoryResponse> turns
 ) {
 }

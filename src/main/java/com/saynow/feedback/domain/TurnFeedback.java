@@ -1,5 +1,6 @@
 package com.saynow.feedback.domain;
 
+import com.saynow.common.domain.BaseTimeEntity;
 import com.saynow.practice.domain.PracticeTurn;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,11 +13,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "turn_feedbacks")
-public class TurnFeedback {
+public class TurnFeedback extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,9 +47,6 @@ public class TurnFeedback {
     @Column(nullable = false, columnDefinition = "text")
     private String reason;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
     protected TurnFeedback() {
     }
 
@@ -62,8 +58,7 @@ public class TurnFeedback {
             String betterExpression,
             int scoreDelta,
             int improvedUnderstoodScore,
-            String reason,
-            LocalDateTime createdAt
+            String reason
     ) {
         this.sessionFeedback = sessionFeedback;
         this.turn = turn;
@@ -73,7 +68,6 @@ public class TurnFeedback {
         this.scoreDelta = scoreDelta;
         this.improvedUnderstoodScore = improvedUnderstoodScore;
         this.reason = reason;
-        this.createdAt = createdAt;
     }
 
     public PracticeTurn getTurn() {

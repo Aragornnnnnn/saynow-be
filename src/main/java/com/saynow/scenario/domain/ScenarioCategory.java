@@ -1,19 +1,16 @@
 package com.saynow.scenario.domain;
 
+import com.saynow.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "scenario_categories")
-public class ScenarioCategory {
+public class ScenarioCategory extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,19 +24,6 @@ public class ScenarioCategory {
 
     @Column(length = 255)
     private String description;
-
-    @Column(name = "sort_order", nullable = false)
-    private int sortOrder;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ContentStatus status;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     protected ScenarioCategory() {
     }
@@ -60,11 +44,4 @@ public class ScenarioCategory {
         return description;
     }
 
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public ContentStatus getStatus() {
-        return status;
-    }
 }

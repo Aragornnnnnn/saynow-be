@@ -30,7 +30,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     void completesSessionAndReturnsFeedbackWithoutExposingInternalSlots() throws Exception {
         String sessionId = startSession("cafe_iced_americano");
 
-        mockMvc.perform(put("/api/v1/sessions/{sessionId}/metrics/micReady", sessionId)
+        mockMvc.perform(put("/api/v1/sessions/{sessionId}/micReady", sessionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"latencyMs":1240}
@@ -91,6 +91,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.scenarioResult").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.totalUnderstoodScore").value(85))
+                .andExpect(jsonPath("$.data.averageScoreDelta").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedback", hasSize(2)))
                 .andExpect(jsonPath("$.data.turnFeedback[0].turnId").value(1))
                 .andExpect(jsonPath("$.data.turnFeedback[0].questionText").value("Hi! What would you like to order?"))
@@ -136,16 +137,13 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
         String sessionId = startSession("taxi_destination");
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/exit", sessionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"reason":"USER_EXIT"}
-                                """))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.status").value("ABANDONED"))
                 .andExpect(jsonPath("$.data.endedAt").isNotEmpty());
 
-        mockMvc.perform(put("/api/v1/sessions/{sessionId}/metrics/micReady", sessionId)
+        mockMvc.perform(put("/api/v1/sessions/{sessionId}/micReady", sessionId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"latencyMs":400}

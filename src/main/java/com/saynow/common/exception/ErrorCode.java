@@ -10,9 +10,7 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
     SCENARIO_NOT_FOUND(HttpStatus.NOT_FOUND, "시나리오를 찾을 수 없습니다."),
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "세션을 찾을 수 없습니다."),
-    PROMPT_NOT_FOUND(HttpStatus.NOT_FOUND, "세션 질문을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."),
-    FEEDBACK_FAILED(HttpStatus.NOT_FOUND, "피드백 생성에 실패했습니다."),
 
     SESSION_ALREADY_ENDED(HttpStatus.CONFLICT, "이미 종료된 세션입니다."),
     SESSION_IN_PROGRESS(HttpStatus.BAD_REQUEST, "아직 진행 중인 세션입니다."),
@@ -24,8 +22,7 @@ public enum ErrorCode {
     UNSUPPORTED_INPUT_TYPE(HttpStatus.BAD_REQUEST, "MVP에서는 AUDIO 입력만 지원합니다."),
 
     AI_STT_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버가 transcript를 반환하지 않았습니다."),
-    AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 응답이 올바르지 않습니다."),
-    FEEDBACK_GENERATING(HttpStatus.ACCEPTED, "피드백을 생성 중입니다.");
+    AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 응답이 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String message;

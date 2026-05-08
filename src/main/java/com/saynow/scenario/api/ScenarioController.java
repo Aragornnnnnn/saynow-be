@@ -24,13 +24,13 @@ public class ScenarioController {
     }
 
     @GetMapping("/categories")
-    @Operation(summary = "카테고리 목록 조회", description = "활성화된 시나리오 카테고리를 정렬 순서대로 조회합니다.")
+    @Operation(summary = "카테고리 목록 조회", description = "시나리오 카테고리 목록을 조회합니다.")
     public ApiResponse<CategoryListResponse> getCategories() {
         return ApiResponse.success(scenarioService.getCategories());
     }
 
     @GetMapping("/categories/{categoryId}/scenarios")
-    @Operation(summary = "카테고리별 시나리오 목록 조회", description = "카테고리에 속한 활성 시나리오 목록을 조회합니다.")
+    @Operation(summary = "카테고리별 시나리오 목록 조회", description = "카테고리에 속한 시나리오 목록을 조회합니다.")
     public ApiResponse<ScenarioListResponse> getScenariosByCategory(@PathVariable String categoryId) {
         return ApiResponse.success(scenarioService.getScenariosByCategory(categoryId));
     }

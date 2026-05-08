@@ -1,5 +1,6 @@
 package com.saynow.scenario.domain;
 
+import com.saynow.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,11 +11,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "scenario_slots")
-public class ScenarioSlot {
+public class ScenarioSlot extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,20 +26,8 @@ public class ScenarioSlot {
     @Column(name = "slot_key", nullable = false, length = 80)
     private String slotKey;
 
-    @Column(name = "display_name", nullable = false, length = 100)
-    private String displayName;
-
-    @Column(name = "slot_order", nullable = false)
-    private int slotOrder;
-
-    @Column(name = "required", nullable = false)
-    private boolean required;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @Column(nullable = false, length = 255)
+    private String description;
 
     protected ScenarioSlot() {
     }
@@ -57,15 +44,7 @@ public class ScenarioSlot {
         return slotKey;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public int getSlotOrder() {
-        return slotOrder;
-    }
-
-    public boolean isRequired() {
-        return required;
+    public String getDescription() {
+        return description;
     }
 }

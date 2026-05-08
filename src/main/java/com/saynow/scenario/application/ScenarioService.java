@@ -7,7 +7,6 @@ import com.saynow.scenario.api.dto.CategoryResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
 import com.saynow.scenario.api.dto.ScenarioListItemResponse;
 import com.saynow.scenario.api.dto.ScenarioListResponse;
-import com.saynow.scenario.domain.ContentStatus;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
 import com.saynow.scenario.infrastructure.ScenarioCategoryRepository;
@@ -28,35 +27,36 @@ public class ScenarioService {
     }
 
     public CategoryListResponse getCategories() {
-        return new CategoryListResponse(categoryRepository.findByStatusOrderBySortOrderAsc(ContentStatus.ACTIVE)
+        return new CategoryListResponse(categoryRepository.findAllByOrderByIdAsc()
                 .stream()
-                .map(category -> new CategoryResponse(category.getCategoryKey(), category.getName(), category.getSortOrder()))
+                .map(category -> new CategoryResponse(category.getCategoryKey(), category.getName()))
                 .toList());
     }
 
     public ScenarioListResponse getScenariosByCategory(String categoryId) {
-        ScenarioCategory category = categoryRepository.findByCategoryKeyAndStatus(categoryId, ContentStatus.ACTIVE)
+        ScenarioCategory category = categoryRepository.findByCategoryKey(categoryId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        return new ScenarioListResponse(category.getCategoryKey(), scenarioRepository.findByCategoryAndStatusOrderBySortOrderAsc(category, ContentStatus.ACTIVE)
+        return new ScenarioListResponse(category.getCategoryKey(), scenarioRepository.findByCategoryOrderByIdAsc(category)
                 .stream()
                 .map(scenario -> new ScenarioListItemResponse(
                         scenario.getScenarioKey(),
                         scenario.getTitle(),
+                        scenario.getDifficulty(),
                         scenario.getSuccessGoal(),
-                        scenario.getThumbnailUrl(),
-                        scenario.getSortOrder()))
+                        scenario.getThumbnailUrl()))
                 .toList());
     }
 
     public ScenarioDetailResponse getScenarioDetail(String scenarioId) {
-        Scenario scenario = scenarioRepository.findByScenarioKeyAndStatus(scenarioId, ContentStatus.ACTIVE)
+        Scenario scenario = scenarioRepository.findByScenarioKey(scenarioId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
 
         return new ScenarioDetailResponse(
                 scenario.getScenarioKey(),
                 scenario.getCategory().getCategoryKey(),
                 scenario.getTitle(),
+                scenario.getDifficulty(),
                 scenario.getSituationDescription(),
                 scenario.getSuccessGoal(),
                 scenario.getOpeningBabsaeText(),
