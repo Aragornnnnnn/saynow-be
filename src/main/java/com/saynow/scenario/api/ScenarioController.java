@@ -4,6 +4,7 @@ import com.saynow.common.response.ApiResponse;
 import com.saynow.scenario.api.dto.CategoryListResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
 import com.saynow.scenario.api.dto.ScenarioListResponse;
+import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
 import com.saynow.scenario.application.ScenarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,12 @@ public class ScenarioController {
     @Operation(summary = "카테고리별 시나리오 목록 조회", description = "카테고리에 속한 시나리오 목록을 조회합니다.")
     public ApiResponse<ScenarioListResponse> getScenariosByCategory(@PathVariable String categoryId) {
         return ApiResponse.success(scenarioService.getScenariosByCategory(categoryId));
+    }
+
+    @GetMapping("/scenarios")
+    @Operation(summary = "전체 시나리오 목록 조회", description = "카테고리 구분 없이 전체 시나리오 목록을 조회합니다.")
+    public ApiResponse<ScenarioSummaryListResponse> getScenarios() {
+        return ApiResponse.success(scenarioService.getScenarios());
     }
 
     @GetMapping("/scenarios/{scenarioId}")

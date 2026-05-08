@@ -46,6 +46,21 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void listsAllScenariosWithCategoryIdWithoutInternalSlotData() throws Exception {
+        mockMvc.perform(get("/api/v1/scenarios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.scenarios", hasSize(10)))
+                .andExpect(jsonPath("$.data.scenarios[0].scenarioId").value("airport_immigration"))
+                .andExpect(jsonPath("$.data.scenarios[0].categoryId").value("airport"))
+                .andExpect(jsonPath("$.data.scenarios[0].title").value("입국 심사 통과하기"))
+                .andExpect(jsonPath("$.data.scenarios[0].difficulty").value("보통"))
+                .andExpect(jsonPath("$.data.scenarios[0].successGoal").value("여행 목적과 체류 기간을 말하고 입국 심사를 통과하세요."))
+                .andExpect(jsonPath("$.data.scenarios[0].thumbnailUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.scenarios[0].filledSlots").doesNotExist())
+                .andExpect(jsonPath("$.data.scenarios[0].missingSlots").doesNotExist());
+    }
+
+    @Test
     void returnsScenarioDetailForModalOnly() throws Exception {
         mockMvc.perform(get("/api/v1/scenarios/cafe_iced_americano"))
                 .andExpect(status().isOk())

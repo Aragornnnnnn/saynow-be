@@ -7,6 +7,8 @@ import com.saynow.scenario.api.dto.CategoryResponse;
 import com.saynow.scenario.api.dto.ScenarioDetailResponse;
 import com.saynow.scenario.api.dto.ScenarioListItemResponse;
 import com.saynow.scenario.api.dto.ScenarioListResponse;
+import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
+import com.saynow.scenario.api.dto.ScenarioSummaryResponse;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
 import com.saynow.scenario.infrastructure.ScenarioCategoryRepository;
@@ -41,6 +43,19 @@ public class ScenarioService {
                 .stream()
                 .map(scenario -> new ScenarioListItemResponse(
                         scenario.getScenarioKey(),
+                        scenario.getTitle(),
+                        scenario.getDifficulty().getDisplayName(),
+                        scenario.getSuccessGoal(),
+                        scenario.getThumbnailUrl()))
+                .toList());
+    }
+
+    public ScenarioSummaryListResponse getScenarios() {
+        return new ScenarioSummaryListResponse(scenarioRepository.findAllByOrderByIdAsc()
+                .stream()
+                .map(scenario -> new ScenarioSummaryResponse(
+                        scenario.getScenarioKey(),
+                        scenario.getCategory().getCategoryKey(),
                         scenario.getTitle(),
                         scenario.getDifficulty().getDisplayName(),
                         scenario.getSuccessGoal(),

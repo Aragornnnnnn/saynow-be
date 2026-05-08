@@ -45,6 +45,17 @@ public class OpenApiResponseCustomizer {
                                     "thumbnailUrl", null))
                     )),
                     errors(error(ErrorCode.CATEGORY_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
+            endpoint(ScenarioController.class, "getScenarios",
+                    success(HttpStatus.OK, "전체 시나리오 목록 조회 성공", objectMap(
+                            "scenarios", List.of(objectMap(
+                                    "scenarioId", "airport_immigration",
+                                    "categoryId", "airport",
+                                    "title", "입국 심사 통과하기",
+                                    "difficulty", "보통",
+                                    "successGoal", "여행 목적과 체류 기간을 말하고 입국 심사를 통과하세요.",
+                                    "thumbnailUrl", null))
+                    )),
+                    errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenarioDetail",
                     success(HttpStatus.OK, "시나리오 상세 조회 성공", objectMap(
                             "scenarioId", "cafe_iced_americano",
