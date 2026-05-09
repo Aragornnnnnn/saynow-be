@@ -27,8 +27,8 @@
 - [x] 실제 AI 서버 최종 피드백 smoke test 추가 및 실행.
 - [x] 최종 피드백 요청 payload를 문서 계약 기준으로 확장.
 - [x] Spring component 생성자 주입을 Lombok `@RequiredArgsConstructor`로 전환.
-- [ ] 도메인/예외 클래스의 단순 getter/no-args boilerplate를 안전한 Lombok 어노테이션으로 전환.
-- [ ] Lombok 리팩터링 후 전체 테스트 실행.
+- [x] 도메인/예외 클래스의 단순 getter/no-args boilerplate를 안전한 Lombok 어노테이션으로 전환.
+- [x] Lombok 리팩터링 후 전체 테스트 실행.
 - [x] 실제 백엔드 API smoke test로 AI 서버까지 연결되는지 확인.
 - [ ] 로컬 PostgreSQL 실행 후 백엔드 원격 AI 모드 기동 확인.
 - [x] diff 최종 점검 후 커밋.

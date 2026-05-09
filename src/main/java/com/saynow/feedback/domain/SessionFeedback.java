@@ -14,9 +14,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "session_feedbacks")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SessionFeedback extends BaseTimeEntity {
 
     @Id
@@ -37,9 +42,6 @@ public class SessionFeedback extends BaseTimeEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String summary;
 
-    protected SessionFeedback() {
-    }
-
     public SessionFeedback(
             PracticeSession session,
             SessionStatus scenarioResult,
@@ -53,26 +55,6 @@ public class SessionFeedback extends BaseTimeEntity {
         this.scenarioResult = scenarioResult;
         this.totalUnderstoodScore = totalUnderstoodScore;
         this.summary = summary;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public PracticeSession getSession() {
-        return session;
-    }
-
-    public SessionStatus getScenarioResult() {
-        return scenarioResult;
-    }
-
-    public int getTotalUnderstoodScore() {
-        return totalUnderstoodScore;
-    }
-
-    public String getSummary() {
-        return summary;
     }
 
 }

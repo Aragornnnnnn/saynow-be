@@ -1,9 +1,11 @@
 package com.saynow.common.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 public class ApiException extends RuntimeException {
 
+    @Getter
     private final ErrorCode errorCode;
 
     public ApiException(ErrorCode errorCode) {
@@ -20,7 +22,4 @@ public class ApiException extends RuntimeException {
         return errorCode.getStatus();
     }
 
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
 }

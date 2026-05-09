@@ -10,9 +10,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "scenario_slots")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScenarioSlot extends BaseTimeEntity {
 
     @Id
@@ -29,22 +34,4 @@ public class ScenarioSlot extends BaseTimeEntity {
     @Column(nullable = false, length = 255)
     private String description;
 
-    protected ScenarioSlot() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Scenario getScenario() {
-        return scenario;
-    }
-
-    public String getSlotKey() {
-        return slotKey;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }

@@ -7,9 +7,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "scenario_categories")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScenarioCategory extends BaseTimeEntity {
 
     @Id
@@ -24,24 +29,5 @@ public class ScenarioCategory extends BaseTimeEntity {
 
     @Column(length = 255)
     private String description;
-
-    protected ScenarioCategory() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getCategoryKey() {
-        return categoryKey;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 
 }
