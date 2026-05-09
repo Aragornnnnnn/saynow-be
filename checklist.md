@@ -1,3 +1,33 @@
+# 소셜 로그인 OIDC 체크리스트
+
+- [x] Obsidian 문서 기준을 refreshToken JSON 반환 방식으로 정리.
+- [x] 연습 세션/피드백 API를 로그인 필수로 전환하는 요구사항 확인.
+- [x] 연습 세션을 회원에게 귀속하는 요구사항 확인.
+- [x] 구현 계획 작성.
+- [x] auth API 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 인증 없이 세션 API 호출 시 401 테스트를 먼저 작성하고 실패 확인.
+- [x] 로그인 후 세션 생성 시 회원 귀속 테스트를 먼저 작성하고 실패 확인.
+- [x] 다른 회원 세션 접근 403 테스트를 먼저 작성하고 실패 확인.
+- [x] 인증 테이블과 `practice_sessions.member_id` migration 추가.
+- [x] 회원, 소셜 계정, refresh token 도메인/저장소 추가.
+- [x] OIDC ID Token 검증 인터페이스와 테스트용 fake verifier 추가.
+- [x] SayNow access token과 refresh token 발급/검증 구현.
+- [x] 로그인, refresh, logout API 구현.
+- [x] 세션/피드백 API 인증 필수와 소유자 검증 구현.
+- [x] OpenAPI 테스트 보강.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+- [x] 인증 구조를 Spring Security `OncePerRequestFilter` 기반으로 전환하는 테스트 추가.
+- [x] MVC `AuthInterceptor`와 `ThreadLocal` 인증 컨텍스트 제거.
+- [x] `UserDetails` 기반 인증 principal 추가.
+- [x] Spring Security 설정과 인증 실패 JSON 응답 연결.
+- [x] 인증 구조 변경 후 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # AI 서버 연동 체크리스트
 
 - [x] `origin/main` 기준 작업 브랜치 생성.
