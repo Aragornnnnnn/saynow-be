@@ -1,8 +1,11 @@
 // 원격 AI 클라이언트의 multipart 요청과 응답 매핑을 검증하는 테스트
 package com.saynow.practice.infrastructure.ai;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.practice.domain.InputType;
+import com.saynow.practice.domain.PracticeSession;
+import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
@@ -39,7 +42,11 @@ class RemoteAiPracticeClientTest {
             int port = server.getAddress().getPort();
             RemoteAiPracticeClient client = new RemoteAiPracticeClient(
                     objectMapper,
-                    new AiClientProperties(URI.create("http://127.0.0.1:" + port), "remote", "/api/v1/turn-evaluations"));
+                    new AiClientProperties(
+                            URI.create("http://127.0.0.1:" + port),
+                            "remote",
+                            "/api/v1/turn-evaluations",
+                            "/api/v1/session-feedbacks"));
 
             AiTurnEvaluationResult result = client.evaluateTurn(new AiTurnEvaluationRequest(
                     "session-1",
@@ -83,6 +90,65 @@ class RemoteAiPracticeClientTest {
         }
     }
 
+    @Test
+    void sendsSessionFeedbackRequestAndMapsResponse() throws Exception {
+        AtomicReference<RecordedRequest> recordedRequest = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/v1/session-feedbacks", exchange -> handleSessionFeedback(exchange, recordedRequest));
+        server.start();
+
+        try {
+            int port = server.getAddress().getPort();
+            RemoteAiPracticeClient client = new RemoteAiPracticeClient(
+                    objectMapper,
+                    new AiClientProperties(
+                            URI.create("http://127.0.0.1:" + port),
+                            "remote",
+                            "/api/v1/turn-evaluations",
+                            "/api/v1/session-feedbacks"));
+
+            AiSessionFeedbackResult result = client.createSessionFeedback(new AiSessionFeedbackRequest(
+                    scenario(),
+                    SessionStatus.SUCCESS,
+                    List.of(
+                            turn(1, "Hi! What can I get for you today?", "I want an iced americano.", 2100),
+                            turn(2, "Would you like that iced or hot?", "Iced, please.", 1700))));
+
+            RecordedRequest request = recordedRequest.get();
+            assertThat(request).isNotNull();
+            assertThat(request.method()).isEqualTo("POST");
+            assertThat(request.contentType()).startsWith("application/json");
+
+            JsonNode payload = objectMapper.readTree(request.body());
+            assertThat(payload.get("scenarioId").asText()).isEqualTo("cafe_iced_americano");
+            assertThat(payload.get("scenarioGoal").asText()).isEqualTo("아이스 아메리카노 주문에 성공하세요.");
+            assertThat(payload.get("turns")).hasSize(2);
+            assertThat(payload.get("turns").get(0).get("question").asText()).isEqualTo("Hi! What can I get for you today?");
+            assertThat(payload.get("turns").get(0).get("transcript").asText()).isEqualTo("I want an iced americano.");
+            assertThat(payload.get("turns").get(0).get("responseTimeSec").asDouble()).isEqualTo(2.1);
+
+            assertThat(result.totalUnderstoodScore()).isEqualTo(91);
+            assertThat(result.summary()).isEqualTo("전체적으로 주문 의도가 잘 전달되었습니다.");
+            assertThat(result.turnFeedback()).containsExactly(
+                    new AiTurnFeedbackResult(
+                            90,
+                            "The speaker wants an iced Americano.",
+                            "I'd like an iced Americano, please.",
+                            5,
+                            95,
+                            "더 정중한 표현을 쓰면 자연스럽습니다."),
+                    new AiTurnFeedbackResult(
+                            92,
+                            "The speaker wants it iced.",
+                            "I would like it iced, please.",
+                            3,
+                            95,
+                            "간결하고 명확합니다."));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private void handleTurnEvaluation(HttpExchange exchange, AtomicReference<RecordedRequest> recordedRequest) throws IOException {
         recordedRequest.set(new RecordedRequest(
                 exchange.getRequestMethod(),
@@ -114,6 +180,42 @@ class RemoteAiPracticeClientTest {
         exchange.close();
     }
 
+    private void handleSessionFeedback(HttpExchange exchange, AtomicReference<RecordedRequest> recordedRequest) throws IOException {
+        recordedRequest.set(new RecordedRequest(
+                exchange.getRequestMethod(),
+                exchange.getRequestHeaders().getFirst("Content-Type"),
+                exchange.getRequestBody().readAllBytes()));
+
+        byte[] response = """
+                        {
+                          "totalUnderstoodScore": 91,
+                          "summary": "전체적으로 주문 의도가 잘 전달되었습니다.",
+                          "turns": [
+                            {
+                              "understoodScore": 90,
+                              "heardAs": "The speaker wants an iced Americano.",
+                              "betterExpression": "I'd like an iced Americano, please.",
+                              "scoreDelta": 5,
+                              "improvedUnderstoodScore": 95,
+                              "reason": "더 정중한 표현을 쓰면 자연스럽습니다."
+                            },
+                            {
+                              "understoodScore": 92,
+                              "heardAs": "The speaker wants it iced.",
+                              "betterExpression": "I would like it iced, please.",
+                              "scoreDelta": 3,
+                              "improvedUnderstoodScore": 95,
+                              "reason": "간결하고 명확합니다."
+                            }
+                          ]
+                        }
+                        """.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(200, response.length);
+        exchange.getResponseBody().write(response);
+        exchange.close();
+    }
+
     private Scenario scenario() {
         ScenarioCategory category = mock(ScenarioCategory.class);
         when(category.getCategoryKey()).thenReturn("cafe");
@@ -133,6 +235,19 @@ class RemoteAiPracticeClientTest {
         when(slot.getSlotKey()).thenReturn(slotKey);
         when(slot.getDescription()).thenReturn(description);
         return slot;
+    }
+
+    private PracticeTurn turn(int turnIndex, String questionText, String transcript, Integer speechStartedAfterMs) {
+        return new PracticeTurn(
+                mock(PracticeSession.class),
+                turnIndex,
+                questionText,
+                null,
+                transcript,
+                InputType.AUDIO,
+                speechStartedAfterMs,
+                3000,
+                new BigDecimal("0.91"));
     }
 
     private record RecordedRequest(

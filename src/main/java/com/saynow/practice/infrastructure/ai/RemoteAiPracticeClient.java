@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -82,8 +83,49 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
         }
     }
 
+    @Override
+    public AiSessionFeedbackResult createSessionFeedback(AiSessionFeedbackRequest request) {
+        try {
+            HttpRequest httpRequest = HttpRequest.newBuilder(sessionFeedbackUri())
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(
+                            objectMapper.writeValueAsString(sessionFeedbackPayload(request)),
+                            StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> httpResponse = httpClient.send(
+                    httpRequest,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                log.warn("AI 서버 세션 피드백 호출이 실패했습니다. status={}, body={}", httpResponse.statusCode(), httpResponse.body());
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 세션 피드백 호출에 실패했습니다.");
+            }
+
+            RemoteSessionFeedbackResponse response = objectMapper.readValue(httpResponse.body(), RemoteSessionFeedbackResponse.class);
+            if (response == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버가 빈 응답을 반환했습니다.");
+            }
+            return response.toResult();
+        } catch (ApiException exception) {
+            throw exception;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            log.warn("AI 서버 세션 피드백 호출에 실패했습니다.", exception);
+            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 세션 피드백 호출에 실패했습니다.");
+        } catch (IOException exception) {
+            log.warn("AI 서버 세션 피드백 호출에 실패했습니다.", exception);
+            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 세션 피드백 호출에 실패했습니다.");
+        }
+    }
+
     private URI turnEvaluationUri() {
         return properties.baseUrl().resolve(properties.turnEvaluationPath());
+    }
+
+    private URI sessionFeedbackUri() {
+        return properties.baseUrl().resolve(properties.sessionFeedbackPath());
     }
 
     private byte[] multipartBody(String boundary, AiTurnEvaluationRequest request) throws JsonProcessingException {
@@ -139,6 +181,27 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
                 request.maxFollowUpCount());
     }
 
+    private SessionFeedbackPayload sessionFeedbackPayload(AiSessionFeedbackRequest request) {
+        return new SessionFeedbackPayload(
+                request.scenario().getScenarioKey(),
+                request.scenario().getSuccessGoal(),
+                request.turns().stream()
+                        .map(turn -> new FeedbackTurnPayload(
+                                turn.getUserTranscript(),
+                                turn.getQuestionText(),
+                                responseTimeSec(turn.getSpeechStartedAfterMs())))
+                        .toList());
+    }
+
+    private BigDecimal responseTimeSec(Integer speechStartedAfterMs) {
+        if (speechStartedAfterMs == null) {
+            return BigDecimal.ZERO;
+        }
+        return BigDecimal.valueOf(speechStartedAfterMs)
+                .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP)
+                .stripTrailingZeros();
+    }
+
     private record TurnEvaluationPayload(
             String sessionId,
             ScenarioPayload scenario,
@@ -178,6 +241,20 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
             Integer speechStartedAfterMs,
             Integer recordingDurationMs,
             Map<String, String> filledSlots
+    ) {
+    }
+
+    private record SessionFeedbackPayload(
+            String scenarioId,
+            String scenarioGoal,
+            List<FeedbackTurnPayload> turns
+    ) {
+    }
+
+    private record FeedbackTurnPayload(
+            String transcript,
+            String question,
+            BigDecimal responseTimeSec
     ) {
     }
 
@@ -239,5 +316,53 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
             String messageText,
             String ttsAudio
     ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RemoteSessionFeedbackResponse(
+            Integer totalUnderstoodScore,
+            String summary,
+            List<RemoteTurnFeedback> turns
+    ) {
+
+        private AiSessionFeedbackResult toResult() {
+            if (totalUnderstoodScore == null || summary == null || turns == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 세션 피드백 응답이 올바르지 않습니다.");
+            }
+            return new AiSessionFeedbackResult(
+                    totalUnderstoodScore,
+                    summary,
+                    turns.stream()
+                            .map(RemoteTurnFeedback::toResult)
+                            .toList());
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RemoteTurnFeedback(
+            Integer understoodScore,
+            String heardAs,
+            String betterExpression,
+            Integer scoreDelta,
+            Integer improvedUnderstoodScore,
+            String reason
+    ) {
+
+        private AiTurnFeedbackResult toResult() {
+            if (understoodScore == null
+                    || heardAs == null
+                    || scoreDelta == null
+                    || improvedUnderstoodScore == null
+                    || reason == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴 피드백 응답이 올바르지 않습니다.");
+            }
+            return new AiTurnFeedbackResult(
+                    understoodScore,
+                    heardAs,
+                    betterExpression,
+                    scoreDelta,
+                    improvedUnderstoodScore,
+                    reason);
+        }
     }
 }

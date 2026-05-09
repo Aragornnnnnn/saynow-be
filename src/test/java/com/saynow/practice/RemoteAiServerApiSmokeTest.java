@@ -3,6 +3,14 @@ package com.saynow.practice;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saynow.practice.domain.InputType;
+import com.saynow.practice.domain.PracticeSession;
+import com.saynow.practice.domain.PracticeTurn;
+import com.saynow.practice.domain.SessionStatus;
+import com.saynow.practice.infrastructure.ai.AiPracticeClient;
+import com.saynow.practice.infrastructure.ai.AiSessionFeedbackRequest;
+import com.saynow.practice.infrastructure.ai.AiSessionFeedbackResult;
+import com.saynow.scenario.domain.Scenario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +22,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,6 +54,9 @@ class RemoteAiServerApiSmokeTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private AiPracticeClient aiPracticeClient;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -80,6 +95,22 @@ class RemoteAiServerApiSmokeTest {
         assertThat(turnBody.get("data").get("status").asText()).isIn("IN_PROGRESS", "SUCCESS");
     }
 
+    @Test
+    void createsSessionFeedbackThroughRemoteAiServer() {
+        AiSessionFeedbackResult result = aiPracticeClient.createSessionFeedback(new AiSessionFeedbackRequest(
+                scenario(),
+                SessionStatus.SUCCESS,
+                List.of(
+                        turn(1, "Hi! What can I get for you today?", "I want an iced americano.", 2100),
+                        turn(2, "Would you like that iced or hot?", "Iced, please.", 1700))));
+
+        assertThat(result.totalUnderstoodScore()).isBetween(0, 100);
+        assertThat(result.summary()).isNotBlank();
+        assertThat(result.turnFeedback()).hasSize(2);
+        assertThat(result.turnFeedback().get(0).heardAs()).isNotBlank();
+        assertThat(result.turnFeedback().get(0).reason()).isNotBlank();
+    }
+
     private String turnFailureMessage(MvcResult result) throws UnsupportedEncodingException {
         return "body=%s, exception=%s".formatted(
                 result.getResponse().getContentAsString(),
@@ -104,5 +135,25 @@ class RemoteAiServerApiSmokeTest {
             current = current.getCause();
         }
         return summary.toString();
+    }
+
+    private Scenario scenario() {
+        Scenario scenario = mock(Scenario.class);
+        when(scenario.getScenarioKey()).thenReturn("cafe_1");
+        when(scenario.getSuccessGoal()).thenReturn("아이스 아메리카노 주문에 성공하세요.");
+        return scenario;
+    }
+
+    private PracticeTurn turn(int turnIndex, String questionText, String transcript, Integer speechStartedAfterMs) {
+        return new PracticeTurn(
+                mock(PracticeSession.class),
+                turnIndex,
+                questionText,
+                null,
+                transcript,
+                InputType.AUDIO,
+                speechStartedAfterMs,
+                3000,
+                new BigDecimal("0.91"));
     }
 }
