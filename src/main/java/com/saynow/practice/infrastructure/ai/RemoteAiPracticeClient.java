@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -183,23 +182,25 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
 
     private SessionFeedbackPayload sessionFeedbackPayload(AiSessionFeedbackRequest request) {
         return new SessionFeedbackPayload(
-                request.scenario().getScenarioKey(),
-                request.scenario().getSuccessGoal(),
+                request.sessionId(),
+                new SessionFeedbackScenarioPayload(
+                        request.scenario().getScenarioKey(),
+                        request.scenario().getTitle(),
+                        request.scenario().getSituationDescription(),
+                        request.scenario().getSuccessGoal()),
+                request.scenarioResult(),
+                request.filledSlots().entrySet().stream()
+                        .map(entry -> new SessionFeedbackFilledSlotPayload(entry.getKey(), entry.getValue()))
+                        .toList(),
                 request.turns().stream()
                         .map(turn -> new FeedbackTurnPayload(
-                                turn.getUserTranscript(),
+                                turn.getId(),
+                                turn.getTurnIndex(),
                                 turn.getQuestionText(),
-                                responseTimeSec(turn.getSpeechStartedAfterMs())))
+                                turn.getUserTranscript(),
+                                turn.getSpeechStartedAfterMs(),
+                                turn.getRecordingDurationMs()))
                         .toList());
-    }
-
-    private BigDecimal responseTimeSec(Integer speechStartedAfterMs) {
-        if (speechStartedAfterMs == null) {
-            return BigDecimal.ZERO;
-        }
-        return BigDecimal.valueOf(speechStartedAfterMs)
-                .divide(BigDecimal.valueOf(1000), 3, RoundingMode.HALF_UP)
-                .stripTrailingZeros();
     }
 
     private record TurnEvaluationPayload(
@@ -245,16 +246,35 @@ public class RemoteAiPracticeClient implements AiPracticeClient {
     }
 
     private record SessionFeedbackPayload(
-            String scenarioId,
-            String scenarioGoal,
+            String sessionId,
+            SessionFeedbackScenarioPayload scenario,
+            SessionStatus scenarioResult,
+            List<SessionFeedbackFilledSlotPayload> filledSlots,
             List<FeedbackTurnPayload> turns
     ) {
     }
 
+    private record SessionFeedbackScenarioPayload(
+            String scenarioId,
+            String title,
+            String situationDescription,
+            String successGoal
+    ) {
+    }
+
+    private record SessionFeedbackFilledSlotPayload(
+            String slotKey,
+            String slotValue
+    ) {
+    }
+
     private record FeedbackTurnPayload(
-            String transcript,
-            String question,
-            BigDecimal responseTimeSec
+            Long turnId,
+            int turnIndex,
+            String questionText,
+            String userTranscript,
+            Integer speechStartedAfterMs,
+            Integer recordingDurationMs
     ) {
     }
 

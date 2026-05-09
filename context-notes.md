@@ -25,6 +25,7 @@
 - AI 서버 OpenAPI 기준 최종 피드백은 `POST /api/v1/session-feedbacks`를 사용한다. 요청은 JSON이며 `scenarioId`, `scenarioGoal`, `turns[]`를 보낸다. `turns[]`에는 `question`, `transcript`, `responseTimeSec`가 필요하다.
 - `curl`로 AI 서버 `/api/v1/session-feedbacks`를 직접 호출했을 때 200 응답과 `totalUnderstoodScore`, `summary`, `turns[]`가 반환되는 것을 확인했다.
 - 백엔드 remote client에도 최종 피드백 호출을 추가했다. `SAYNOW_REMOTE_AI_SMOKE_TEST=true ./gradlew test --tests com.saynow.practice.RemoteAiServerApiSmokeTest`로 턴 평가와 최종 피드백 AI 서버 호출이 모두 통과했다.
+- 최종 피드백 요청 payload는 Obsidian 문서 계약에 맞춰 `sessionId`, `scenario`, `scenarioResult`, `filledSlots`, `turns[]`를 보내도록 변경했다. 턴별 필드는 `turnId`, `turnIndex`, `questionText`, `userTranscript`, `speechStartedAfterMs`, `recordingDurationMs`다.
 - AI 서버 레포에서 STT segments dict 처리와 백엔드 시나리오 payload 기반 턴 평가를 수정해 main에 push했고, GitHub Actions 배포 성공 후 직접 curl 호출이 200으로 바뀌었다.
 - 백엔드 smoke test에서 Spring `RestClient` multipart 요청은 본문에 `audio`, `payload`가 있어도 AI 서버가 422 missing으로 판단했다.
 - 수동 curl multipart는 같은 AI 서버에서 200을 반환했다. Java 표준 `HttpClient`로 직접 multipart를 만들고 HTTP/1.1을 명시하자 백엔드 세션 API smoke test가 실제 AI 서버까지 200으로 통과했다.

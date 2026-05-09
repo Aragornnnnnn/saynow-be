@@ -13,12 +13,14 @@ import com.saynow.scenario.domain.ScenarioSlot;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -108,8 +110,10 @@ class RemoteAiPracticeClientTest {
                             "/api/v1/session-feedbacks"));
 
             AiSessionFeedbackResult result = client.createSessionFeedback(new AiSessionFeedbackRequest(
+                    "session-1",
                     scenario(),
                     SessionStatus.SUCCESS,
+                    filledSlots(),
                     List.of(
                             turn(1, "Hi! What can I get for you today?", "I want an iced americano.", 2100),
                             turn(2, "Would you like that iced or hot?", "Iced, please.", 1700))));
@@ -120,12 +124,22 @@ class RemoteAiPracticeClientTest {
             assertThat(request.contentType()).startsWith("application/json");
 
             JsonNode payload = objectMapper.readTree(request.body());
-            assertThat(payload.get("scenarioId").asText()).isEqualTo("cafe_iced_americano");
-            assertThat(payload.get("scenarioGoal").asText()).isEqualTo("아이스 아메리카노 주문에 성공하세요.");
+            assertThat(payload.get("sessionId").asText()).isEqualTo("session-1");
+            assertThat(payload.get("scenario").get("scenarioId").asText()).isEqualTo("cafe_iced_americano");
+            assertThat(payload.get("scenario").get("title").asText()).isEqualTo("아이스 아메리카노 주문하기");
+            assertThat(payload.get("scenario").get("situationDescription").asText()).isEqualTo("카페에서 원하는 음료를 주문해야 합니다.");
+            assertThat(payload.get("scenario").get("successGoal").asText()).isEqualTo("아이스 아메리카노 주문에 성공하세요.");
+            assertThat(payload.get("scenarioResult").asText()).isEqualTo("SUCCESS");
+            assertThat(payload.get("filledSlots")).hasSize(2);
+            assertThat(payload.get("filledSlots").get(0).get("slotKey").asText()).isEqualTo("drink");
+            assertThat(payload.get("filledSlots").get(0).get("slotValue").asText()).isEqualTo("americano");
             assertThat(payload.get("turns")).hasSize(2);
-            assertThat(payload.get("turns").get(0).get("question").asText()).isEqualTo("Hi! What can I get for you today?");
-            assertThat(payload.get("turns").get(0).get("transcript").asText()).isEqualTo("I want an iced americano.");
-            assertThat(payload.get("turns").get(0).get("responseTimeSec").asDouble()).isEqualTo(2.1);
+            assertThat(payload.get("turns").get(0).get("turnId").asLong()).isEqualTo(1L);
+            assertThat(payload.get("turns").get(0).get("turnIndex").asInt()).isEqualTo(1);
+            assertThat(payload.get("turns").get(0).get("questionText").asText()).isEqualTo("Hi! What can I get for you today?");
+            assertThat(payload.get("turns").get(0).get("userTranscript").asText()).isEqualTo("I want an iced americano.");
+            assertThat(payload.get("turns").get(0).get("speechStartedAfterMs").asInt()).isEqualTo(2100);
+            assertThat(payload.get("turns").get(0).get("recordingDurationMs").asInt()).isEqualTo(3000);
 
             assertThat(result.totalUnderstoodScore()).isEqualTo(91);
             assertThat(result.summary()).isEqualTo("전체적으로 주문 의도가 잘 전달되었습니다.");
@@ -238,7 +252,7 @@ class RemoteAiPracticeClientTest {
     }
 
     private PracticeTurn turn(int turnIndex, String questionText, String transcript, Integer speechStartedAfterMs) {
-        return new PracticeTurn(
+        PracticeTurn turn = new PracticeTurn(
                 mock(PracticeSession.class),
                 turnIndex,
                 questionText,
@@ -248,6 +262,15 @@ class RemoteAiPracticeClientTest {
                 speechStartedAfterMs,
                 3000,
                 new BigDecimal("0.91"));
+        ReflectionTestUtils.setField(turn, "id", (long) turnIndex);
+        return turn;
+    }
+
+    private Map<String, String> filledSlots() {
+        Map<String, String> filledSlots = new LinkedHashMap<>();
+        filledSlots.put("drink", "americano");
+        filledSlots.put("temperature", "iced");
+        return filledSlots;
     }
 
     private record RecordedRequest(

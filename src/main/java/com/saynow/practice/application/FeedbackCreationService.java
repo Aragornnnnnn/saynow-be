@@ -44,8 +44,10 @@ public class FeedbackCreationService {
 
         List<PracticeTurn> turns = turnRepository.findBySessionOrderByTurnIndexAsc(session);
         AiSessionFeedbackResult aiFeedback = aiPracticeClient.createSessionFeedback(new AiSessionFeedbackRequest(
+                session.getPublicId(),
                 session.getScenario(),
                 session.getStatus(),
+                session.getFilledSlots(),
                 turns));
         validateFeedback(aiFeedback, turns);
 

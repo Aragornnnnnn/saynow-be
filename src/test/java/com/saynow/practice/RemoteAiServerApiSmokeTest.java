@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -98,8 +99,10 @@ class RemoteAiServerApiSmokeTest {
     @Test
     void createsSessionFeedbackThroughRemoteAiServer() {
         AiSessionFeedbackResult result = aiPracticeClient.createSessionFeedback(new AiSessionFeedbackRequest(
+                "smoke-session-1",
                 scenario(),
                 SessionStatus.SUCCESS,
+                java.util.Map.of("drink", "americano", "temperature", "iced"),
                 List.of(
                         turn(1, "Hi! What can I get for you today?", "I want an iced americano.", 2100),
                         turn(2, "Would you like that iced or hot?", "Iced, please.", 1700))));
@@ -140,12 +143,14 @@ class RemoteAiServerApiSmokeTest {
     private Scenario scenario() {
         Scenario scenario = mock(Scenario.class);
         when(scenario.getScenarioKey()).thenReturn("cafe_1");
+        when(scenario.getTitle()).thenReturn("아이스 아메리카노 주문하기");
+        when(scenario.getSituationDescription()).thenReturn("카페에서 원하는 음료를 주문해야 합니다.");
         when(scenario.getSuccessGoal()).thenReturn("아이스 아메리카노 주문에 성공하세요.");
         return scenario;
     }
 
     private PracticeTurn turn(int turnIndex, String questionText, String transcript, Integer speechStartedAfterMs) {
-        return new PracticeTurn(
+        PracticeTurn turn = new PracticeTurn(
                 mock(PracticeSession.class),
                 turnIndex,
                 questionText,
@@ -155,5 +160,7 @@ class RemoteAiServerApiSmokeTest {
                 speechStartedAfterMs,
                 3000,
                 new BigDecimal("0.91"));
+        ReflectionTestUtils.setField(turn, "id", (long) turnIndex);
+        return turn;
     }
 }
