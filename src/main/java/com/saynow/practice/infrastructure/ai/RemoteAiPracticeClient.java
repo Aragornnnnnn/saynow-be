@@ -10,8 +10,8 @@ import com.saynow.practice.domain.InputType;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioSlot;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -29,22 +29,15 @@ import java.util.UUID;
 
 @Component
 @ConditionalOnProperty(prefix = "saynow.ai", name = "client-mode", havingValue = "remote")
+@RequiredArgsConstructor
+@Slf4j
 public class RemoteAiPracticeClient implements AiPracticeClient {
 
-    private static final Logger log = LoggerFactory.getLogger(RemoteAiPracticeClient.class);
     private static final String CRLF = "\r\n";
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper;
     private final AiClientProperties properties;
-
-    public RemoteAiPracticeClient(
-            ObjectMapper objectMapper,
-            AiClientProperties properties
-    ) {
-        this.objectMapper = objectMapper;
-        this.properties = properties;
-    }
 
     @Override
     public AiTurnEvaluationResult evaluateTurn(AiTurnEvaluationRequest request) {

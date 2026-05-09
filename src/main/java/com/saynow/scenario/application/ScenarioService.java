@@ -11,10 +11,12 @@ import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioCategory;
 import com.saynow.scenario.infrastructure.ScenarioCategoryRepository;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ScenarioService {
 
@@ -22,11 +24,6 @@ public class ScenarioService {
 
     private final ScenarioCategoryRepository categoryRepository;
     private final ScenarioRepository scenarioRepository;
-
-    public ScenarioService(ScenarioCategoryRepository categoryRepository, ScenarioRepository scenarioRepository) {
-        this.categoryRepository = categoryRepository;
-        this.scenarioRepository = scenarioRepository;
-    }
 
     public CategoryListResponse getCategories() {
         return new CategoryListResponse(categoryRepository.findAllByOrderByIdAsc()

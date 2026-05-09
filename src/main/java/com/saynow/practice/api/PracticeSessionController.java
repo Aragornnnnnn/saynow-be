@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,15 +37,12 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/sessions")
+@RequiredArgsConstructor
 @Validated
 @Tag(name = "Practice Session", description = "MVP 회화 세션 진행 API")
 public class PracticeSessionController {
 
     private final PracticeSessionService practiceSessionService;
-
-    public PracticeSessionController(PracticeSessionService practiceSessionService) {
-        this.practiceSessionService = practiceSessionService;
-    }
 
     @PostMapping
     @Operation(summary = "세션 시작", description = "시나리오를 선택해 연습 세션을 시작하고 첫 질문을 반환합니다.")

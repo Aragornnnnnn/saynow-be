@@ -7,6 +7,7 @@ import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
 import com.saynow.scenario.application.ScenarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,14 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 @Tag(name = "Scenario", description = "MVP 시나리오 탐색 API")
 public class ScenarioController {
 
     private final ScenarioService scenarioService;
-
-    public ScenarioController(ScenarioService scenarioService) {
-        this.scenarioService = scenarioService;
-    }
 
     @GetMapping("/categories")
     @Operation(summary = "카테고리 목록 조회", description = "시나리오 카테고리 목록을 조회합니다.")

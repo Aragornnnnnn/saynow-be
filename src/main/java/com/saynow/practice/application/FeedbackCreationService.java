@@ -13,29 +13,19 @@ import com.saynow.practice.infrastructure.ai.AiPracticeClient;
 import com.saynow.practice.infrastructure.ai.AiSessionFeedbackRequest;
 import com.saynow.practice.infrastructure.ai.AiSessionFeedbackResult;
 import com.saynow.practice.infrastructure.ai.AiTurnFeedbackResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class FeedbackCreationService {
 
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final TurnFeedbackRepository turnFeedbackRepository;
     private final PracticeTurnRepository turnRepository;
     private final AiPracticeClient aiPracticeClient;
-
-    public FeedbackCreationService(
-            SessionFeedbackRepository sessionFeedbackRepository,
-            TurnFeedbackRepository turnFeedbackRepository,
-            PracticeTurnRepository turnRepository,
-            AiPracticeClient aiPracticeClient
-    ) {
-        this.sessionFeedbackRepository = sessionFeedbackRepository;
-        this.turnFeedbackRepository = turnFeedbackRepository;
-        this.turnRepository = turnRepository;
-        this.aiPracticeClient = aiPracticeClient;
-    }
 
     public void createReadyFeedback(PracticeSession session) {
         if (sessionFeedbackRepository.existsBySession(session)) {
