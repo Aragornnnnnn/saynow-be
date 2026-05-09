@@ -1,5 +1,6 @@
 package com.saynow.practice.domain;
 
+import com.saynow.auth.domain.Member;
 import com.saynow.common.domain.BaseTimeEntity;
 import com.saynow.scenario.domain.Scenario;
 import jakarta.persistence.Column;
@@ -41,6 +42,10 @@ public class PracticeSession extends BaseTimeEntity {
     @JoinColumn(name = "scenario_id", nullable = false)
     private Scenario scenario;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SessionStatus status;
@@ -67,9 +72,10 @@ public class PracticeSession extends BaseTimeEntity {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
-    public PracticeSession(String publicId, Scenario scenario, LocalDateTime now) {
+    public PracticeSession(String publicId, Scenario scenario, Member member, LocalDateTime now) {
         this.publicId = publicId;
         this.scenario = scenario;
+        this.member = member;
         this.status = SessionStatus.IN_PROGRESS;
         this.currentBabsaeText = scenario.getOpeningBabsaeText();
         this.currentBabsaeTtsUrl = scenario.getOpeningTtsUrl();
@@ -107,6 +113,10 @@ public class PracticeSession extends BaseTimeEntity {
 
     public boolean isInProgress() {
         return status == SessionStatus.IN_PROGRESS;
+    }
+
+    public boolean isOwnedBy(Long memberId) {
+        return member != null && member.getId().equals(memberId);
     }
 
     public Map<String, String> getFilledSlots() {

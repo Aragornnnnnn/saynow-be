@@ -1,5 +1,7 @@
 package com.saynow.practice.application;
 
+import com.saynow.auth.domain.Member;
+import com.saynow.auth.infrastructure.MemberRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.practice.api.dto.ExitSessionResponse;
@@ -60,14 +62,16 @@ public class PracticeSessionService {
     private final PracticeTurnRepository turnRepository;
     private final AiPracticeClient aiPracticeClient;
     private final FeedbackCreationService feedbackCreationService;
+    private final MemberRepository memberRepository;
 
     @Transactional
-    public SessionStartResponse startSession(StartSessionRequest request) {
+    public SessionStartResponse startSession(Long memberId, StartSessionRequest request) {
         Scenario scenario = scenarioRepository.findByScenarioKey(request.scenarioId())
                 .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
+        Member member = memberRepository.getReferenceById(memberId);
 
         LocalDateTime now = LocalDateTime.now();
-        PracticeSession session = sessionRepository.save(new PracticeSession(UUID.randomUUID().toString(), scenario, now));
+        PracticeSession session = sessionRepository.save(new PracticeSession(UUID.randomUUID().toString(), scenario, member, now));
 
         return new SessionStartResponse(
                 session.getPublicId(),
@@ -81,8 +85,8 @@ public class PracticeSessionService {
     }
 
     @Transactional
-    public MicReadyResponse recordMicReady(String sessionId, MicReadyRequest request) {
-        PracticeSession session = findSession(sessionId);
+    public MicReadyResponse recordMicReady(Long memberId, String sessionId, MicReadyRequest request) {
+        PracticeSession session = findSession(memberId, sessionId);
         assertInProgress(session);
 
         session.recordMicReady(request.latencyMs());
@@ -90,8 +94,8 @@ public class PracticeSessionService {
     }
 
     @Transactional
-    public TurnSubmitResponse submitTurn(String sessionId, SubmittedAudio audio, SubmitTurnRequest request) {
-        PracticeSession session = findSession(sessionId);
+    public TurnSubmitResponse submitTurn(Long memberId, String sessionId, SubmittedAudio audio, SubmitTurnRequest request) {
+        PracticeSession session = findSession(memberId, sessionId);
         assertInProgress(session);
         validateTurnSubmitRequest(audio, request);
 
@@ -148,8 +152,8 @@ public class PracticeSessionService {
     }
 
     @Transactional(readOnly = true)
-    public SessionStatusResponse getSession(String sessionId) {
-        PracticeSession session = findSession(sessionId);
+    public SessionStatusResponse getSession(Long memberId, String sessionId) {
+        PracticeSession session = findSession(memberId, sessionId);
         List<TurnHistoryResponse> turns = turnRepository.findBySessionOrderByTurnIndexAsc(session).stream()
                 .map(turn -> new TurnHistoryResponse(
                         turn.getId(),
@@ -174,8 +178,8 @@ public class PracticeSessionService {
     }
 
     @Transactional
-    public ExitSessionResponse exitSession(String sessionId) {
-        PracticeSession session = findSession(sessionId);
+    public ExitSessionResponse exitSession(Long memberId, String sessionId) {
+        PracticeSession session = findSession(memberId, sessionId);
         assertInProgress(session);
 
         LocalDateTime now = LocalDateTime.now();
@@ -183,9 +187,13 @@ public class PracticeSessionService {
         return new ExitSessionResponse(session.getPublicId(), session.getStatus(), session.getEndedAt());
     }
 
-    private PracticeSession findSession(String sessionId) {
-        return sessionRepository.findByPublicId(sessionId)
+    private PracticeSession findSession(Long memberId, String sessionId) {
+        PracticeSession session = sessionRepository.findByPublicId(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
+        if (!session.isOwnedBy(memberId)) {
+            throw new ApiException(ErrorCode.SESSION_ACCESS_DENIED);
+        }
+        return session;
     }
 
     private void assertInProgress(PracticeSession session) {
