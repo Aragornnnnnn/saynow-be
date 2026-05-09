@@ -9,6 +9,16 @@ public enum ErrorCode {
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
 
+    AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
+    ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "인증 토큰이 만료됐습니다."),
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "재발급 토큰이 올바르지 않습니다."),
+    UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 소셜 로그인 제공자입니다."),
+    OIDC_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "소셜 로그인 토큰이 올바르지 않습니다."),
+    OIDC_NONCE_MISMATCH(HttpStatus.BAD_REQUEST, "소셜 로그인 요청 검증 값이 일치하지 않습니다."),
+    SOCIAL_ACCOUNT_CONFLICT(HttpStatus.CONFLICT, "이미 다른 계정에 연결된 소셜 계정입니다."),
+    OIDC_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 제공자 검증에 실패했습니다."),
+    SESSION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근할 수 없는 세션입니다."),
+
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
     SCENARIO_NOT_FOUND(HttpStatus.NOT_FOUND, "시나리오를 찾을 수 없습니다."),
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "세션을 찾을 수 없습니다."),
