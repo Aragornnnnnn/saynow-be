@@ -17,11 +17,11 @@ import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.practice.infrastructure.PracticeSessionRepository;
 import com.saynow.practice.infrastructure.PracticeTurnRepository;
+import com.saynow.practice.infrastructure.ai.AiPracticeClient;
 import com.saynow.practice.infrastructure.ai.AiFilledSlot;
 import com.saynow.practice.infrastructure.ai.AiPrompt;
 import com.saynow.practice.infrastructure.ai.AiTurnEvaluationRequest;
 import com.saynow.practice.infrastructure.ai.AiTurnEvaluationResult;
-import com.saynow.practice.infrastructure.ai.LocalAiPracticeClient;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioSlot;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
@@ -56,7 +56,7 @@ public class PracticeSessionService {
     private final ScenarioSlotRepository scenarioSlotRepository;
     private final PracticeSessionRepository sessionRepository;
     private final PracticeTurnRepository turnRepository;
-    private final LocalAiPracticeClient aiPracticeClient;
+    private final AiPracticeClient aiPracticeClient;
     private final FeedbackCreationService feedbackCreationService;
 
     public PracticeSessionService(
@@ -64,7 +64,7 @@ public class PracticeSessionService {
             ScenarioSlotRepository scenarioSlotRepository,
             PracticeSessionRepository sessionRepository,
             PracticeTurnRepository turnRepository,
-            LocalAiPracticeClient aiPracticeClient,
+            AiPracticeClient aiPracticeClient,
             FeedbackCreationService feedbackCreationService
     ) {
         this.scenarioRepository = scenarioRepository;
@@ -118,6 +118,7 @@ public class PracticeSessionService {
                 session.getScenario(),
                 session.getCurrentBabsaeText(),
                 session.getCurrentBabsaeTtsUrl(),
+                turnIndex,
                 audio.filename(),
                 audio.contentType(),
                 audio.content(),

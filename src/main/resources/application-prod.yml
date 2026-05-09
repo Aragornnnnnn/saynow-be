@@ -20,3 +20,7 @@ management:
     web:
       exposure:
         include: health,info
+
+saynow:
+  ai:
+    client-mode: ${SAYNOW_AI_CLIENT_MODE:remote}

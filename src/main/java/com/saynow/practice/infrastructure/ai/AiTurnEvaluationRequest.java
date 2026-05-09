@@ -12,6 +12,7 @@ public record AiTurnEvaluationRequest(
         Scenario scenario,
         String currentQuestionText,
         String currentQuestionTtsUrl,
+        int turnIndex,
         String audioFilename,
         String audioContentType,
         byte[] audioContent,

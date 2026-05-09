@@ -2,6 +2,7 @@ package com.saynow.practice.infrastructure.ai;
 
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.scenario.domain.ScenarioSlot;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -14,8 +15,10 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
-public class LocalAiPracticeClient {
+@ConditionalOnProperty(prefix = "saynow.ai", name = "client-mode", havingValue = "local", matchIfMissing = true)
+public class LocalAiPracticeClient implements AiPracticeClient {
 
+    @Override
     public AiTurnEvaluationResult evaluateTurn(AiTurnEvaluationRequest request) {
         String transcript = transcribe(request.audioContent());
         BigDecimal sttConfidence = confidenceFor(transcript);
