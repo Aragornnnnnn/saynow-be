@@ -11,7 +11,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.jpa.open-in-view=false",
         "spring.flyway.enabled=true",
-        "spring.flyway.locations=classpath:db/migration"
+        "spring.flyway.locations=classpath:db/migration",
+        "saynow.auth.oidc.fake-enabled=true"
 })
 @AutoConfigureMockMvc
 public abstract class IntegrationTestSupport {

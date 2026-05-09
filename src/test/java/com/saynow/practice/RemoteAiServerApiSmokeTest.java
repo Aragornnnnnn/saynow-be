@@ -16,6 +16,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.flyway.enabled=true",
         "spring.flyway.locations=classpath:db/migration",
         "saynow.ai.client-mode=remote",
-        "saynow.ai.base-url=http://43.202.146.182:8080"
+        "saynow.ai.base-url=http://43.202.146.182:8080",
+        "saynow.auth.oidc.fake-enabled=true"
 })
 @AutoConfigureMockMvc
 @EnabledIfEnvironmentVariable(named = "SAYNOW_REMOTE_AI_SMOKE_TEST", matches = "true")
@@ -64,8 +67,10 @@ class RemoteAiServerApiSmokeTest {
     @Test
     void submitsTurnThroughBackendApiToRemoteAiServer() throws Exception {
         assertThat(Files.exists(AUDIO_PATH)).as("smoke test audio file").isTrue();
+        String accessToken = loginAccessToken();
 
         MvcResult startResult = mockMvc.perform(post("/api/v1/sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scenarioId":"cafe_iced_americano"}
@@ -83,6 +88,7 @@ class RemoteAiServerApiSmokeTest {
 
         MvcResult turnResult = mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .param("inputType", "AUDIO")
                         .param("speechStartedAfterMs", "1000")
                         .param("recordingDurationMs", "2000"))
@@ -138,6 +144,28 @@ class RemoteAiServerApiSmokeTest {
             current = current.getCause();
         }
         return summary.toString();
+    }
+
+    private String loginAccessToken() throws Exception {
+        String subject = UUID.randomUUID().toString();
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/social-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider":"GOOGLE",
+                                  "idToken":"%s|smoke@example.com|Smoke User",
+                                  "nonce":"nonce"
+                                }
+                                """.formatted(subject)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
+        return body.get("data").get("accessToken").asText();
+    }
+
+    private String bearer(String accessToken) {
+        return "Bearer " + accessToken;
     }
 
     private Scenario scenario() {
