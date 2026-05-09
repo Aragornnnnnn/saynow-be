@@ -26,6 +26,7 @@ import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.ScenarioSlot;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PracticeSessionService {
 
     private static final long MAX_AUDIO_BYTES = 10 * 1024 * 1024;
@@ -58,22 +60,6 @@ public class PracticeSessionService {
     private final PracticeTurnRepository turnRepository;
     private final AiPracticeClient aiPracticeClient;
     private final FeedbackCreationService feedbackCreationService;
-
-    public PracticeSessionService(
-            ScenarioRepository scenarioRepository,
-            ScenarioSlotRepository scenarioSlotRepository,
-            PracticeSessionRepository sessionRepository,
-            PracticeTurnRepository turnRepository,
-            AiPracticeClient aiPracticeClient,
-            FeedbackCreationService feedbackCreationService
-    ) {
-        this.scenarioRepository = scenarioRepository;
-        this.scenarioSlotRepository = scenarioSlotRepository;
-        this.sessionRepository = sessionRepository;
-        this.turnRepository = turnRepository;
-        this.aiPracticeClient = aiPracticeClient;
-        this.feedbackCreationService = feedbackCreationService;
-    }
 
     @Transactional
     public SessionStartResponse startSession(StartSessionRequest request) {

@@ -13,6 +13,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -22,6 +25,8 @@ import java.util.Map;
 
 @Entity
 @Table(name = "practice_sessions")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PracticeSession extends BaseTimeEntity {
 
     @Id
@@ -61,9 +66,6 @@ public class PracticeSession extends BaseTimeEntity {
 
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
-
-    protected PracticeSession() {
-    }
 
     public PracticeSession(String publicId, Scenario scenario, LocalDateTime now) {
         this.publicId = publicId;
@@ -107,49 +109,9 @@ public class PracticeSession extends BaseTimeEntity {
         return status == SessionStatus.IN_PROGRESS;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getPublicId() {
-        return publicId;
-    }
-
-    public Scenario getScenario() {
-        return scenario;
-    }
-
-    public SessionStatus getStatus() {
-        return status;
-    }
-
-    public String getCurrentBabsaeText() {
-        return currentBabsaeText;
-    }
-
-    public String getCurrentBabsaeTtsUrl() {
-        return currentBabsaeTtsUrl;
-    }
-
-    public int getFollowUpCount() {
-        return followUpCount;
-    }
-
     public Map<String, String> getFilledSlots() {
         ensureFilledSlots();
         return filledSlots;
-    }
-
-    public Integer getMicReadyLatencyMs() {
-        return micReadyLatencyMs;
-    }
-
-    public LocalDateTime getStartedAt() {
-        return startedAt;
-    }
-
-    public LocalDateTime getEndedAt() {
-        return endedAt;
     }
 
     private void ensureFilledSlots() {

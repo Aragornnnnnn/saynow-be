@@ -11,26 +11,18 @@ import com.saynow.practice.domain.PracticeSession;
 import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.practice.domain.SessionStatus;
 import com.saynow.practice.infrastructure.PracticeSessionRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class FeedbackService {
 
     private final PracticeSessionRepository sessionRepository;
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final TurnFeedbackRepository turnFeedbackRepository;
-
-    public FeedbackService(
-            PracticeSessionRepository sessionRepository,
-            SessionFeedbackRepository sessionFeedbackRepository,
-            TurnFeedbackRepository turnFeedbackRepository
-    ) {
-        this.sessionRepository = sessionRepository;
-        this.sessionFeedbackRepository = sessionFeedbackRepository;
-        this.turnFeedbackRepository = turnFeedbackRepository;
-    }
 
     public FeedbackResponse getFeedback(String sessionId) {
         PracticeSession session = sessionRepository.findByPublicId(sessionId)

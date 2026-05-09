@@ -20,6 +20,15 @@
 - [x] 운영 백엔드 JAR에 아직 원격 AI 클라이언트 클래스가 배포되지 않았음을 확인.
 - [x] 운영 프로파일 기본 AI 클라이언트 모드를 `remote`로 변경.
 - [x] 운영 프로파일에서 `RemoteAiPracticeClient`가 선택되는지 테스트.
+- [x] AI 서버 `/api/v1/session-feedbacks` 직접 호출로 최종 피드백 API 정상 응답 확인.
+- [x] 최종 피드백 원격 클라이언트 테스트를 먼저 작성하고 실패 확인.
+- [x] 최종 피드백 원격 클라이언트 구현.
+- [x] 세션 종료 시 AI 서버 최종 피드백 결과를 저장하도록 연결.
+- [x] 실제 AI 서버 최종 피드백 smoke test 추가 및 실행.
+- [x] 최종 피드백 요청 payload를 문서 계약 기준으로 확장.
+- [x] Spring component 생성자 주입을 Lombok `@RequiredArgsConstructor`로 전환.
+- [x] 도메인/예외 클래스의 단순 getter/no-args boilerplate를 안전한 Lombok 어노테이션으로 전환.
+- [x] Lombok 리팩터링 후 전체 테스트 실행.
 - [x] 실제 백엔드 API smoke test로 AI 서버까지 연결되는지 확인.
 - [ ] 로컬 PostgreSQL 실행 후 백엔드 원격 AI 모드 기동 확인.
 - [x] diff 최종 점검 후 커밋.

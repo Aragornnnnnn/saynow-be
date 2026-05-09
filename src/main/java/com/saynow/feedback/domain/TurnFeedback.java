@@ -12,9 +12,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "turn_feedbacks")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TurnFeedback extends BaseTimeEntity {
 
     @Id
@@ -27,28 +31,32 @@ public class TurnFeedback extends BaseTimeEntity {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "turn_id", nullable = false)
+    @Getter
     private PracticeTurn turn;
 
     @Column(name = "understood_score", nullable = false)
+    @Getter
     private int understoodScore;
 
     @Column(name = "heard_as", nullable = false, columnDefinition = "text")
+    @Getter
     private String heardAs;
 
     @Column(name = "better_expression", length = 500)
+    @Getter
     private String betterExpression;
 
     @Column(name = "score_delta", nullable = false)
+    @Getter
     private int scoreDelta;
 
     @Column(name = "improved_understood_score", nullable = false)
+    @Getter
     private int improvedUnderstoodScore;
 
     @Column(nullable = false, columnDefinition = "text")
+    @Getter
     private String reason;
-
-    protected TurnFeedback() {
-    }
 
     public TurnFeedback(
             SessionFeedback sessionFeedback,
@@ -70,31 +78,4 @@ public class TurnFeedback extends BaseTimeEntity {
         this.reason = reason;
     }
 
-    public PracticeTurn getTurn() {
-        return turn;
-    }
-
-    public int getUnderstoodScore() {
-        return understoodScore;
-    }
-
-    public String getHeardAs() {
-        return heardAs;
-    }
-
-    public String getBetterExpression() {
-        return betterExpression;
-    }
-
-    public int getScoreDelta() {
-        return scoreDelta;
-    }
-
-    public int getImprovedUnderstoodScore() {
-        return improvedUnderstoodScore;
-    }
-
-    public String getReason() {
-        return reason;
-    }
 }

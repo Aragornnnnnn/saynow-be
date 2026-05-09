@@ -12,9 +12,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "scenarios")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Scenario extends BaseTimeEntity {
 
     @Id
@@ -52,52 +57,5 @@ public class Scenario extends BaseTimeEntity {
 
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
-
-    protected Scenario() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public ScenarioCategory getCategory() {
-        return category;
-    }
-
-    public String getScenarioKey() {
-        return scenarioKey;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public ScenarioDifficulty getDifficulty() {
-        return difficulty;
-    }
-
-    public String getSituationDescription() {
-        return situationDescription;
-    }
-
-    public String getSuccessGoal() {
-        return successGoal;
-    }
-
-    public String getOpeningBabsaeText() {
-        return openingBabsaeText;
-    }
-
-    public String getOpeningTtsUrl() {
-        return openingTtsUrl;
-    }
-
-    public int getMaxFollowUpCount() {
-        return maxFollowUpCount;
-    }
-
-    public String getThumbnailUrl() {
-        return thumbnailUrl;
-    }
 
 }

@@ -12,15 +12,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "practice_turns")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PracticeTurn extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -28,15 +33,19 @@ public class PracticeTurn extends BaseTimeEntity {
     private PracticeSession session;
 
     @Column(name = "turn_index", nullable = false)
+    @Getter
     private int turnIndex;
 
     @Column(name = "question_text", nullable = false, length = 500)
+    @Getter
     private String questionText;
 
     @Column(name = "question_tts_url", length = 500)
+    @Getter
     private String questionTtsUrl;
 
     @Column(name = "user_transcript", nullable = false, columnDefinition = "text")
+    @Getter
     private String userTranscript;
 
     @Enumerated(EnumType.STRING)
@@ -44,19 +53,19 @@ public class PracticeTurn extends BaseTimeEntity {
     private InputType inputType;
 
     @Column(name = "speech_started_after_ms")
+    @Getter
     private Integer speechStartedAfterMs;
 
     @Column(name = "recording_duration_ms")
+    @Getter
     private Integer recordingDurationMs;
 
     @Column(name = "stt_confidence", precision = 5, scale = 4)
+    @Getter
     private BigDecimal sttConfidence;
 
     @Column(name = "audio_object_key", length = 500)
     private String audioObjectKey;
-
-    protected PracticeTurn() {
-    }
 
     public PracticeTurn(
             PracticeSession session,
@@ -80,35 +89,4 @@ public class PracticeTurn extends BaseTimeEntity {
         this.sttConfidence = sttConfidence;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public int getTurnIndex() {
-        return turnIndex;
-    }
-
-    public String getQuestionText() {
-        return questionText;
-    }
-
-    public String getQuestionTtsUrl() {
-        return questionTtsUrl;
-    }
-
-    public String getUserTranscript() {
-        return userTranscript;
-    }
-
-    public Integer getSpeechStartedAfterMs() {
-        return speechStartedAfterMs;
-    }
-
-    public Integer getRecordingDurationMs() {
-        return recordingDurationMs;
-    }
-
-    public BigDecimal getSttConfidence() {
-        return sttConfidence;
-    }
 }

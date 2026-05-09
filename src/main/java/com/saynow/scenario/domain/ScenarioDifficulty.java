@@ -1,5 +1,8 @@
 package com.saynow.scenario.domain;
 
+import lombok.Getter;
+
+@Getter
 public enum ScenarioDifficulty {
     EASY("쉬움"),
     NORMAL("보통"),
@@ -11,7 +14,4 @@ public enum ScenarioDifficulty {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
 }

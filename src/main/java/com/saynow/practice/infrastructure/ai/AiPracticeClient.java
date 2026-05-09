@@ -4,4 +4,6 @@ package com.saynow.practice.infrastructure.ai;
 public interface AiPracticeClient {
 
     AiTurnEvaluationResult evaluateTurn(AiTurnEvaluationRequest request);
+
+    AiSessionFeedbackResult createSessionFeedback(AiSessionFeedbackRequest request);
 }

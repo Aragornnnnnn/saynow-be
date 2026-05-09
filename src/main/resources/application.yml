@@ -19,3 +19,4 @@ saynow:
     base-url: ${SAYNOW_AI_BASE_URL:http://43.202.146.182:8080}
     client-mode: ${SAYNOW_AI_CLIENT_MODE:local}
     turn-evaluation-path: ${SAYNOW_AI_TURN_EVALUATION_PATH:/api/v1/turn-evaluations}
+    session-feedback-path: ${SAYNOW_AI_SESSION_FEEDBACK_PATH:/api/v1/session-feedbacks}

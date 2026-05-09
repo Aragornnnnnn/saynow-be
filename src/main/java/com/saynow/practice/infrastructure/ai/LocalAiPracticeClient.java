@@ -1,6 +1,7 @@
 package com.saynow.practice.infrastructure.ai;
 
 import com.saynow.practice.domain.SessionStatus;
+import com.saynow.practice.domain.PracticeTurn;
 import com.saynow.scenario.domain.ScenarioSlot;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -61,6 +62,35 @@ public class LocalAiPracticeClient implements AiPracticeClient {
                 filledSlots,
                 new AiPrompt(promptFor(missingSlot.getSlotKey()), null),
                 null);
+    }
+
+    @Override
+    public AiSessionFeedbackResult createSessionFeedback(AiSessionFeedbackRequest request) {
+        boolean success = request.scenarioResult() == SessionStatus.SUCCESS;
+        List<AiTurnFeedbackResult> turnFeedback = request.turns().stream()
+                .map(turn -> localTurnFeedback(turn, success))
+                .toList();
+
+        return new AiSessionFeedbackResult(
+                success ? 85 : 60,
+                success
+                        ? "대화 전체를 보면 필요한 정보가 전달되어 시나리오를 완료했어요."
+                        : "대화 전체를 보면 필요한 정보가 충분히 전달되지 않아 시나리오를 완료하지 못했어요.",
+                turnFeedback);
+    }
+
+    private AiTurnFeedbackResult localTurnFeedback(PracticeTurn turn, boolean success) {
+        int understoodScore = success ? Math.min(95, 80 + turn.getTurnIndex() * 2) : Math.max(45, 65 - turn.getTurnIndex() * 3);
+        int scoreDelta = success ? 8 : 12;
+        return new AiTurnFeedbackResult(
+                understoodScore,
+                "외국인은 발화의 핵심 의도를 이해할 가능성이 높아요.",
+                turn.getTurnIndex() == 1 ? "I'd like an iced americano, please." : null,
+                scoreDelta,
+                Math.min(100, understoodScore + scoreDelta),
+                turn.getTurnIndex() == 1
+                        ? "주문 상황에서는 'I'd like'를 쓰면 더 자연스럽게 들려요."
+                        : "이미 충분히 자연스럽게 답했어요.");
     }
 
     private String transcribe(byte[] audioContent) {

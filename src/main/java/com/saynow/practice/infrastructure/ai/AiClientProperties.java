@@ -9,12 +9,16 @@ import java.net.URI;
 public record AiClientProperties(
         URI baseUrl,
         String clientMode,
-        String turnEvaluationPath
+        String turnEvaluationPath,
+        String sessionFeedbackPath
 ) {
 
     public AiClientProperties {
         if (turnEvaluationPath == null || turnEvaluationPath.isBlank()) {
             turnEvaluationPath = "/api/v1/turn-evaluations";
+        }
+        if (sessionFeedbackPath == null || sessionFeedbackPath.isBlank()) {
+            sessionFeedbackPath = "/api/v1/session-feedbacks";
         }
     }
 }
