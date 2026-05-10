@@ -24,19 +24,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException exception) {
-        captureIfServerError(exception);
+        sentryEventReporter.captureException(exception);
         return ResponseEntity.status(exception.getStatus())
                 .body(ApiResponse.error(exception.getErrorCode(), exception.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException exception) {
-        return error(ErrorCode.VALIDATION_FAILED);
+        return error(ErrorCode.VALIDATION_FAILED, exception);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException exception) {
-        return error(ErrorCode.VALIDATION_FAILED);
+        return error(ErrorCode.VALIDATION_FAILED, exception);
     }
 
     @ExceptionHandler({
@@ -45,29 +45,27 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception exception) {
-        return error(ErrorCode.VALIDATION_FAILED);
+        return error(ErrorCode.VALIDATION_FAILED, exception);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException exception) {
-        return error(ErrorCode.UNSUPPORTED_AUDIO_TYPE);
+        return error(ErrorCode.UNSUPPORTED_AUDIO_TYPE, exception);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
-        return error(ErrorCode.AUDIO_TOO_LARGE);
+        return error(ErrorCode.AUDIO_TOO_LARGE, exception);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception exception) {
-        sentryEventReporter.captureException(exception);
-        return error(ErrorCode.INTERNAL_SERVER_ERROR);
+        return error(ErrorCode.INTERNAL_SERVER_ERROR, exception);
     }
 
-    private void captureIfServerError(ApiException exception) {
-        if (exception.getStatus().is5xxServerError()) {
-            sentryEventReporter.captureException(exception);
-        }
+    private ResponseEntity<ApiResponse<Void>> error(ErrorCode errorCode, Exception exception) {
+        sentryEventReporter.captureException(exception);
+        return error(errorCode);
     }
 
     private ResponseEntity<ApiResponse<Void>> error(ErrorCode errorCode) {

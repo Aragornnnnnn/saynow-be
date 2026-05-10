@@ -2,6 +2,8 @@
 package com.saynow.common.exception;
 
 import com.saynow.common.observability.SentryEventReporter;
+import jakarta.validation.ConstraintViolationException;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,12 +32,21 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void doesNotCaptureClientApiException() {
+    void capturesClientApiException() {
         ApiException exception = new ApiException(ErrorCode.VALIDATION_FAILED);
 
         handler.handleApiException(exception);
 
-        assertThat(sentryEventReporter.capturedException).isNull();
+        assertThat(sentryEventReporter.capturedException).isSameAs(exception);
+    }
+
+    @Test
+    void capturesValidationException() {
+        ConstraintViolationException exception = new ConstraintViolationException(Set.of());
+
+        handler.handleConstraintViolation(exception);
+
+        assertThat(sentryEventReporter.capturedException).isSameAs(exception);
     }
 
     private static class CapturingSentryEventReporter implements SentryEventReporter {
