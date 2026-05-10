@@ -5,6 +5,7 @@ public record ScenarioSummaryResponse(
         String categoryId,
         String title,
         String difficulty,
+        String situationDescription,
         String successGoal,
         String thumbnailUrl
 ) {

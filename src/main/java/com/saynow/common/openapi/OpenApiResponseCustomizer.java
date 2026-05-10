@@ -80,24 +80,11 @@ public class OpenApiResponseCustomizer {
                                     "categoryId", "cafe",
                                     "title", "아이스 아메리카노 주문하기",
                                     "difficulty", "쉬움",
+                                    "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
                                     "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                                     "thumbnailUrl", null))
                     )),
                     errors(error(ErrorCode.CATEGORY_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(ScenarioController.class, "getScenarioDetail",
-                    success(HttpStatus.OK, "시나리오 상세 조회 성공", objectMap(
-                            "scenarioId", "cafe_iced_americano",
-                            "categoryId", "cafe",
-                            "title", "아이스 아메리카노 주문하기",
-                            "difficulty", "쉬움",
-                            "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
-                            "successGoal", "아이스 아메리카노 주문에 성공하세요.",
-                            "openingBabsaeText", "Hi! What would you like to order?",
-                            "openingTtsUrl", null,
-                            "maxFollowUpCount", 5,
-                            "thumbnailUrl", null
-                    )),
-                    errors(error(ErrorCode.SCENARIO_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(PracticeSessionController.class, "startSession",
                     success(HttpStatus.CREATED, "세션 시작 성공", objectMap(
                             "sessionId", "550e8400-e29b-41d4-a716-446655440000",
