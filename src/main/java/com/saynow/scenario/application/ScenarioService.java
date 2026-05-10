@@ -4,7 +4,6 @@ import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.scenario.api.dto.CategoryListResponse;
 import com.saynow.scenario.api.dto.CategoryResponse;
-import com.saynow.scenario.api.dto.ScenarioDetailResponse;
 import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
 import com.saynow.scenario.api.dto.ScenarioSummaryResponse;
 import com.saynow.scenario.domain.Scenario;
@@ -47,23 +46,6 @@ public class ScenarioService {
                 .stream()
                 .map(this::toSummaryResponse)
                 .toList());
-    }
-
-    public ScenarioDetailResponse getScenarioDetail(String scenarioId) {
-        Scenario scenario = scenarioRepository.findByScenarioKey(scenarioId)
-                .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
-
-        return new ScenarioDetailResponse(
-                scenario.getScenarioKey(),
-                scenario.getCategory().getCategoryKey(),
-                scenario.getTitle(),
-                scenario.getDifficulty().getDisplayName(),
-                scenario.getSituationDescription(),
-                scenario.getSuccessGoal(),
-                scenario.getOpeningBabsaeText(),
-                scenario.getOpeningTtsUrl(),
-                scenario.getMaxFollowUpCount(),
-                scenario.getThumbnailUrl());
     }
 
     private ScenarioSummaryResponse toSummaryResponse(Scenario scenario) {

@@ -2,6 +2,13 @@
 
 ## 2026-05-10
 
+- 시나리오 상세 조회 API는 제거한다. 목록 API가 이미 각 시나리오별 `situationDescription`을 반환하므로, 상세 조회 성공 테스트와 OpenAPI 경로도 제거 대상이다.
+- 삭제 범위는 `ScenarioController.getScenarioDetail`, `ScenarioService.getScenarioDetail`, `ScenarioDetailResponse`, `OpenApiResponseCustomizer`의 상세 조회 예시, 관련 통합 테스트로 제한한다.
+- 프로덕션 코드 변경 전 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `/api/v1/scenarios/{scenarioId}`가 아직 OpenAPI에 있어 두 테스트가 실패했다.
+- 상세 조회 전용 컨트롤러 메서드, 서비스 메서드, DTO 파일, 수동 OpenAPI 예시를 제거했다. 상세 조회 관련 참조 검색 결과는 OpenAPI 부재 검증 테스트만 남았다.
+- 제거 후 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`가 통과했다.
+- 목록 API 회귀 확인으로 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`를 실행했고 통과했다.
+- 최종 검증은 `rg`로 상세 조회 참조 검색, `git diff --check`, `./gradlew test` 순서로 실행했다.
 - 시나리오 목록 조회 API도 상세 조회의 `situationDescription`과 같은 설명 값을 각 시나리오별로 반환해야 한다.
 - 새 DB 컬럼이나 마이그레이션은 필요 없다. 이미 `scenarios.situation_description`과 `Scenario.situationDescription`이 존재하므로 목록 DTO와 매핑만 확장한다.
 - 기존 목록 응답의 내부 슬롯 비공개 정책은 유지한다. 추가 필드는 설명 텍스트 하나로 제한한다.

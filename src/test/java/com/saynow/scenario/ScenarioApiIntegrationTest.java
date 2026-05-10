@@ -74,25 +74,6 @@ class ScenarioApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void returnsScenarioDetailForModalOnly() throws Exception {
-        mockMvc.perform(get("/api/v1/scenarios/cafe_iced_americano"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.scenarioId").value("cafe_iced_americano"))
-                .andExpect(jsonPath("$.data.categoryId").value("cafe"))
-                .andExpect(jsonPath("$.data.title").value("아이스 아메리카노 주문하기"))
-                .andExpect(jsonPath("$.data.difficulty").value("쉬움"))
-                .andExpect(jsonPath("$.data.situationDescription").value("카페에서 원하는 음료를 주문해야 합니다."))
-                .andExpect(jsonPath("$.data.successGoal").value("아이스 아메리카노 주문에 성공하세요."))
-                .andExpect(jsonPath("$.data.openingBabsaeText").value("Hi! What would you like to order?"))
-                .andExpect(jsonPath("$.data.openingTtsUrl").value(nullValue()))
-                .andExpect(jsonPath("$.data.maxFollowUpCount").value(5))
-                .andExpect(jsonPath("$.data.thumbnailUrl").value(nullValue()))
-                .andExpect(jsonPath("$.data.requiredSlots").doesNotExist())
-                .andExpect(jsonPath("$.data.filledSlots").doesNotExist())
-                .andExpect(jsonPath("$.data.missingSlots").doesNotExist());
-    }
-
-    @Test
     void returnsNotFoundForUnknownCategory() throws Exception {
         mockMvc.perform(get("/api/v1/scenarios")
                         .param("categoryId", "unknown"))
