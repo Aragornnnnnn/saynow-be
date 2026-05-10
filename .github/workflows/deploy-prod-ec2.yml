@@ -159,7 +159,15 @@ jobs:
                   continue
               values[key] = parameter["Value"]
 
-          required = ["DB_URL", "DB_USERNAME", "DB_PASSWORD"]
+          required = [
+              "DB_URL",
+              "DB_USERNAME",
+              "DB_PASSWORD",
+              "SAYNOW_AUTH_TOKEN_SECRET",
+              "SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES",
+              "SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES",
+          ]
+          optional = []
           missing = [key for key in required if not values.get(key)]
           if missing:
               raise SystemExit("Missing required SSM parameters: " + ", ".join(missing))
@@ -169,8 +177,9 @@ jobs:
           def quote_systemd(value):
               return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
-          for key in required + ["SPRING_PROFILES_ACTIVE"]:
-              print(f"{key}={quote_systemd(values[key])}")
+          for key in required + optional + ["SPRING_PROFILES_ACTIVE"]:
+              if values.get(key):
+                  print(f"{key}={quote_systemd(values[key])}")
           PY
 
           sudo install -o saynow -g saynow -m 755 -d "${APP_DIR}"

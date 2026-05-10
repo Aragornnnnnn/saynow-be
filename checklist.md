@@ -1,3 +1,51 @@
+# 소셜 로그인 OIDC 체크리스트
+
+- [x] Obsidian 문서 기준을 refreshToken JSON 반환 방식으로 정리.
+- [x] 연습 세션/피드백 API를 로그인 필수로 전환하는 요구사항 확인.
+- [x] 연습 세션을 회원에게 귀속하는 요구사항 확인.
+- [x] 구현 계획 작성.
+- [x] auth API 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 인증 없이 세션 API 호출 시 401 테스트를 먼저 작성하고 실패 확인.
+- [x] 로그인 후 세션 생성 시 회원 귀속 테스트를 먼저 작성하고 실패 확인.
+- [x] 다른 회원 세션 접근 403 테스트를 먼저 작성하고 실패 확인.
+- [x] 인증 테이블과 `practice_sessions.member_id` migration 추가.
+- [x] 회원, 소셜 계정, refresh token 도메인/저장소 추가.
+- [x] OIDC ID Token 검증 인터페이스와 테스트용 fake verifier 추가.
+- [x] SayNow access token과 refresh token 발급/검증 구현.
+- [x] 로그인, refresh, logout API 구현.
+- [x] 세션/피드백 API 인증 필수와 소유자 검증 구현.
+- [x] OpenAPI 테스트 보강.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+- [x] Google Web Client ID audience를 환경 변수로 연결.
+- [x] 운영 배포 SSM 파라미터 문서화와 workflow 반영.
+- [x] 검증 후 PR 브랜치 갱신.
+- [x] 인증 구조를 Spring Security `OncePerRequestFilter` 기반으로 전환하는 테스트 추가.
+- [x] MVC `AuthInterceptor`와 `ThreadLocal` 인증 컨텍스트 제거.
+- [x] `UserDetails` 기반 인증 principal 추가.
+- [x] Spring Security 설정과 인증 실패 JSON 응답 연결.
+- [x] 인증 구조 변경 후 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+- [x] 운영 소셜 로그인 환경 보강 계획 작성.
+- [x] AWS Parameter Store Google/Kakao audience 값 보강.
+- [x] 배포 워크플로 인증 환경변수 주입 목록 추가.
+- [x] 인증 관련 테스트와 워크플로 문법 검증.
+
+---
+
+# PR 4 main 병합 충돌 해결 체크리스트
+
+- [x] `feat/3` worktree와 PR #4 충돌 상태를 확인한다.
+- [x] 로컬 `feat/3`을 원격 PR head로 fast-forward한다.
+- [x] 최신 `origin/main`을 병합해 충돌 파일을 식별한다.
+- [x] `OpenApiIntegrationTest` 충돌을 소셜 인증 검증과 시나리오 상세 API 제거 검증 모두 보존하는 방식으로 해결한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 충돌 해결 커밋 전 변경 범위를 점검한다.
+
+---
+
 # AI 서버 연동 체크리스트
 
 - [x] `origin/main` 기준 작업 브랜치 생성.

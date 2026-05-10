@@ -23,10 +23,12 @@ public class FeedbackService {
     private final PracticeSessionRepository sessionRepository;
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final TurnFeedbackRepository turnFeedbackRepository;
-
-    public FeedbackResponse getFeedback(String sessionId) {
+    public FeedbackResponse getFeedback(Long memberId, String sessionId) {
         PracticeSession session = sessionRepository.findByPublicId(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
+        if (!session.isOwnedBy(memberId)) {
+            throw new ApiException(ErrorCode.SESSION_ACCESS_DENIED);
+        }
 
         if (session.getStatus() == SessionStatus.IN_PROGRESS) {
             throw new ApiException(ErrorCode.SESSION_IN_PROGRESS);

@@ -1,6 +1,7 @@
 package com.saynow.common.openapi;
 
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.auth.api.AuthController;
 import com.saynow.feedback.api.FeedbackController;
 import com.saynow.practice.api.PracticeSessionController;
 import com.saynow.scenario.api.ScenarioController;
@@ -29,6 +30,44 @@ public class OpenApiResponseCustomizer {
 
     private static final String APPLICATION_JSON = "application/json";
     private static final Map<String, EndpointDoc> ENDPOINT_DOCS = Map.ofEntries(
+            endpoint(AuthController.class, "socialLogin",
+                    success(HttpStatus.OK, "소셜 로그인 성공", objectMap(
+                            "tokenType", "Bearer",
+                            "accessToken", "saynow-access-token",
+                            "accessTokenExpiresIn", 1800,
+                            "refreshToken", "saynow-refresh-token",
+                            "refreshTokenExpiresIn", 1209600,
+                            "member", objectMap(
+                                    "memberId", "1",
+                                    "nickname", "Ryan",
+                                    "email", "ryan@example.com",
+                                    "provider", "GOOGLE",
+                                    "newMember", true)
+                    )),
+                    errors(
+                            error(ErrorCode.VALIDATION_FAILED),
+                            error(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER),
+                            error(ErrorCode.OIDC_TOKEN_INVALID),
+                            error(ErrorCode.OIDC_NONCE_MISMATCH),
+                            error(ErrorCode.OIDC_PROVIDER_UNAVAILABLE),
+                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
+            endpoint(AuthController.class, "refresh",
+                    success(HttpStatus.OK, "토큰 재발급 성공", objectMap(
+                            "tokenType", "Bearer",
+                            "accessToken", "new-saynow-access-token",
+                            "accessTokenExpiresIn", 1800,
+                            "refreshToken", "new-saynow-refresh-token",
+                            "refreshTokenExpiresIn", 1209600
+                    )),
+                    errors(
+                            error(ErrorCode.VALIDATION_FAILED),
+                            error(ErrorCode.REFRESH_TOKEN_INVALID),
+                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
+            endpoint(AuthController.class, "logout",
+                    success(HttpStatus.OK, "로그아웃 성공", null),
+                    errors(
+                            error(ErrorCode.VALIDATION_FAILED),
+                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getCategories",
                     success(HttpStatus.OK, "카테고리 목록 조회 성공", objectMap(
                             "categories", List.of(objectMap("categoryId", "cafe", "name", "카페"))
@@ -58,6 +97,7 @@ public class OpenApiResponseCustomizer {
                             "startedAt", "2026-05-08T00:00:00"
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
                             error(ErrorCode.VALIDATION_FAILED),
                             error(ErrorCode.SCENARIO_NOT_FOUND),
                             error(ErrorCode.INTERNAL_SERVER_ERROR))),
@@ -81,6 +121,8 @@ public class OpenApiResponseCustomizer {
                                     "createdAt", "2026-05-08T00:00:10"))
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
+                            error(ErrorCode.SESSION_ACCESS_DENIED),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(PracticeSessionController.class, "recordMicReady",
@@ -89,6 +131,8 @@ public class OpenApiResponseCustomizer {
                             "micReadyLatencyMs", 1240
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
+                            error(ErrorCode.SESSION_ACCESS_DENIED),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.SESSION_ALREADY_ENDED),
                             error(ErrorCode.INTERNAL_SERVER_ERROR))),
@@ -107,6 +151,8 @@ public class OpenApiResponseCustomizer {
                             "feedbackAvailable", false
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
+                            error(ErrorCode.SESSION_ACCESS_DENIED),
                             error(ErrorCode.VALIDATION_FAILED),
                             error(ErrorCode.UNSUPPORTED_INPUT_TYPE),
                             error(ErrorCode.AUDIO_REQUIRED),
@@ -125,6 +171,8 @@ public class OpenApiResponseCustomizer {
                             "endedAt", "2026-05-08T00:03:00"
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
+                            error(ErrorCode.SESSION_ACCESS_DENIED),
                             error(ErrorCode.VALIDATION_FAILED),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.SESSION_ALREADY_ENDED),
@@ -150,6 +198,8 @@ public class OpenApiResponseCustomizer {
                                     "reason", "정중한 주문 표현을 쓰면 더 자연스럽습니다."))
                     )),
                     errors(
+                            error(ErrorCode.AUTH_REQUIRED),
+                            error(ErrorCode.SESSION_ACCESS_DENIED),
                             error(ErrorCode.SESSION_IN_PROGRESS),
                             error(ErrorCode.SESSION_NOT_FOUND),
                             error(ErrorCode.FEEDBACK_NOT_FOUND),
@@ -211,7 +261,7 @@ public class OpenApiResponseCustomizer {
         return Map.entry(key(controllerType, methodName), new EndpointDoc(success, errors));
     }
 
-    private static SuccessDoc success(HttpStatus status, String description, Map<String, Object> data) {
+    private static SuccessDoc success(HttpStatus status, String description, Object data) {
         return new SuccessDoc(status, description, data);
     }
 
@@ -223,7 +273,7 @@ public class OpenApiResponseCustomizer {
         return new ErrorDoc(errorCode, errorCode.getMessage());
     }
 
-    private static Map<String, Object> successBody(Map<String, Object> data) {
+    private static Map<String, Object> successBody(Object data) {
         return objectMap("success", true, "data", data, "error", null);
     }
 
@@ -258,7 +308,7 @@ public class OpenApiResponseCustomizer {
     private record EndpointDoc(SuccessDoc success, List<ErrorDoc> errors) {
     }
 
-    private record SuccessDoc(HttpStatus status, String description, Map<String, Object> data) {
+    private record SuccessDoc(HttpStatus status, String description, Object data) {
     }
 
     private record ErrorDoc(ErrorCode errorCode, String summary) {

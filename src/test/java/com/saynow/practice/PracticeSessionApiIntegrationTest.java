@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -30,9 +32,11 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void completesSessionAndReturnsFeedbackWithoutExposingInternalSlots() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(put("/api/v1/sessions/{sessionId}/micReady", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"latencyMs":1240}
@@ -43,6 +47,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.webm", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 2100, 3600)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -60,6 +65,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-2.webm", "Small for here, please."))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1200, 1600)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.turnId").exists())
@@ -73,7 +79,8 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.filledSlots").doesNotExist())
                 .andExpect(jsonPath("$.data.missingSlots").doesNotExist());
 
-        mockMvc.perform(get("/api/v1/sessions/{sessionId}", sessionId))
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.scenarioId").value("cafe_iced_americano"))
@@ -84,7 +91,8 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turns[0].questionText").value("Hi! What would you like to order?"))
                 .andExpect(jsonPath("$.data.turns[0].userTranscript").value("I want iced americano"));
 
-        mockMvc.perform(get("/api/v1/sessions/{sessionId}/feedback", sessionId))
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/feedback", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.scenarioResult").value("SUCCESS"))
@@ -98,6 +106,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-3.webm", "Another answer"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("SESSION_ALREADY_ENDED"));
@@ -105,9 +114,11 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void rejectsTurnSubmitWithoutAudio() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 2100, 3600)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -117,10 +128,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void submitsTurnWithSwaggerMultipartRequestPart() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.webm", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -130,10 +143,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsTurnRequestPartWithoutJsonContentType() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000, MediaType.TEXT_PLAIN_VALUE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -142,10 +157,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void rejectsInvalidTurnRequestPartJson() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(new MockMultipartFile("request", "", MediaType.TEXT_PLAIN_VALUE, "{".getBytes(StandardCharsets.UTF_8))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -155,10 +172,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsMp3AudioContentTypeAlias() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.mp3", "audio/mp3", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -167,10 +186,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsM4aAudioContentTypeAlias() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.m4a", "audio/m4a", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -179,10 +200,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsWebmVideoContentTypeAlias() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.webm", "video/webm", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -191,10 +214,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsWebmAudioContentTypeWithCodecParameter() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.webm", "audio/webm;codecs=opus", "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -203,10 +228,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsMp3UploadWhenContentTypeIsGeneric() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -215,10 +242,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsExplicitUnsupportedContentTypeWhenAudioPayloadExists() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-1.mp3", MediaType.TEXT_PLAIN_VALUE, "I want iced americano"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -227,10 +256,12 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void acceptsUploadedFileWithoutAudioContentTypeValidation() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(new MockMultipartFile("audio", "turn-1.txt", MediaType.TEXT_PLAIN_VALUE, "I want iced americano".getBytes()))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -239,11 +270,13 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void failsSessionAndMakesFeedbackAvailableAfterMaxFollowUps() throws Exception {
-        String sessionId = startSession("cafe_iced_americano");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("cafe_iced_americano", accessToken);
 
         for (int turnIndex = 1; turnIndex <= 5; turnIndex++) {
             mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                             .file(audio("turn-%d.webm".formatted(turnIndex), "Maybe later."))
+                            .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                             .file(turnRequest("AUDIO", 1000, 1800)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.turnIndex").value(turnIndex))
@@ -255,6 +288,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-6.webm", "Maybe later."))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .file(turnRequest("AUDIO", 1000, 1800)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.turnIndex").value(6))
@@ -264,7 +298,8 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.maxFollowUpCount").value(5))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(true));
 
-        mockMvc.perform(get("/api/v1/sessions/{sessionId}/feedback", sessionId))
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/feedback", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.scenarioResult").value("FAILURE"))
                 .andExpect(jsonPath("$.data.turnFeedback", hasSize(6)));
@@ -272,9 +307,11 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void exitsSessionAndRejectsFurtherUpdates() throws Exception {
-        String sessionId = startSession("taxi_destination");
+        String accessToken = loginAccessToken();
+        String sessionId = startSession("taxi_destination", accessToken);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/exit", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -282,6 +319,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.endedAt").isNotEmpty());
 
         mockMvc.perform(put("/api/v1/sessions/{sessionId}/micReady", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"latencyMs":400}
@@ -290,8 +328,9 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.error.code").value("SESSION_ALREADY_ENDED"));
     }
 
-    private String startSession(String scenarioId) throws Exception {
+    private String startSession(String scenarioId, String accessToken) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"scenarioId":"%s"}
@@ -308,6 +347,28 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
         return body.get("data").get("sessionId").asText();
+    }
+
+    private String loginAccessToken() throws Exception {
+        String subject = UUID.randomUUID().toString();
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/social-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider":"GOOGLE",
+                                  "idToken":"%s|practice@example.com|Practice User",
+                                  "nonce":"nonce"
+                                }
+                                """.formatted(subject)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
+        return body.get("data").get("accessToken").asText();
+    }
+
+    private String bearer(String accessToken) {
+        return "Bearer " + accessToken;
     }
 
     private MockMultipartFile audio(String filename, String transcript) {
