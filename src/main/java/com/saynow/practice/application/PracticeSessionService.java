@@ -45,14 +45,6 @@ import java.util.stream.Collectors;
 public class PracticeSessionService {
 
     private static final long MAX_AUDIO_BYTES = 10 * 1024 * 1024;
-    private static final Set<String> SUPPORTED_AUDIO_CONTENT_TYPES = Set.of(
-            "audio/webm",
-            "audio/wav",
-            "audio/x-wav",
-            "audio/mpeg",
-            "audio/mp4",
-            "audio/x-m4a"
-    );
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioSlotRepository scenarioSlotRepository;
@@ -203,9 +195,6 @@ public class PracticeSessionService {
         }
         if (audio.size() > MAX_AUDIO_BYTES) {
             throw new ApiException(ErrorCode.AUDIO_TOO_LARGE);
-        }
-        if (audio.contentType() == null || !SUPPORTED_AUDIO_CONTENT_TYPES.contains(audio.contentType())) {
-            throw new ApiException(ErrorCode.UNSUPPORTED_AUDIO_TYPE);
         }
     }
 

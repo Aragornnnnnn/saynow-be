@@ -24,6 +24,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -83,9 +84,7 @@ class RemoteAiServerApiSmokeTest {
 
         MvcResult turnResult = mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio)
-                        .param("inputType", "AUDIO")
-                        .param("speechStartedAfterMs", "1000")
-                        .param("recordingDurationMs", "2000"))
+                        .file(turnRequest("AUDIO", 1000, 2000)))
                 .andReturn();
         assertThat(turnResult.getResponse().getStatus())
                 .describedAs(turnFailureMessage(turnResult))
@@ -162,5 +161,20 @@ class RemoteAiServerApiSmokeTest {
                 new BigDecimal("0.91"));
         ReflectionTestUtils.setField(turn, "id", (long) turnIndex);
         return turn;
+    }
+
+    private MockMultipartFile turnRequest(String inputType, int speechStartedAfterMs, int recordingDurationMs) {
+        return new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {
+                          "inputType":"%s",
+                          "speechStartedAfterMs":%d,
+                          "recordingDurationMs":%d
+                        }
+                        """.formatted(inputType, speechStartedAfterMs, recordingDurationMs)
+                        .getBytes(StandardCharsets.UTF_8));
     }
 }
