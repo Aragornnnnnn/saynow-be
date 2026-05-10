@@ -129,6 +129,31 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void acceptsTurnRequestPartWithoutJsonContentType() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000, MediaType.TEXT_PLAIN_VALUE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void rejectsInvalidTurnRequestPartJson() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .file(new MockMultipartFile("request", "", MediaType.TEXT_PLAIN_VALUE, "{".getBytes(StandardCharsets.UTF_8))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.data").value(nullValue()))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
     void acceptsMp3AudioContentTypeAlias() throws Exception {
         String sessionId = startSession("cafe_iced_americano");
 
@@ -261,10 +286,14 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     private MockMultipartFile turnRequest(String inputType, int speechStartedAfterMs, int recordingDurationMs) {
+        return turnRequest(inputType, speechStartedAfterMs, recordingDurationMs, MediaType.APPLICATION_JSON_VALUE);
+    }
+
+    private MockMultipartFile turnRequest(String inputType, int speechStartedAfterMs, int recordingDurationMs, String contentType) {
         return new MockMultipartFile(
                 "request",
                 "",
-                MediaType.APPLICATION_JSON_VALUE,
+                contentType,
                 """
                         {
                           "inputType":"%s",

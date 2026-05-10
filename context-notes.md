@@ -74,3 +74,12 @@
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 테스트를 실제 이슈 중심으로 단순화한 뒤 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`와 `./gradlew test`를 다시 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 같은 mp3를 넣었는데도 415가 난다고 보고했다.
+- 운영 서버에서 `request` part에 `type=application/json`을 명시한 curl은 200으로 성공했다.
+- 같은 세션 API에 `-F 'request={...}'`처럼 request part Content-Type을 생략하면 415 `UNSUPPORTED_AUDIO_TYPE`이 재현됐다.
+- 원인은 audio 검증이 아니라 `@RequestPart("request") SubmitTurnRequest`가 text/plain request part를 DTO로 변환하지 못해 Spring `HttpMediaTypeNotSupportedException`이 발생하고, 현재 전역 핸들러가 이를 `UNSUPPORTED_AUDIO_TYPE`으로 매핑하기 때문이다.
+- 수정 방향은 컨트롤러가 request part를 문자열 JSON으로 받고 직접 파싱해, Swagger/curl이 text/plain으로 보내도 처리되게 하는 것이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType`를 실행했고, 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- `PracticeSessionController`가 `request` part를 `String`으로 받은 뒤 `ObjectMapper`로 `SubmitTurnRequest`를 파싱하도록 변경했다. `inputType` 누락이나 음수 메트릭은 `VALIDATION_FAILED`로 처리한다.
+- `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType --tests com.saynow.practice.PracticeSessionApiIntegrationTest.rejectsInvalidTurnRequestPartJson`, `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`, `./gradlew test`를 실행했고 모두 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.

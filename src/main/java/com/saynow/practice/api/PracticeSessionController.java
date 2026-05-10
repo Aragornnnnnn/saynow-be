@@ -1,5 +1,7 @@
 package com.saynow.practice.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.common.response.ApiResponse;
@@ -15,6 +17,7 @@ import com.saynow.practice.application.PracticeSessionService;
 import com.saynow.practice.application.SubmittedAudio;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,7 @@ import java.io.IOException;
 public class PracticeSessionController {
 
     private final PracticeSessionService practiceSessionService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping
     @Operation(summary = "세션 시작", description = "시나리오를 선택해 연습 세션을 시작하고 첫 질문을 반환합니다.")
@@ -67,9 +71,10 @@ public class PracticeSessionController {
             @PathVariable String sessionId,
             @Parameter(description = "사용자 발화 음성 파일")
             @RequestPart("audio") MultipartFile audio,
-            @Valid @RequestPart("request") SubmitTurnRequest request
+            @Parameter(description = "턴 제출 메트릭", schema = @Schema(implementation = SubmitTurnRequest.class))
+            @RequestPart("request") String request
     ) {
-        return ApiResponse.success(practiceSessionService.submitTurn(sessionId, toSubmittedAudio(audio), request));
+        return ApiResponse.success(practiceSessionService.submitTurn(sessionId, toSubmittedAudio(audio), parseSubmitTurnRequest(request)));
     }
 
     @PostMapping("/{sessionId}/exit")
@@ -84,5 +89,30 @@ public class PracticeSessionController {
         } catch (IOException exception) {
             throw new ApiException(ErrorCode.AUDIO_READ_FAILED);
         }
+    }
+
+    private SubmitTurnRequest parseSubmitTurnRequest(String request) {
+        if (request == null || request.isBlank()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+        try {
+            SubmitTurnRequest submitTurnRequest = objectMapper.readValue(request, SubmitTurnRequest.class);
+            validateSubmitTurnRequest(submitTurnRequest);
+            return submitTurnRequest;
+        } catch (JsonProcessingException exception) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+    }
+
+    private void validateSubmitTurnRequest(SubmitTurnRequest request) {
+        if (request.inputType() == null
+                || isNegative(request.speechStartedAfterMs())
+                || isNegative(request.recordingDurationMs())) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        }
+    }
+
+    private boolean isNegative(Integer value) {
+        return value != null && value < 0;
     }
 }

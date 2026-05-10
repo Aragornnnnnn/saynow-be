@@ -83,3 +83,15 @@
 - [x] 관련 테스트 통과.
 - [x] 전체 테스트 통과.
 - [x] diff 최종 점검 후 커밋.
+
+---
+
+# 턴 request part Content-Type 허용 체크리스트
+
+- [x] 운영 서버에서 `request` part에 `type=application/json`이 없으면 415가 재현됨을 확인.
+- [x] `request` part가 text/plain이어도 처리되는 통합 테스트 추가.
+- [x] 컨트롤러가 `request` part 문자열 JSON을 파싱하도록 수정.
+- [x] 잘못된 request JSON은 400 검증 실패로 반환.
+- [x] 관련 테스트 통과.
+- [x] 전체 테스트 통과.
+- [x] diff 최종 점검 후 커밋.
