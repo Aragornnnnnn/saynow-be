@@ -176,3 +176,41 @@
 - [x] `checklist.md` 충돌을 양쪽 작업 기록 보존 방식으로 해결한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 충돌 해결 커밋 전 변경 범위를 점검한다.
+
+---
+
+# Sentry 연결 체크리스트
+
+- [x] Sentry 연결 계획 문서 작성.
+- [x] Sentry 5xx 예외 캡처 테스트 작성 및 실패 확인.
+- [x] Sentry 의존성과 예외 캡처 구현.
+- [x] Logback Sentry Appender 설정 추가.
+- [x] 운영 환경 SSM 동기화에 Sentry 환경 변수 추가.
+- [x] README와 `.env.example`에 Sentry 설정 반영.
+- [x] 관련 단위 테스트 통과.
+- [x] 전체 테스트 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
+# 이슈 템플릿 강제 체크리스트
+
+- [x] 현재 GitHub 이슈 템플릿 구조 확인.
+- [x] legacy Markdown 이슈 템플릿을 Issue Forms로 전환.
+- [x] blank issue 생성을 비활성화.
+- [x] Sentry 4xx 이벤트 전송 여부를 현재 리졸버 순서로 검증.
+- [x] 템플릿 YAML 문법과 관련 테스트 실행.
+- [x] 변경 범위 점검 후 커밋.
+
+---
+
+# Sentry 4xx 전송 체크리스트
+
+- [x] 현재 4xx 응답 경로를 확인한다.
+- [x] 4xx `ApiException` 전송 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] validation 계열 4xx 전송 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] Spring Security 401 응답 전송 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] 전역 예외 핸들러와 인증 실패 writer에서 4xx를 Sentry로 전송한다.
+- [x] Wiki의 Sentry 수집 기준을 4xx 포함으로 수정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋하고 PR 브랜치를 갱신한다.

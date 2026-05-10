@@ -162,3 +162,50 @@
 - `PracticeSessionController`가 `request` part를 `String`으로 받은 뒤 `ObjectMapper`로 `SubmitTurnRequest`를 파싱하도록 변경했다. `inputType` 누락이나 음수 메트릭은 `VALIDATION_FAILED`로 처리한다.
 - `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType --tests com.saynow.practice.PracticeSessionApiIntegrationTest.rejectsInvalidTurnRequestPartJson`, `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`, `./gradlew test`를 실행했고 모두 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# Sentry 연결 컨텍스트 노트
+
+## 2026-05-11
+
+- Sentry를 추가하는 목적은 현재 운영 환경에서 에러 로그 확인이 어렵기 때문이다.
+- 이번 범위는 운영 에러 이벤트, 에러와 연관된 breadcrumbs, 검색 가능한 Sentry structured logs까지 포함한다.
+- 성능 트레이싱, 프로파일링, OpenTelemetry Java Agent 도입은 이번 범위에서 제외한다.
+- 로컬 개발과 테스트는 DSN 없이도 동작해야 하므로 Sentry 전송은 운영 환경 변수 기반으로만 활성화한다.
+- `GlobalExceptionHandler`가 예외를 `ApiResponse`로 감싸기 때문에 Sentry 자동 캡처만 의존하지 않고 예외를 명시적으로 캡처한다.
+- 초기 결정은 4xx 사용자 오류와 validation 오류를 Sentry 이벤트로 보내지 않는 것이었지만, 이후 사용자 요청에 따라 4xx도 전송하도록 변경했다.
+- 운영 로그 전체 수집은 비용과 노이즈를 고려해 기본 `INFO` 이상을 대상으로 잡고, `DEBUG`와 `TRACE`는 제외한다.
+- Sentry Java SDK는 `8.40.0`을 사용한다. Maven Repository 기준 2026-04-22 공개된 최신 8.40.x 버전이다.
+- `SentryAppender`의 `minimumLevel` setter가 실제 8.40.0 JAR에 있는지 `javap`로 확인했다.
+- GitHub Actions 배포는 SSM `/saynow/prod`에서 Sentry 파라미터를 선택적으로 읽는다. DB 파라미터만 필수로 유지해 기존 배포를 깨지 않게 한다.
+- Sentry Java SDK 8.40.0의 `maxRequestBodySize` enum은 `NONE`, `SMALL`, `MEDIUM`, `ALWAYS`다. Spring 설정에는 문서 표현인 `never` 대신 실제 enum 값인 `NONE`을 사용한다.
+- `sentry.dsn`을 빈 기본값으로 두면 DSN이 없어도 Sentry 자동 설정 조건이 매칭된다. 환경 변수 `SENTRY_DSN`이 있을 때만 Spring이 `sentry.dsn`으로 바인딩하도록 yml에서는 dsn 기본값을 제거했다.
+- `SentryProdConfigurationTest`에서 fake DSN으로 운영 Sentry 옵션 바인딩을 검증했다. 실제 이벤트 전송은 발생시키지 않는다.
+- 검증 명령은 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest`, `./gradlew test --tests com.saynow.ProdAiClientModeTest`, `./gradlew test --tests com.saynow.SentryProdConfigurationTest`, `./gradlew test`, `git diff --check`를 사용했다.
+
+---
+
+# 이슈 템플릿 강제 컨텍스트 노트
+
+## 2026-05-11
+
+- GitHub 이슈 템플릿이 적용되지 않는 원인은 `.github/ISSUE_TEMPLATE.md` 단일 legacy Markdown 템플릿만 있어서 이슈 작성 화면의 입력 필드를 강제할 수 없기 때문이다.
+- GitHub Issue Forms는 `.github/ISSUE_TEMPLATE/*.yml`로 관리하고 `config.yml`의 `blank_issues_enabled: false`로 웹 UI의 빈 이슈 버튼을 숨길 수 있다.
+- GitHub API, GitHub CLI, 권한 있는 자동화는 템플릿을 우회할 수 있으므로 완전한 저장소 정책 강제가 필요하면 별도 issue validation workflow가 필요하다.
+- 당시 Sentry 명시 캡처 정책은 `GlobalExceptionHandler` 기준 5xx `ApiException`과 예상 밖 예외만 전송하는 것이었지만, 이후 사용자 요청에 따라 4xx/validation 예외도 전송하도록 변경했다.
+- 운영 Sentry 설정에서 SDK `SentryExceptionResolver`는 Spring 기본 `HandlerExceptionResolverComposite` 뒤에 실행된다. 따라서 `@RestControllerAdvice`가 처리한 4xx는 SDK 자동 리졸버에 도달하지 않고, 애플리케이션 명시 캡처 경로로 전송된다.
+- 검증으로 `./gradlew test --tests com.saynow.SentryProdConfigurationTest`, `ruby -e 'require "yaml"; Dir[".github/ISSUE_TEMPLATE/*.yml"].sort.each { |file| YAML.load_file(file); puts "ok #{file}" }'`, `git diff --check`, `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# Sentry 4xx 전송 컨텍스트 노트
+
+## 2026-05-11
+
+- 사용자 판단에 따라 4xx 사용자 오류와 validation 오류도 Sentry 이벤트로 전송한다.
+- `GlobalExceptionHandler`가 처리하는 `ApiException`, validation, bad request, unsupported media, upload size 예외를 모두 명시 캡처 대상으로 바꾼다.
+- Spring Security의 인증 실패는 `GlobalExceptionHandler`를 거치지 않고 `AuthFailureResponseWriter`에서 직접 응답하므로, 401/403도 writer에서 Sentry 이벤트를 생성해야 한다.
+- Sentry SDK MVC 리졸버 순서는 그대로 Spring 예외 핸들러 뒤에 둔다. 4xx 전송은 자동 리졸버가 아니라 애플리케이션의 명시 캡처 정책으로 보장한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고, 4xx `ApiException`, validation 예외, 인증 실패 401 캡처 기대 테스트가 실패하는 것을 확인했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest --tests com.saynow.SentryProdConfigurationTest`와 `./gradlew test`를 실행했고 통과했다.
