@@ -56,6 +56,8 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.404.content['application/json'].examples.SCENARIO_NOT_FOUND.value.error.code").value("SCENARIO_NOT_FOUND"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].get.responses.404.content['application/json'].examples.SESSION_NOT_FOUND.value.error.code").value("SESSION_NOT_FOUND"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/micReady'].put.responses.409.content['application/json'].examples.SESSION_ALREADY_ENDED.value.error.code").value("SESSION_ALREADY_ENDED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.requestBody.content['multipart/form-data'].schema.properties.audio").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.requestBody.content['multipart/form-data'].schema.properties.request").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.413.content['application/json'].examples.AUDIO_TOO_LARGE.value.error.code").value("AUDIO_TOO_LARGE"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.415.content['application/json'].examples.UNSUPPORTED_AUDIO_TYPE.value.error.code").value("UNSUPPORTED_AUDIO_TYPE"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.503.content['application/json'].examples.AI_STT_FAILED.value.error.code").value("AI_STT_FAILED"))

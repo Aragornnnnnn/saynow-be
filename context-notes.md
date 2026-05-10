@@ -31,3 +31,17 @@
 - AI 서버 레포에서 STT segments dict 처리와 백엔드 시나리오 payload 기반 턴 평가를 수정해 main에 push했고, GitHub Actions 배포 성공 후 직접 curl 호출이 200으로 바뀌었다.
 - 백엔드 smoke test에서 Spring `RestClient` multipart 요청은 본문에 `audio`, `payload`가 있어도 AI 서버가 422 missing으로 판단했다.
 - 수동 curl multipart는 같은 AI 서버에서 200을 반환했다. Java 표준 `HttpClient`로 직접 multipart를 만들고 HTTP/1.1을 명시하자 백엔드 세션 API smoke test가 실제 AI 서버까지 200으로 통과했다.
+
+## 2026-05-10
+
+- 작업 대상을 `feat/3`에서 `main`으로 전환했다. 전환 직후 `main`은 `origin/main`과 같은 `74e0e3d` 커밋이다.
+- Swagger UI의 `POST /api/v1/sessions/{sessionId}/turns` 화면은 `multipart/form-data`에서 `audio` 파일 파트와 `request` 객체 파트를 입력하게 보여준다.
+- 현재 `main` 컨트롤러는 `@RequestPart("audio") MultipartFile audio`와 `@Valid @ModelAttribute SubmitTurnRequest request` 조합이다. 이 구현은 `request` JSON 파트가 아니라 `inputType`, `speechStartedAfterMs`, `recordingDurationMs` 최상위 form field를 기대한다.
+- 사용자가 Swagger UI대로 `request` 객체에 `{ "inputType": "AUDIO", "speechStartedAfterMs": 1000, "recordingDurationMs": 1000 }`를 입력하면 `inputType`이 DTO에 바인딩되지 않아 `VALIDATION_FAILED` 400이 발생한다.
+- 수정 방향은 Swagger 계약에 맞춰 API가 `request` JSON part를 받도록 바꾸는 것이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.submitsTurnWithSwaggerMultipartRequestPart`를 실행했고, 200을 기대했지만 400 `VALIDATION_FAILED`가 반환되는 것을 확인했다.
+- 컨트롤러를 `@Valid @RequestPart("request") SubmitTurnRequest request`로 변경했다. 이후 턴 제출 테스트와 수동 smoke test 요청도 `request` JSON part를 보내도록 맞췄다.
+- OpenAPI 테스트에는 턴 제출 requestBody의 `multipart/form-data` 스키마에 `audio`와 `request` property가 존재하는지 확인하는 검증을 추가했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.submitsTurnWithSwaggerMultipartRequestPart`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.

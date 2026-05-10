@@ -23,7 +23,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -68,7 +67,7 @@ public class PracticeSessionController {
             @PathVariable String sessionId,
             @Parameter(description = "사용자 발화 음성 파일")
             @RequestPart("audio") MultipartFile audio,
-            @Valid @ModelAttribute SubmitTurnRequest request
+            @Valid @RequestPart("request") SubmitTurnRequest request
     ) {
         return ApiResponse.success(practiceSessionService.submitTurn(sessionId, toSubmittedAudio(audio), request));
     }

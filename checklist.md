@@ -32,3 +32,16 @@
 - [x] 실제 백엔드 API smoke test로 AI 서버까지 연결되는지 확인.
 - [ ] 로컬 PostgreSQL 실행 후 백엔드 원격 AI 모드 기동 확인.
 - [x] diff 최종 점검 후 커밋.
+
+---
+
+# 턴 제출 Swagger multipart 계약 수정 체크리스트
+
+- [x] `main` 기준 Swagger UI의 `audio` + `request` multipart 계약과 실제 컨트롤러 바인딩 차이 확인.
+- [x] `request` JSON part로 턴 제출 시 실패하는 통합 테스트 추가.
+- [x] 컨트롤러가 `request` JSON part를 바인딩하도록 수정.
+- [x] 기존 턴 제출 통합 테스트와 smoke test 요청 형식 갱신.
+- [x] OpenAPI 문서와 관련 테스트 확인.
+- [x] 관련 테스트 통과.
+- [x] 전체 테스트 통과.
+- [x] diff 최종 점검 후 커밋.
