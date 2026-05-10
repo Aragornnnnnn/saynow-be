@@ -1,5 +1,15 @@
 # AI 서버 연동 컨텍스트 노트
 
+## 2026-05-10
+
+- 시나리오 목록 조회 API도 상세 조회의 `situationDescription`과 같은 설명 값을 각 시나리오별로 반환해야 한다.
+- 새 DB 컬럼이나 마이그레이션은 필요 없다. 이미 `scenarios.situation_description`과 `Scenario.situationDescription`이 존재하므로 목록 DTO와 매핑만 확장한다.
+- 기존 목록 응답의 내부 슬롯 비공개 정책은 유지한다. 추가 필드는 설명 텍스트 하나로 제한한다.
+- 프로덕션 코드 변경 전 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`를 실행했고, 목록 응답의 `situationDescription` 경로가 없어 두 테스트가 실패했다.
+- `ScenarioSummaryResponse`에 필드를 추가하고 `ScenarioService.toSummaryResponse`에서 기존 상세 응답과 같은 `scenario.getSituationDescription()` 값을 넣도록 했다.
+- 수동 OpenAPI 예시도 목록 응답에 같은 `situationDescription` 값을 포함하도록 맞췄다.
+- 검증은 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`, `./gradlew test --tests com.saynow.OpenApiIntegrationTest`, `git diff --check`, `./gradlew test` 순서로 실행했다.
+
 ## 2026-05-09
 
 - AI 서버 주소는 `http://43.202.146.182:8080`이다.

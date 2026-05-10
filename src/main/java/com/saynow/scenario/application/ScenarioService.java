@@ -72,6 +72,7 @@ public class ScenarioService {
                 scenario.getCategory().getCategoryKey(),
                 scenario.getTitle(),
                 scenario.getDifficulty().getDisplayName(),
+                scenario.getSituationDescription(),
                 scenario.getSuccessGoal(),
                 scenario.getThumbnailUrl());
     }

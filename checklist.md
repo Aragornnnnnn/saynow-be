@@ -32,3 +32,12 @@
 - [x] 실제 백엔드 API smoke test로 AI 서버까지 연결되는지 확인.
 - [ ] 로컬 PostgreSQL 실행 후 백엔드 원격 AI 모드 기동 확인.
 - [x] diff 최종 점검 후 커밋.
+
+## 2026-05-10 시나리오 목록 설명 반환
+
+- [x] 목록 API 응답에서 `situationDescription` 기대값을 검증하는 테스트를 먼저 추가한다.
+- [x] 실패한 테스트를 확인한다.
+- [x] `ScenarioSummaryResponse`와 서비스 매핑에 `situationDescription`을 추가한다.
+- [x] 관련 통합 테스트를 통과시킨다.
+- [x] 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.

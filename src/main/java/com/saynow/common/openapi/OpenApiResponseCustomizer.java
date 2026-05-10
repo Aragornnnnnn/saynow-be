@@ -41,6 +41,7 @@ public class OpenApiResponseCustomizer {
                                     "categoryId", "cafe",
                                     "title", "아이스 아메리카노 주문하기",
                                     "difficulty", "쉬움",
+                                    "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
                                     "successGoal", "아이스 아메리카노 주문에 성공하세요.",
                                     "thumbnailUrl", null))
                     )),
