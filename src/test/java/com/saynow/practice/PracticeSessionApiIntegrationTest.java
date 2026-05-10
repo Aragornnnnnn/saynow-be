@@ -153,6 +153,30 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void acceptsWebmVideoContentTypeAlias() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.webm", "video/webm", "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void acceptsWebmAudioContentTypeWithCodecParameter() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.webm", "audio/webm;codecs=opus", "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
     void rejectsUnsupportedAudioType() throws Exception {
         String sessionId = startSession("cafe_iced_americano");
 

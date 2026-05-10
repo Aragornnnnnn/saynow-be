@@ -56,3 +56,11 @@
 - GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsMp3AudioContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsM4aAudioContentTypeAlias`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 WebM 업로드도 415로 실패한다고 보고했다.
+- 현재 `main` 기준 WebM 허용 값은 `audio/webm` 정확 일치뿐이다. 실제 브라우저, Swagger, 녹음 API 환경에서는 `.webm`이 `video/webm` 또는 `audio/webm;codecs=opus`처럼 들어올 수 있다.
+- 이번 수정은 `video/webm`을 WebM audio container alias로 허용하고, `Content-Type`의 `;codecs=...` 같은 MIME 파라미터를 제거해 검증한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmVideoContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmAudioContentTypeWithCodecParameter`를 실행했고, 두 케이스 모두 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- 허용 MIME 목록에 `video/webm`을 추가하고, `Content-Type`에서 `;` 이후 MIME 파라미터를 제거한 뒤 소문자로 정규화해 비교하도록 변경했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmVideoContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmAudioContentTypeWithCodecParameter`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.

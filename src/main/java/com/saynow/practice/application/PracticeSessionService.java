@@ -47,6 +47,7 @@ public class PracticeSessionService {
     private static final long MAX_AUDIO_BYTES = 10 * 1024 * 1024;
     private static final Set<String> SUPPORTED_AUDIO_CONTENT_TYPES = Set.of(
             "audio/webm",
+            "video/webm",
             "audio/wav",
             "audio/x-wav",
             "audio/mpeg",
@@ -206,9 +207,13 @@ public class PracticeSessionService {
         if (audio.size() > MAX_AUDIO_BYTES) {
             throw new ApiException(ErrorCode.AUDIO_TOO_LARGE);
         }
-        if (audio.contentType() == null || !SUPPORTED_AUDIO_CONTENT_TYPES.contains(audio.contentType())) {
+        if (audio.contentType() == null || !SUPPORTED_AUDIO_CONTENT_TYPES.contains(normalizeContentType(audio.contentType()))) {
             throw new ApiException(ErrorCode.UNSUPPORTED_AUDIO_TYPE);
         }
+    }
+
+    private String normalizeContentType(String contentType) {
+        return contentType.split(";", 2)[0].trim().toLowerCase();
     }
 
     private void validateAiEvaluationResult(AiTurnEvaluationResult evaluation) {
