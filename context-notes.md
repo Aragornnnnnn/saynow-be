@@ -72,3 +72,55 @@
 - AI 서버 레포에서 STT segments dict 처리와 백엔드 시나리오 payload 기반 턴 평가를 수정해 main에 push했고, GitHub Actions 배포 성공 후 직접 curl 호출이 200으로 바뀌었다.
 - 백엔드 smoke test에서 Spring `RestClient` multipart 요청은 본문에 `audio`, `payload`가 있어도 AI 서버가 422 missing으로 판단했다.
 - 수동 curl multipart는 같은 AI 서버에서 200을 반환했다. Java 표준 `HttpClient`로 직접 multipart를 만들고 HTTP/1.1을 명시하자 백엔드 세션 API smoke test가 실제 AI 서버까지 200으로 통과했다.
+
+## 2026-05-10
+
+- 작업 대상을 `feat/3`에서 `main`으로 전환했다. 전환 직후 `main`은 `origin/main`과 같은 `74e0e3d` 커밋이다.
+- Swagger UI의 `POST /api/v1/sessions/{sessionId}/turns` 화면은 `multipart/form-data`에서 `audio` 파일 파트와 `request` 객체 파트를 입력하게 보여준다.
+- 현재 `main` 컨트롤러는 `@RequestPart("audio") MultipartFile audio`와 `@Valid @ModelAttribute SubmitTurnRequest request` 조합이다. 이 구현은 `request` JSON 파트가 아니라 `inputType`, `speechStartedAfterMs`, `recordingDurationMs` 최상위 form field를 기대한다.
+- 사용자가 Swagger UI대로 `request` 객체에 `{ "inputType": "AUDIO", "speechStartedAfterMs": 1000, "recordingDurationMs": 1000 }`를 입력하면 `inputType`이 DTO에 바인딩되지 않아 `VALIDATION_FAILED` 400이 발생한다.
+- 수정 방향은 Swagger 계약에 맞춰 API가 `request` JSON part를 받도록 바꾸는 것이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.submitsTurnWithSwaggerMultipartRequestPart`를 실행했고, 200을 기대했지만 400 `VALIDATION_FAILED`가 반환되는 것을 확인했다.
+- 컨트롤러를 `@Valid @RequestPart("request") SubmitTurnRequest request`로 변경했다. 이후 턴 제출 테스트와 수동 smoke test 요청도 `request` JSON part를 보내도록 맞췄다.
+- OpenAPI 테스트에는 턴 제출 requestBody의 `multipart/form-data` 스키마에 `audio`와 `request` property가 존재하는지 확인하는 검증을 추가했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.submitsTurnWithSwaggerMultipartRequestPart`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 현재 오디오 파일 검증은 확장자 자체가 아니라 `MultipartFile.getContentType()` 기준이다.
+- 허용 MIME은 `audio/webm`, `audio/wav`, `audio/x-wav`, `audio/mpeg`, `audio/mp4`, `audio/x-m4a`다.
+- 사용자가 mp3 업로드 시 415 `UNSUPPORTED_AUDIO_TYPE`을 확인했다. 기존 코드상 mp3 표준 MIME인 `audio/mpeg`은 허용하지만, 브라우저나 Swagger 환경이 `audio/mp3`로 보낼 경우 거절된다.
+- m4a도 `audio/mp4`, `audio/x-m4a`는 허용하지만, 환경에 따라 `audio/m4a`로 오면 거절된다.
+- 이번 수정은 확장자만으로 파일 타입을 신뢰하지 않고 `audio/mp3`, `audio/m4a` MIME alias를 추가하는 범위로 제한한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsMp3AudioContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsM4aAudioContentTypeAlias`를 실행했고, 두 케이스 모두 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- 허용 MIME 목록에 `audio/mp3`, `audio/m4a`를 추가했다.
+- `PracticeSessionApiIntegrationTest` 전체 실행 중 기존 테스트가 `turnId` DB 전역 시퀀스 값을 `1`, `2`로 고정해 실패했다. 턴 순서는 `turnIndex`로 검증하고 있으므로 `turnId`는 존재 여부만 확인하도록 조정했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsMp3AudioContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsM4aAudioContentTypeAlias`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 WebM 업로드도 415로 실패한다고 보고했다.
+- 현재 `main` 기준 WebM 허용 값은 `audio/webm` 정확 일치뿐이다. 실제 브라우저, Swagger, 녹음 API 환경에서는 `.webm`이 `video/webm` 또는 `audio/webm;codecs=opus`처럼 들어올 수 있다.
+- 이번 수정은 `video/webm`을 WebM audio container alias로 허용하고, `Content-Type`의 `;codecs=...` 같은 MIME 파라미터를 제거해 검증한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmVideoContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmAudioContentTypeWithCodecParameter`를 실행했고, 두 케이스 모두 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- 허용 MIME 목록에 `video/webm`을 추가하고, `Content-Type`에서 `;` 이후 MIME 파라미터를 제거한 뒤 소문자로 정규화해 비교하도록 변경했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmVideoContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmAudioContentTypeWithCodecParameter`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 첨부 파일 `/Users/sangmin8817/Desktop/output.mp3`는 로컬 `file --mime-type` 기준 `audio/mpeg`이다.
+- 배포 서버 `http://13.209.216.213:8080`에 실제 세션을 만들고 `curl -F audio=@/Users/sangmin8817/Desktop/output.mp3`로 업로드하자 415 `UNSUPPORTED_AUDIO_TYPE`이 재현됐다.
+- `curl --trace-ascii`로 multipart를 확인한 결과 `audio` part가 `Content-Type: application/octet-stream`으로 전송됐다. 따라서 파일 자체가 mp3여도 서버는 MIME 기준으로 generic binary로 판단해 거절한다.
+- 사용자가 `audio.contentType()` 기반 검증을 제거하자고 방향을 바꿨다. 따라서 generic MIME 보정, MIME alias 맵, 확장자 fallback 맵 방향은 폐기했다.
+- `validateTurnSubmitRequest`에서는 `inputType`, 빈 파일, 최대 크기만 검증하고, `Content-Type`은 더 이상 `UNSUPPORTED_AUDIO_TYPE`으로 거절하지 않는다.
+- 기존에 `UNSUPPORTED_AUDIO_TYPE`을 기대하던 테스트는 `application/octet-stream` mp3와 임의 Content-Type 파일이 모두 진행되는 테스트로 바꿨다.
+- 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 테스트를 실제 이슈 중심으로 단순화한 뒤 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`와 `./gradlew test`를 다시 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 같은 mp3를 넣었는데도 415가 난다고 보고했다.
+- 운영 서버에서 `request` part에 `type=application/json`을 명시한 curl은 200으로 성공했다.
+- 같은 세션 API에 `-F 'request={...}'`처럼 request part Content-Type을 생략하면 415 `UNSUPPORTED_AUDIO_TYPE`이 재현됐다.
+- 원인은 audio 검증이 아니라 `@RequestPart("request") SubmitTurnRequest`가 text/plain request part를 DTO로 변환하지 못해 Spring `HttpMediaTypeNotSupportedException`이 발생하고, 현재 전역 핸들러가 이를 `UNSUPPORTED_AUDIO_TYPE`으로 매핑하기 때문이다.
+- 수정 방향은 컨트롤러가 request part를 문자열 JSON으로 받고 직접 파싱해, Swagger/curl이 text/plain으로 보내도 처리되게 하는 것이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType`를 실행했고, 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- `PracticeSessionController`가 `request` part를 `String`으로 받은 뒤 `ObjectMapper`로 `SubmitTurnRequest`를 파싱하도록 변경했다. `inputType` 누락이나 음수 메트릭은 `VALIDATION_FAILED`로 처리한다.
+- `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType --tests com.saynow.practice.PracticeSessionApiIntegrationTest.rejectsInvalidTurnRequestPartJson`, `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`, `./gradlew test`를 실행했고 모두 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
