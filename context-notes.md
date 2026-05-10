@@ -183,3 +183,16 @@
 - `sentry.dsn`을 빈 기본값으로 두면 DSN이 없어도 Sentry 자동 설정 조건이 매칭된다. 환경 변수 `SENTRY_DSN`이 있을 때만 Spring이 `sentry.dsn`으로 바인딩하도록 yml에서는 dsn 기본값을 제거했다.
 - `SentryProdConfigurationTest`에서 fake DSN으로 운영 Sentry 옵션 바인딩을 검증했다. 실제 이벤트 전송은 발생시키지 않는다.
 - 검증 명령은 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest`, `./gradlew test --tests com.saynow.ProdAiClientModeTest`, `./gradlew test --tests com.saynow.SentryProdConfigurationTest`, `./gradlew test`, `git diff --check`를 사용했다.
+
+---
+
+# 이슈 템플릿 강제 컨텍스트 노트
+
+## 2026-05-11
+
+- GitHub 이슈 템플릿이 적용되지 않는 원인은 `.github/ISSUE_TEMPLATE.md` 단일 legacy Markdown 템플릿만 있어서 이슈 작성 화면의 입력 필드를 강제할 수 없기 때문이다.
+- GitHub Issue Forms는 `.github/ISSUE_TEMPLATE/*.yml`로 관리하고 `config.yml`의 `blank_issues_enabled: false`로 웹 UI의 빈 이슈 버튼을 숨길 수 있다.
+- GitHub API, GitHub CLI, 권한 있는 자동화는 템플릿을 우회할 수 있으므로 완전한 저장소 정책 강제가 필요하면 별도 issue validation workflow가 필요하다.
+- Sentry 명시 캡처 정책은 `GlobalExceptionHandler` 기준 5xx `ApiException`과 예상 밖 예외만 전송하고, 4xx/validation 예외는 전송하지 않는다.
+- 운영 Sentry 설정에서 SDK `SentryExceptionResolver`는 Spring 기본 `HandlerExceptionResolverComposite` 뒤에 실행된다. 따라서 `@RestControllerAdvice`가 처리한 4xx는 SDK 자동 리졸버에 도달하지 않고, 5xx는 명시 캡처 경로로만 전송된다.
+- 검증으로 `./gradlew test --tests com.saynow.SentryProdConfigurationTest`, `ruby -e 'require "yaml"; Dir[".github/ISSUE_TEMPLATE/*.yml"].sort.each { |file| YAML.load_file(file); puts "ok #{file}" }'`, `git diff --check`, `./gradlew test`를 실행했고 통과했다.

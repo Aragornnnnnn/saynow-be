@@ -2,10 +2,14 @@
 package com.saynow;
 
 import io.sentry.SentryOptions;
+import io.sentry.spring7.SentryExceptionResolver;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.handler.HandlerExceptionResolverComposite;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +34,9 @@ class SentryProdConfigurationTest {
     @Autowired
     private SentryOptions sentryOptions;
 
+    @Autowired
+    private List<HandlerExceptionResolver> exceptionResolvers;
+
     @Test
     void prodProfileBindsSentryOptions() {
         assertThat(sentryOptions.getDsn()).isEqualTo("https://public@example.com/1");
@@ -39,5 +46,24 @@ class SentryProdConfigurationTest {
         assertThat(sentryOptions.getTracesSampleRate()).isZero();
         assertThat(sentryOptions.isSendDefaultPii()).isFalse();
         assertThat(sentryOptions.getLogs().isEnabled()).isTrue();
+    }
+
+    @Test
+    void sentryExceptionResolverRunsAfterSpringExceptionHandlers() {
+        int springResolverIndex = indexOf(HandlerExceptionResolverComposite.class);
+        int sentryResolverIndex = indexOf(SentryExceptionResolver.class);
+
+        assertThat(springResolverIndex).isGreaterThanOrEqualTo(0);
+        assertThat(sentryResolverIndex).isGreaterThanOrEqualTo(0);
+        assertThat(sentryResolverIndex).isGreaterThan(springResolverIndex);
+    }
+
+    private int indexOf(Class<?> resolverType) {
+        for (int index = 0; index < exceptionResolvers.size(); index++) {
+            if (resolverType.isInstance(exceptionResolvers.get(index))) {
+                return index;
+            }
+        }
+        return -1;
     }
 }
