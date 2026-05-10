@@ -45,3 +45,14 @@
 - GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.submitsTurnWithSwaggerMultipartRequestPart`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 현재 오디오 파일 검증은 확장자 자체가 아니라 `MultipartFile.getContentType()` 기준이다.
+- 허용 MIME은 `audio/webm`, `audio/wav`, `audio/x-wav`, `audio/mpeg`, `audio/mp4`, `audio/x-m4a`다.
+- 사용자가 mp3 업로드 시 415 `UNSUPPORTED_AUDIO_TYPE`을 확인했다. 기존 코드상 mp3 표준 MIME인 `audio/mpeg`은 허용하지만, 브라우저나 Swagger 환경이 `audio/mp3`로 보낼 경우 거절된다.
+- m4a도 `audio/mp4`, `audio/x-m4a`는 허용하지만, 환경에 따라 `audio/m4a`로 오면 거절된다.
+- 이번 수정은 확장자만으로 파일 타입을 신뢰하지 않고 `audio/mp3`, `audio/m4a` MIME alias를 추가하는 범위로 제한한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsMp3AudioContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsM4aAudioContentTypeAlias`를 실행했고, 두 케이스 모두 415 `UNSUPPORTED_AUDIO_TYPE`으로 실패하는 것을 확인했다.
+- 허용 MIME 목록에 `audio/mp3`, `audio/m4a`를 추가했다.
+- `PracticeSessionApiIntegrationTest` 전체 실행 중 기존 테스트가 `turnId` DB 전역 시퀀스 값을 `1`, `2`로 고정해 실패했다. 턴 순서는 `turnIndex`로 검증하고 있으므로 `turnId`는 존재 여부만 확인하도록 조정했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsMp3AudioContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsM4aAudioContentTypeAlias`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.

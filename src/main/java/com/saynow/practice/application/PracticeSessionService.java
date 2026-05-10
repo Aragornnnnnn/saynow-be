@@ -50,7 +50,9 @@ public class PracticeSessionService {
             "audio/wav",
             "audio/x-wav",
             "audio/mpeg",
+            "audio/mp3",
             "audio/mp4",
+            "audio/m4a",
             "audio/x-m4a"
     );
 

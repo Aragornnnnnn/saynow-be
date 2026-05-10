@@ -46,7 +46,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                         .file(turnRequest("AUDIO", 2100, 3600)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data.turnId").value(1))
+                .andExpect(jsonPath("$.data.turnId").exists())
                 .andExpect(jsonPath("$.data.turnIndex").value(1))
                 .andExpect(jsonPath("$.data.transcript").value("I want iced americano"))
                 .andExpect(jsonPath("$.data.sttConfidence").value(0.86))
@@ -62,7 +62,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                         .file(audio("turn-2.webm", "Small for here, please."))
                         .file(turnRequest("AUDIO", 1200, 1600)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.turnId").value(2))
+                .andExpect(jsonPath("$.data.turnId").exists())
                 .andExpect(jsonPath("$.data.turnIndex").value(2))
                 .andExpect(jsonPath("$.data.transcript").value("Small for here, please."))
                 .andExpect(jsonPath("$.data.sttConfidence").value(0.92))
@@ -91,7 +91,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.totalUnderstoodScore").value(85))
                 .andExpect(jsonPath("$.data.averageScoreDelta").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedback", hasSize(2)))
-                .andExpect(jsonPath("$.data.turnFeedback[0].turnId").value(1))
+                .andExpect(jsonPath("$.data.turnFeedback[0].turnId").exists())
                 .andExpect(jsonPath("$.data.turnFeedback[0].questionText").value("Hi! What would you like to order?"))
                 .andExpect(jsonPath("$.data.turnFeedback[0].speechStartedAfterSeconds").value(2.1))
                 .andExpect(jsonPath("$.data.turnFeedback[0].heardAs").isNotEmpty());
@@ -125,6 +125,30 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.turnIndex").value(1))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void acceptsMp3AudioContentTypeAlias() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.mp3", "audio/mp3", "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void acceptsM4aAudioContentTypeAlias() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.m4a", "audio/m4a", "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
     }
 
@@ -182,7 +206,11 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     private MockMultipartFile audio(String filename, String transcript) {
-        return new MockMultipartFile("audio", filename, "audio/webm", transcript.getBytes());
+        return audio(filename, "audio/webm", transcript);
+    }
+
+    private MockMultipartFile audio(String filename, String contentType, String transcript) {
+        return new MockMultipartFile("audio", filename, contentType, transcript.getBytes());
     }
 
     private MockMultipartFile turnRequest(String inputType, int speechStartedAfterMs, int recordingDurationMs) {
