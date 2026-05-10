@@ -37,6 +37,17 @@
 - env placeholder가 빈 문자열로 바인딩되는 경우를 피하기 위해 `RemoteOidcTokenVerifier`에서 blank audience를 무시한다.
 - 검증으로 `./gradlew test --rerun-tasks`와 `./gradlew build`를 실행했고 통과했다.
 
+## 2026-05-10
+
+- 운영 소셜 로그인 환경 보강 범위는 Parameter Store audience 값 보강과 배포 워크플로의 `.env` 주입 목록 수정이다.
+- 백엔드 OIDC verifier는 Google/Kakao ID token의 issuer, audience, signature, expiry, nonce를 검증한다.
+- 운영에서 `SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`, `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`, `SAYNOW_AUTH_TOKEN_SECRET`이 서비스 환경에 들어가지 않으면 소셜 로그인은 실제 ID token 검증 단계에서 실패한다.
+- 사용자가 전달한 key 원문은 리포지토리 파일에 기록하지 않고 AWS Parameter Store에만 반영한다.
+- AWS Parameter Store `/saynow/prod`의 Google audience는 web client id와 Android client id를 모두 포함하도록 갱신했다.
+- AWS Parameter Store `/saynow/prod`의 Kakao audience는 REST API key와 Native App Key를 모두 포함하도록 갱신했다.
+- 배포 워크플로의 required 환경변수 목록에 `SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`, `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`, `SAYNOW_AUTH_TOKEN_SECRET`을 추가했다.
+- 검증 명령은 `git diff --check`, `ruby -e 'require "yaml"; YAML.load_file(ARGV[0]); puts "yaml ok"' .github/workflows/deploy-prod-ec2.yml`, 더미 SSM JSON 기반 `.env` 출력 시뮬레이션, `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest --rerun-tasks`를 실행했고 모두 통과했다.
+
 ---
 
 # AI 서버 연동 컨텍스트 노트

@@ -28,6 +28,10 @@
 - [x] 인증 구조 변경 후 관련 테스트 통과.
 - [x] 전체 `./gradlew test` 통과.
 - [x] diff 최종 점검 후 커밋.
+- [x] 운영 소셜 로그인 환경 보강 계획 작성.
+- [x] AWS Parameter Store Google/Kakao audience 값 보강.
+- [x] 배포 워크플로 인증 환경변수 주입 목록 추가.
+- [x] 인증 관련 테스트와 워크플로 문법 검증.
 
 ---
 
