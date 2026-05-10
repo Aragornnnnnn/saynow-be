@@ -162,3 +162,24 @@
 - `PracticeSessionController`가 `request` part를 `String`으로 받은 뒤 `ObjectMapper`로 `SubmitTurnRequest`를 파싱하도록 변경했다. `inputType` 누락이나 음수 메트릭은 `VALIDATION_FAILED`로 처리한다.
 - `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsTurnRequestPartWithoutJsonContentType --tests com.saynow.practice.PracticeSessionApiIntegrationTest.rejectsInvalidTurnRequestPartJson`, `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`, `./gradlew test`를 실행했고 모두 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# Sentry 연결 컨텍스트 노트
+
+## 2026-05-11
+
+- Sentry를 추가하는 목적은 현재 운영 환경에서 에러 로그 확인이 어렵기 때문이다.
+- 이번 범위는 운영 에러 이벤트, 에러와 연관된 breadcrumbs, 검색 가능한 Sentry structured logs까지 포함한다.
+- 성능 트레이싱, 프로파일링, OpenTelemetry Java Agent 도입은 이번 범위에서 제외한다.
+- 로컬 개발과 테스트는 DSN 없이도 동작해야 하므로 Sentry 전송은 운영 환경 변수 기반으로만 활성화한다.
+- `GlobalExceptionHandler`가 예외를 `ApiResponse`로 감싸기 때문에 Sentry 자동 캡처만 의존하지 않고 5xx 예외를 명시적으로 캡처한다.
+- 4xx 사용자 오류와 validation 오류는 Sentry 이벤트로 보내지 않는다.
+- 운영 로그 전체 수집은 비용과 노이즈를 고려해 기본 `INFO` 이상을 대상으로 잡고, `DEBUG`와 `TRACE`는 제외한다.
+- Sentry Java SDK는 `8.40.0`을 사용한다. Maven Repository 기준 2026-04-22 공개된 최신 8.40.x 버전이다.
+- `SentryAppender`의 `minimumLevel` setter가 실제 8.40.0 JAR에 있는지 `javap`로 확인했다.
+- GitHub Actions 배포는 SSM `/saynow/prod`에서 Sentry 파라미터를 선택적으로 읽는다. DB 파라미터만 필수로 유지해 기존 배포를 깨지 않게 한다.
+- Sentry Java SDK 8.40.0의 `maxRequestBodySize` enum은 `NONE`, `SMALL`, `MEDIUM`, `ALWAYS`다. Spring 설정에는 문서 표현인 `never` 대신 실제 enum 값인 `NONE`을 사용한다.
+- `sentry.dsn`을 빈 기본값으로 두면 DSN이 없어도 Sentry 자동 설정 조건이 매칭된다. 환경 변수 `SENTRY_DSN`이 있을 때만 Spring이 `sentry.dsn`으로 바인딩하도록 yml에서는 dsn 기본값을 제거했다.
+- `SentryProdConfigurationTest`에서 fake DSN으로 운영 Sentry 옵션 바인딩을 검증했다. 실제 이벤트 전송은 발생시키지 않는다.
+- 검증 명령은 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest`, `./gradlew test --tests com.saynow.ProdAiClientModeTest`, `./gradlew test --tests com.saynow.SentryProdConfigurationTest`, `./gradlew test`, `git diff --check`를 사용했다.

@@ -24,3 +24,15 @@ management:
 saynow:
   ai:
     client-mode: ${SAYNOW_AI_CLIENT_MODE:remote}
+
+sentry:
+  enabled: ${SENTRY_ENABLED:true}
+  environment: ${SENTRY_ENVIRONMENT:prod}
+  release: ${SENTRY_RELEASE:saynow-be}
+  send-default-pii: false
+  max-request-body-size: NONE
+  traces-sample-rate: 0.0
+  logs:
+    enabled: ${SENTRY_LOGS_ENABLED:true}
+  logging:
+    enabled: false

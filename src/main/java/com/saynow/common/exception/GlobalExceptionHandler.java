@@ -1,5 +1,6 @@
 package com.saynow.common.exception;
 
+import com.saynow.common.observability.SentryEventReporter;
 import com.saynow.common.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +16,15 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final SentryEventReporter sentryEventReporter;
+
+    public GlobalExceptionHandler(SentryEventReporter sentryEventReporter) {
+        this.sentryEventReporter = sentryEventReporter;
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException exception) {
+        captureIfServerError(exception);
         return ResponseEntity.status(exception.getStatus())
                 .body(ApiResponse.error(exception.getErrorCode(), exception.getMessage()));
     }
@@ -52,7 +60,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception exception) {
+        sentryEventReporter.captureException(exception);
         return error(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+
+    private void captureIfServerError(ApiException exception) {
+        if (exception.getStatus().is5xxServerError()) {
+            sentryEventReporter.captureException(exception);
+        }
     }
 
     private ResponseEntity<ApiResponse<Void>> error(ErrorCode errorCode) {

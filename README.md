@@ -33,6 +33,11 @@ DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<database-password>
 SAYNOW_AUTH_TOKEN_SECRET=<long-random-hmac-secret>
 SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=<google-web-client-id>
+SENTRY_ENABLED=true
+SENTRY_DSN=https://<public-key>@<org>.ingest.sentry.io/<project-id>
+SENTRY_ENVIRONMENT=prod
+SENTRY_LOGS_ENABLED=true
+SENTRY_RELEASE=saynow-be
 ```
 
 배포 테스트용 환경 변수 파일이 필요하면 [.env.example](.env.example)을 템플릿으로 사용합니다. 운영 환경 변수 파일이나 인증 정보는 커밋하지 않습니다.
@@ -44,6 +49,14 @@ SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=1062331189445-ov26of8u6pb8iauq0c4n68ni1flipm1q
 ```
 
 Kakao OIDC를 활성화하면 `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`에 Kakao 앱 키를 설정합니다.
+
+## Sentry 운영 로그
+
+운영 프로필은 `SENTRY_DSN`이 설정된 경우 Sentry로 서버 오류를 전송합니다. `GlobalExceptionHandler`에서 처리되는 5xx 예외는 명시적으로 캡처하고, 4xx 사용자 오류와 validation 오류는 전송하지 않습니다.
+
+Logback Sentry Appender는 운영 프로필에서만 붙습니다. `ERROR` 이상 로그는 Sentry 이벤트로 전송하고, `INFO` 이상 로그는 에러 이벤트의 breadcrumb와 Sentry Logs 조회 대상으로 사용합니다.
+
+음성 파일 본문과 요청 body, 기본 PII는 보내지 않습니다. 로그 전체 수집을 끄려면 운영 환경 변수 `SENTRY_LOGS_ENABLED=false`를 사용합니다.
 
 애플리케이션 실행:
 
@@ -69,7 +82,7 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 
 애플리케이션 런타임 환경변수는 EC2 IAM Role로 AWS SSM Parameter Store의 `/saynow/prod` 경로에서 읽어 `/opt/saynow/.env`로 생성합니다.
 
-필수 SSM 파라미터:
+필수 SSM 파라미터입니다.
 
 - `/saynow/prod/DB_URL`
 - `/saynow/prod/DB_USERNAME`
@@ -80,3 +93,11 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 선택 SSM 파라미터:
 
 - `/saynow/prod/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`
+
+선택 Sentry SSM 파라미터입니다.
+
+- `/saynow/prod/SENTRY_ENABLED`
+- `/saynow/prod/SENTRY_DSN`
+- `/saynow/prod/SENTRY_ENVIRONMENT`
+- `/saynow/prod/SENTRY_LOGS_ENABLED`
+- `/saynow/prod/SENTRY_RELEASE`

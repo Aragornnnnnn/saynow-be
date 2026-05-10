@@ -167,7 +167,13 @@ jobs:
               "SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES",
               "SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES",
           ]
-          optional = []
+          optional = [
+              "SENTRY_DSN",
+              "SENTRY_ENABLED",
+              "SENTRY_ENVIRONMENT",
+              "SENTRY_LOGS_ENABLED",
+              "SENTRY_RELEASE",
+          ]
           missing = [key for key in required if not values.get(key)]
           if missing:
               raise SystemExit("Missing required SSM parameters: " + ", ".join(missing))

@@ -23,3 +23,10 @@ management:
     web:
       exposure:
         include: health,info
+
+sentry:
+  enabled: ${SENTRY_ENABLED:false}
+  logs:
+    enabled: ${SENTRY_LOGS_ENABLED:false}
+  logging:
+    enabled: false

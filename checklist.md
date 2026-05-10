@@ -176,3 +176,17 @@
 - [x] `checklist.md` 충돌을 양쪽 작업 기록 보존 방식으로 해결한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 충돌 해결 커밋 전 변경 범위를 점검한다.
+
+---
+
+# Sentry 연결 체크리스트
+
+- [x] Sentry 연결 계획 문서 작성.
+- [x] Sentry 5xx 예외 캡처 테스트 작성 및 실패 확인.
+- [x] Sentry 의존성과 예외 캡처 구현.
+- [x] Logback Sentry Appender 설정 추가.
+- [x] 운영 환경 SSM 동기화에 Sentry 환경 변수 추가.
+- [x] README와 `.env.example`에 Sentry 설정 반영.
+- [x] 관련 단위 테스트 통과.
+- [x] 전체 테스트 통과.
+- [x] diff 최종 점검 후 커밋.
