@@ -238,6 +238,43 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void failsSessionAndMakesFeedbackAvailableAfterMaxFollowUps() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        for (int turnIndex = 1; turnIndex <= 5; turnIndex++) {
+            mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                            .file(audio("turn-%d.webm".formatted(turnIndex), "Maybe later."))
+                            .param("inputType", "AUDIO")
+                            .param("speechStartedAfterMs", "1000")
+                            .param("recordingDurationMs", "1800"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.turnIndex").value(turnIndex))
+                    .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+                    .andExpect(jsonPath("$.data.followUpCount").value(turnIndex))
+                    .andExpect(jsonPath("$.data.maxFollowUpCount").value(5))
+                    .andExpect(jsonPath("$.data.feedbackAvailable").value(false));
+        }
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-6.webm", "Maybe later."))
+                        .param("inputType", "AUDIO")
+                        .param("speechStartedAfterMs", "1000")
+                        .param("recordingDurationMs", "1800"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.turnIndex").value(6))
+                .andExpect(jsonPath("$.data.status").value("FAILURE"))
+                .andExpect(jsonPath("$.data.babsaeText").value("The scenario was not cleared in time."))
+                .andExpect(jsonPath("$.data.followUpCount").value(5))
+                .andExpect(jsonPath("$.data.maxFollowUpCount").value(5))
+                .andExpect(jsonPath("$.data.feedbackAvailable").value(true));
+
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/feedback", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.scenarioResult").value("FAILURE"))
+                .andExpect(jsonPath("$.data.turnFeedback", hasSize(6)));
+    }
+
+    @Test
     void exitsSessionAndRejectsFurtherUpdates() throws Exception {
         String sessionId = startSession("taxi_destination");
 
