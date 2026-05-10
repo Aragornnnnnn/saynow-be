@@ -64,3 +64,13 @@
 - GREEN 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmVideoContentTypeAlias --tests com.saynow.practice.PracticeSessionApiIntegrationTest.acceptsWebmAudioContentTypeWithCodecParameter`와 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 첨부 파일 `/Users/sangmin8817/Desktop/output.mp3`는 로컬 `file --mime-type` 기준 `audio/mpeg`이다.
+- 배포 서버 `http://13.209.216.213:8080`에 실제 세션을 만들고 `curl -F audio=@/Users/sangmin8817/Desktop/output.mp3`로 업로드하자 415 `UNSUPPORTED_AUDIO_TYPE`이 재현됐다.
+- `curl --trace-ascii`로 multipart를 확인한 결과 `audio` part가 `Content-Type: application/octet-stream`으로 전송됐다. 따라서 파일 자체가 mp3여도 서버는 MIME 기준으로 generic binary로 판단해 거절한다.
+- 사용자가 `audio.contentType()` 기반 검증을 제거하자고 방향을 바꿨다. 따라서 generic MIME 보정, MIME alias 맵, 확장자 fallback 맵 방향은 폐기했다.
+- `validateTurnSubmitRequest`에서는 `inputType`, 빈 파일, 최대 크기만 검증하고, `Content-Type`은 더 이상 `UNSUPPORTED_AUDIO_TYPE`으로 거절하지 않는다.
+- 기존에 `UNSUPPORTED_AUDIO_TYPE`을 기대하던 테스트는 `application/octet-stream` mp3와 임의 Content-Type 파일이 모두 진행되는 테스트로 바꿨다.
+- 검증으로 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 테스트를 실제 이슈 중심으로 단순화한 뒤 `./gradlew test --tests com.saynow.practice.PracticeSessionApiIntegrationTest`와 `./gradlew test`를 다시 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.

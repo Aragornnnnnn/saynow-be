@@ -177,16 +177,39 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void rejectsUnsupportedAudioType() throws Exception {
+    void acceptsMp3UploadWhenContentTypeIsGeneric() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("output.mp3", MediaType.APPLICATION_OCTET_STREAM_VALUE, "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void acceptsExplicitUnsupportedContentTypeWhenAudioPayloadExists() throws Exception {
+        String sessionId = startSession("cafe_iced_americano");
+
+        mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
+                        .file(audio("turn-1.mp3", MediaType.TEXT_PLAIN_VALUE, "I want iced americano"))
+                        .file(turnRequest("AUDIO", 1000, 1000)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
+    }
+
+    @Test
+    void acceptsUploadedFileWithoutAudioContentTypeValidation() throws Exception {
         String sessionId = startSession("cafe_iced_americano");
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(new MockMultipartFile("audio", "turn-1.txt", MediaType.TEXT_PLAIN_VALUE, "I want iced americano".getBytes()))
                         .file(turnRequest("AUDIO", 1000, 1000)))
-                .andExpect(status().isUnsupportedMediaType())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.data").value(nullValue()))
-                .andExpect(jsonPath("$.error.code").value("UNSUPPORTED_AUDIO_TYPE"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.transcript").value("I want iced americano"));
     }
 
     @Test

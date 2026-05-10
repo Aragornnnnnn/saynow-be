@@ -69,3 +69,17 @@
 - [x] 관련 테스트 통과.
 - [x] 전체 테스트 통과.
 - [x] diff 최종 점검 후 커밋.
+
+---
+
+# 오디오 Content-Type 검증 제거 체크리스트
+
+- [x] 첨부 `output.mp3` 파일의 로컬 MIME 확인.
+- [x] 배포 서버에 첨부 `output.mp3` 실제 업로드로 415 재현.
+- [x] multipart trace로 `audio` part가 `application/octet-stream`으로 전송됨을 확인.
+- [x] 사용자 요청에 따라 MIME/확장자 검증 보정 방향 폐기.
+- [x] `audio.contentType()` 기반 `UNSUPPORTED_AUDIO_TYPE` 검증 제거.
+- [x] `application/octet-stream` mp3 업로드와 임의 Content-Type 허용 테스트로 수정.
+- [x] 관련 테스트 통과.
+- [x] 전체 테스트 통과.
+- [x] diff 최종 점검 후 커밋.
