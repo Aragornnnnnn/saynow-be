@@ -31,9 +31,19 @@ SPRING_PROFILES_ACTIVE=prod
 DB_URL=jdbc:postgresql://<session-pooler-host>:5432/postgres
 DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<database-password>
+SAYNOW_AUTH_TOKEN_SECRET=<long-random-hmac-secret>
+SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=<google-web-client-id>
 ```
 
 배포 테스트용 환경 변수 파일이 필요하면 [.env.example](.env.example)을 템플릿으로 사용합니다. 운영 환경 변수 파일이나 인증 정보는 커밋하지 않습니다.
+
+Google Web OAuth Client ID를 사용하는 경우 `SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`에 Client ID를 설정합니다. 여러 플랫폼의 Client ID를 허용해야 하면 comma-separated 형식으로 입력합니다.
+
+```bash
+SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=1062331189445-ov26of8u6pb8iauq0c4n68ni1flipm1q.apps.googleusercontent.com
+```
+
+Kakao OIDC를 활성화하면 `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`에 Kakao 앱 키를 설정합니다.
 
 애플리케이션 실행:
 
@@ -64,3 +74,9 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 - `/saynow/prod/DB_URL`
 - `/saynow/prod/DB_USERNAME`
 - `/saynow/prod/DB_PASSWORD`
+- `/saynow/prod/SAYNOW_AUTH_TOKEN_SECRET`
+- `/saynow/prod/SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`
+
+선택 SSM 파라미터:
+
+- `/saynow/prod/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`

@@ -31,6 +31,11 @@
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 필터의 `ApiException` catch 범위는 access token 파싱으로만 제한했다. 컨트롤러 이후 서비스 예외는 기존 `GlobalExceptionHandler` 흐름을 타야 하기 때문이다.
 - catch 범위 조정 후 `./gradlew test --tests com.saynow.auth.SecurityAuthenticationIntegrationTest --tests com.saynow.practice.PracticeSessionAuthorizationIntegrationTest`와 `./gradlew test`를 다시 실행했고 통과했다.
+- Google Web OAuth Client ID는 `1062331189445-ov26of8u6pb8iauq0c4n68ni1flipm1q.apps.googleusercontent.com`이고, callback URI는 `http://localhost:3000/auth/google/callback`이다.
+- 백엔드는 callback URI를 직접 사용하지 않는다. Google ID Token의 `aud` 검증을 위해 `SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`에 Google Client ID를 설정한다.
+- `SAYNOW_AUTH_TOKEN_SECRET`, `SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`, `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`를 `application.yml` env placeholder와 `.env.example`, README, prod EC2 deploy workflow에 반영했다.
+- env placeholder가 빈 문자열로 바인딩되는 경우를 피하기 위해 `RemoteOidcTokenVerifier`에서 blank audience를 무시한다.
+- 검증으로 `./gradlew test --rerun-tasks`와 `./gradlew build`를 실행했고 통과했다.
 
 ---
 

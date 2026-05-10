@@ -15,6 +15,12 @@ springdoc:
     display-request-duration: true
 
 saynow:
+  auth:
+    oidc:
+      google-audiences: ${SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES:}
+      kakao-audiences: ${SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES:}
+    token:
+      secret: ${SAYNOW_AUTH_TOKEN_SECRET:saynow-development-token-secret-change-before-production}
   ai:
     base-url: ${SAYNOW_AI_BASE_URL:http://43.202.146.182:8080}
     client-mode: ${SAYNOW_AI_CLIENT_MODE:local}

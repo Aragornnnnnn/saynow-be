@@ -81,14 +81,20 @@ public class RemoteOidcTokenVerifier implements OidcTokenVerifier {
             case GOOGLE -> new ProviderSettings(
                     List.of("https://accounts.google.com", "accounts.google.com"),
                     "https://www.googleapis.com/oauth2/v3/certs",
-                    oidcProperties.getGoogleAudiences()
+                    configuredAudiences(oidcProperties.getGoogleAudiences())
             );
             case KAKAO -> new ProviderSettings(
                     List.of("https://kauth.kakao.com"),
                     "https://kauth.kakao.com/.well-known/jwks.json",
-                    oidcProperties.getKakaoAudiences()
+                    configuredAudiences(oidcProperties.getKakaoAudiences())
             );
         };
+    }
+
+    private List<String> configuredAudiences(List<String> audiences) {
+        return audiences.stream()
+                .filter(audience -> audience != null && !audience.isBlank())
+                .toList();
     }
 
     private PublicKey publicKey(SocialProvider provider, ProviderSettings settings, Object kid) throws Exception {

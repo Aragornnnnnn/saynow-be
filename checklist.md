@@ -18,6 +18,9 @@
 - [x] 관련 테스트 통과.
 - [x] 전체 `./gradlew test` 통과.
 - [x] diff 최종 점검 후 커밋.
+- [x] Google Web Client ID audience를 환경 변수로 연결.
+- [x] 운영 배포 SSM 파라미터 문서화와 workflow 반영.
+- [x] 검증 후 PR 브랜치 갱신.
 - [x] 인증 구조를 Spring Security `OncePerRequestFilter` 기반으로 전환하는 테스트 추가.
 - [x] MVC `AuthInterceptor`와 `ThreadLocal` 인증 컨텍스트 제거.
 - [x] `UserDetails` 기반 인증 principal 추가.
