@@ -244,9 +244,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
         for (int turnIndex = 1; turnIndex <= 5; turnIndex++) {
             mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                             .file(audio("turn-%d.webm".formatted(turnIndex), "Maybe later."))
-                            .param("inputType", "AUDIO")
-                            .param("speechStartedAfterMs", "1000")
-                            .param("recordingDurationMs", "1800"))
+                            .file(turnRequest("AUDIO", 1000, 1800)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.turnIndex").value(turnIndex))
                     .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
@@ -257,9 +255,7 @@ class PracticeSessionApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(multipart("/api/v1/sessions/{sessionId}/turns", sessionId)
                         .file(audio("turn-6.webm", "Maybe later."))
-                        .param("inputType", "AUDIO")
-                        .param("speechStartedAfterMs", "1000")
-                        .param("recordingDurationMs", "1800"))
+                        .file(turnRequest("AUDIO", 1000, 1800)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.turnIndex").value(6))
                 .andExpect(jsonPath("$.data.status").value("FAILURE"))

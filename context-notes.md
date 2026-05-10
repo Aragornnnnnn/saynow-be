@@ -1,5 +1,27 @@
 # AI 서버 연동 컨텍스트 노트
 
+## 2026-05-10
+
+- PR #7은 최신 `origin/main` 기준 GitHub에서 `mergeable=CONFLICTING`, `mergeStateStatus=DIRTY`였다.
+- `origin/main` 병합은 처음에 `.git/worktrees/.../ORIG_HEAD.lock` 권한 문제로 실패했고, 권한 상승 후 실제 충돌은 `checklist.md` 하나에서만 발생했다.
+- `checklist.md` 충돌은 `origin/main`의 턴 제출 관련 작업 기록과 `feat/6`의 시나리오 API 작업 기록을 모두 보존하는 방식으로 해결했다.
+- 병합 후 `PracticeSessionApiIntegrationTest.failsSessionAndMakesFeedbackAvailableAfterMaxFollowUps`가 400 `VALIDATION_FAILED`로 실패했다. 최신 컨트롤러는 `request` multipart part를 요구하지만 해당 테스트만 옛 form field 방식을 남겨둔 것이 원인이어서 `turnRequest(...)` helper 사용으로 맞췄다.
+- 충돌 해결 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest --tests com.saynow.scenario.ScenarioApiIntegrationTest --tests com.saynow.practice.PracticeSessionApiIntegrationTest`, `git diff --check`, `./gradlew test`를 실행했고 통과했다.
+- 시나리오 상세 조회 API는 제거한다. 목록 API가 이미 각 시나리오별 `situationDescription`을 반환하므로, 상세 조회 성공 테스트와 OpenAPI 경로도 제거 대상이다.
+- 삭제 범위는 `ScenarioController.getScenarioDetail`, `ScenarioService.getScenarioDetail`, `ScenarioDetailResponse`, `OpenApiResponseCustomizer`의 상세 조회 예시, 관련 통합 테스트로 제한한다.
+- 프로덕션 코드 변경 전 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `/api/v1/scenarios/{scenarioId}`가 아직 OpenAPI에 있어 두 테스트가 실패했다.
+- 상세 조회 전용 컨트롤러 메서드, 서비스 메서드, DTO 파일, 수동 OpenAPI 예시를 제거했다. 상세 조회 관련 참조 검색 결과는 OpenAPI 부재 검증 테스트만 남았다.
+- 제거 후 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`가 통과했다.
+- 목록 API 회귀 확인으로 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`를 실행했고 통과했다.
+- 최종 검증은 `rg`로 상세 조회 참조 검색, `git diff --check`, `./gradlew test` 순서로 실행했다.
+- 시나리오 목록 조회 API도 상세 조회의 `situationDescription`과 같은 설명 값을 각 시나리오별로 반환해야 한다.
+- 새 DB 컬럼이나 마이그레이션은 필요 없다. 이미 `scenarios.situation_description`과 `Scenario.situationDescription`이 존재하므로 목록 DTO와 매핑만 확장한다.
+- 기존 목록 응답의 내부 슬롯 비공개 정책은 유지한다. 추가 필드는 설명 텍스트 하나로 제한한다.
+- 프로덕션 코드 변경 전 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`를 실행했고, 목록 응답의 `situationDescription` 경로가 없어 두 테스트가 실패했다.
+- `ScenarioSummaryResponse`에 필드를 추가하고 `ScenarioService.toSummaryResponse`에서 기존 상세 응답과 같은 `scenario.getSituationDescription()` 값을 넣도록 했다.
+- 수동 OpenAPI 예시도 목록 응답에 같은 `situationDescription` 값을 포함하도록 맞췄다.
+- 검증은 `./gradlew test --tests com.saynow.scenario.ScenarioApiIntegrationTest`, `./gradlew test --tests com.saynow.OpenApiIntegrationTest`, `git diff --check`, `./gradlew test` 순서로 실행했다.
+
 ## 2026-05-09
 
 - AI 서버 주소는 `http://43.202.146.182:8080`이다.
