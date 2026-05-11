@@ -2,7 +2,9 @@
 package com.saynow.auth.security;
 
 import com.saynow.auth.application.SaynowTokenService;
+import com.saynow.auth.infrastructure.MemberRepository;
 import com.saynow.common.exception.ApiException;
+import com.saynow.common.exception.ErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +26,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final SaynowTokenService saynowTokenService;
+    private final MemberRepository memberRepository;
     private final AuthFailureResponseWriter failureResponseWriter;
 
     @Override
@@ -43,6 +46,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             memberId = saynowTokenService.parseAccessToken(authorization.substring(BEARER_PREFIX.length()));
         } catch (ApiException exception) {
             failureResponseWriter.write(response, exception.getErrorCode());
+            return;
+        }
+        if (!memberRepository.existsByIdAndWithdrawnAtIsNull(memberId)) {
+            failureResponseWriter.write(response, ErrorCode.AUTH_REQUIRED);
             return;
         }
 

@@ -1,3 +1,20 @@
+# 회원 탈퇴 기능 체크리스트
+
+- [x] `origin/main` 기준 `feat/member-withdrawal` 브랜치 생성.
+- [x] 기존 회원, 소셜 계정, refresh token, Spring Security 인증 구조 확인.
+- [x] 회원 탈퇴 구현 계획 작성.
+- [x] 탈퇴 API 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 회원 탈퇴 상태 migration 추가.
+- [x] 회원 탈퇴 도메인 상태와 저장소 쿼리 추가.
+- [x] `DELETE /api/v1/auth/me` API 추가.
+- [x] 탈퇴 시 refresh token 폐기와 social account 연결 삭제 구현.
+- [x] 탈퇴 회원 access token 거부 구현.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # 소셜 로그인 OIDC 체크리스트
 
 - [x] Obsidian 문서 기준을 refreshToken JSON 반환 방식으로 정리.

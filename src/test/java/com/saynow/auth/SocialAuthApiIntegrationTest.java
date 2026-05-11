@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -13,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -134,6 +136,41 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.member.newMember").value(false));
     }
 
+    @Test
+    void withdrawRevokesTokensRejectsExistingAccessTokenAndAllowsFreshSocialSignup() throws Exception {
+        JsonNode loginBody = login("withdraw-sub|withdraw@example.com|Withdraw User");
+        String accessToken = loginBody.get("data").get("accessToken").asText();
+        String refreshToken = loginBody.get("data").get("refreshToken").asText();
+        String memberId = loginBody.get("data").get("member").get("memberId").asText();
+
+        mockMvc.perform(delete("/api/v1/auth/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"%s"}
+                                """.formatted(refreshToken)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("REFRESH_TOKEN_INVALID"));
+
+        mockMvc.perform(post("/api/v1/sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"scenarioId":"cafe_iced_americano"}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("AUTH_REQUIRED"));
+
+        JsonNode reloginBody = login("withdraw-sub|withdraw@example.com|Withdraw User");
+        assertThat(reloginBody.get("data").get("member").get("newMember").asBoolean()).isTrue();
+        assertThat(reloginBody.get("data").get("member").get("memberId").asText()).isNotEqualTo(memberId);
+    }
+
     private JsonNode login(String idToken) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/social-login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,5 +185,9 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                 .andReturn();
 
         return objectMapper.readTree(result.getResponse().getContentAsByteArray());
+    }
+
+    private String bearer(String accessToken) {
+        return "Bearer " + accessToken;
     }
 }

@@ -1,3 +1,24 @@
+# 회원 탈퇴 기능 컨텍스트 노트
+
+## 2026-05-11
+
+- 작업 브랜치는 `feat/member-withdrawal`이다.
+- 현재 회원 row는 `practice_sessions.member_id` FK의 참조 대상이다. 따라서 회원 row를 물리 삭제하면 기존 세션 데이터까지 함께 정리해야 하므로 범위가 커진다.
+- 이번 구현은 회원 row를 보존하고 `withdrawn_at`으로 탈퇴 상태를 기록한다. 과거 세션 FK는 유지하되, 탈퇴 회원 access token은 인증 필터에서 거부한다.
+- 탈퇴 시 refresh token은 모두 폐기한다. access token은 서버 저장 토큰이 아니므로, 인증 필터가 회원 active 상태를 확인해 차단한다.
+- 탈퇴 시 social account 연결은 삭제한다. 같은 provider subject로 재로그인하면 새 회원으로 가입되는 동작을 목표로 한다.
+- 프로덕션 코드 변경 전 `SocialAuthApiIntegrationTest`에 탈퇴 통합 테스트를 추가하고 RED를 확인한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest.withdrawRevokesTokensRejectsExistingAccessTokenAndAllowsFreshSocialSignup`를 실행했고, `DELETE /api/v1/auth/me`가 매핑되지 않아 500 `INTERNAL_SERVER_ERROR`로 실패하는 것을 확인했다.
+- `V4__member_withdrawal.sql`로 `members.withdrawn_at`을 추가했다.
+- `AuthService.withdraw`는 active member만 조회하고, 같은 transaction에서 active refresh token을 폐기한 뒤 social account 연결을 삭제하고 회원 프로필을 비운다.
+- `AuthTokenFilter`는 access token 서명 검증 후 `MemberRepository.existsByIdAndWithdrawnAtIsNull`로 회원 active 상태를 확인한다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest.withdrawRevokesTokensRejectsExistingAccessTokenAndAllowsFreshSocialSignup`를 실행했고 통과했다.
+- 관련 회귀 검증으로 `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest --tests com.saynow.practice.PracticeSessionAuthorizationIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 소셜 로그인 OIDC 컨텍스트 노트
 
 ## 2026-05-09
