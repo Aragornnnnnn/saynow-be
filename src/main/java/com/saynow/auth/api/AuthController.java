@@ -7,11 +7,14 @@ import com.saynow.auth.api.dto.SocialLoginRequest;
 import com.saynow.auth.api.dto.TokenRefreshRequest;
 import com.saynow.auth.api.dto.TokenRefreshResponse;
 import com.saynow.auth.application.AuthService;
+import com.saynow.auth.security.AuthMemberPrincipal;
 import com.saynow.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +44,13 @@ public class AuthController {
     @Operation(summary = "로그아웃", description = "refresh token을 폐기합니다.")
     public ApiResponse<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping("/me")
+    @Operation(summary = "회원 탈퇴", description = "현재 회원을 탈퇴 처리하고 refresh token과 소셜 계정 연결을 정리합니다.")
+    public ApiResponse<Void> withdraw(@AuthenticationPrincipal AuthMemberPrincipal principal) {
+        authService.withdraw(principal.memberId());
         return ApiResponse.success(null);
     }
 }

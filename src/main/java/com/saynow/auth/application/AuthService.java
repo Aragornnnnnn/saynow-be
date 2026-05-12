@@ -94,6 +94,17 @@ public class AuthService {
                 .ifPresent(refreshToken -> refreshToken.revoke(LocalDateTime.now()));
     }
 
+    @Transactional
+    public void withdraw(Long memberId) {
+        LocalDateTime now = LocalDateTime.now();
+        Member member = memberRepository.findByIdAndWithdrawnAtIsNull(memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_REQUIRED));
+
+        refreshTokenRepository.revokeAllActiveByMemberId(memberId, now);
+        socialAccountRepository.deleteByMemberId(memberId);
+        member.withdraw(now);
+    }
+
     private IssuedTokens issueTokens(Member member) {
         String accessToken = saynowTokenService.createAccessToken(member.getId());
         String refreshToken = saynowTokenService.createRefreshToken();

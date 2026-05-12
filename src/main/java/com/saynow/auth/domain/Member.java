@@ -12,6 +12,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "members")
 @Getter
@@ -28,6 +30,9 @@ public class Member extends BaseTimeEntity {
     @Column(length = 255)
     private String email;
 
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
     public Member(String nickname, String email) {
         this.nickname = nickname;
         this.email = email;
@@ -40,5 +45,11 @@ public class Member extends BaseTimeEntity {
         if (email != null) {
             this.email = email;
         }
+    }
+
+    public void withdraw(LocalDateTime withdrawnAt) {
+        this.nickname = null;
+        this.email = null;
+        this.withdrawnAt = withdrawnAt;
     }
 }
