@@ -1,3 +1,33 @@
+# Swagger 서버 도메인 설정 체크리스트
+
+- [x] 현재 OpenAPI 설정과 테스트 구조 확인.
+- [x] Swagger 서버 도메인 설정 계획 작성.
+- [x] OpenAPI server URL 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] `https://saynow.p-e.kr` 기본 Swagger server URL 설정.
+- [x] `SAYNOW_OPENAPI_SERVER_URL` 환경변수 override 추가.
+- [x] README, `.env.example`, EC2 배포 workflow 선택 파라미터 반영.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+- [ ] PR #11에 push하고 설명 갱신.
+
+---
+
+# 프론트 CORS origin 허용 체크리스트
+
+- [x] `origin/main` 기준 `feat/cors-allowed-origins` 브랜치 생성.
+- [x] 현재 CORS 설정 부재와 Spring Security 인증 설정 확인.
+- [x] CORS 허용 origin 구현 계획 작성.
+- [x] CORS preflight 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] CORS allowed origins 설정 프로퍼티 추가.
+- [x] Spring Security CORS 필터 활성화.
+- [x] `https://saynow-fe-web.vercel.app`, `http://localhost:3000` 기본 허용 origin 등록.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # 회원 탈퇴 기능 체크리스트
 
 - [x] `origin/main` 기준 `feat/member-withdrawal` 브랜치 생성.

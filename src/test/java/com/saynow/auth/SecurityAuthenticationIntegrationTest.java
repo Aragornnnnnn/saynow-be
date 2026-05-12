@@ -15,13 +15,16 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
@@ -58,6 +61,28 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
                 .singleElement()
                 .isInstanceOfSatisfying(ApiException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AUTH_REQUIRED));
+    }
+
+    @Test
+    void allowsProductionFrontendOriginForCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/sessions")
+                        .header(HttpHeaders.ORIGIN, "https://saynow-fe-web.vercel.app")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://saynow-fe-web.vercel.app"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
+    @Test
+    void allowsLocalhostFrontendOriginForCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/sessions")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 
     @TestConfiguration

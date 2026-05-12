@@ -168,6 +168,8 @@ jobs:
               "SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES",
           ]
           optional = [
+              "SAYNOW_CORS_ALLOWED_ORIGINS",
+              "SAYNOW_OPENAPI_SERVER_URL",
               "SENTRY_DSN",
               "SENTRY_ENABLED",
               "SENTRY_ENVIRONMENT",
