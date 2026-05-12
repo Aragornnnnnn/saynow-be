@@ -1,3 +1,24 @@
+# Swagger 서버 도메인 설정 컨텍스트 노트
+
+## 2026-05-12
+
+- 작업 브랜치는 기존 CORS PR 브랜치인 `feat/cors-allowed-origins`다.
+- 운영 백엔드 도메인은 `https://saynow.p-e.kr`로 변경됐다.
+- 현재 `OpenApiConfig`는 title, version, description만 설정하고 OpenAPI `servers`를 설정하지 않는다.
+- Swagger UI에서 운영 도메인을 기본 서버로 보여주기 위해 OpenAPI document의 `servers[0].url`을 `https://saynow.p-e.kr`로 설정한다.
+- 기본값은 `application.yml`에 두고, 필요하면 `SAYNOW_OPENAPI_SERVER_URL`로 override할 수 있게 한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest.exposesOpenApiDocumentForMvpApis`를 실행했고, OpenAPI `servers[0].url`이 `http://localhost`라서 실패하는 것을 확인했다.
+- `OpenApiConfig`에 `saynow.openapi.server-url` 값을 주입하고 `OpenAPI.servers`에 서버 URL을 추가했다.
+- `application.yml` 기본값은 `SAYNOW_OPENAPI_SERVER_URL` 없을 때 `https://saynow.p-e.kr`이다.
+- `.env.example`, README, EC2 배포 workflow의 선택 SSM 파라미터 목록에 `SAYNOW_OPENAPI_SERVER_URL`을 추가했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest.exposesOpenApiDocumentForMvpApis`를 실행했고 통과했다.
+- 관련 회귀 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고 통과했다.
+- workflow YAML 검증으로 `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/deploy-prod-ec2.yml"); puts "yaml ok"'`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 프론트 CORS origin 허용 컨텍스트 노트
 
 ## 2026-05-12

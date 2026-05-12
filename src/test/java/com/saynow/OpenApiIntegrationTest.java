@@ -21,6 +21,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("SayNow Backend API"))
                 .andExpect(jsonPath("$.info.version").value("v1"))
+                .andExpect(jsonPath("$.servers[0].url").value("https://saynow.p-e.kr"))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/social-login")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/token/refresh")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/logout")))
