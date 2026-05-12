@@ -33,6 +33,7 @@ DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<database-password>
 SAYNOW_AUTH_TOKEN_SECRET=<long-random-hmac-secret>
 SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=<google-web-client-id>
+SAYNOW_CORS_ALLOWED_ORIGINS=https://saynow-fe-web.vercel.app,http://localhost:3000
 SENTRY_ENABLED=true
 SENTRY_DSN=https://<public-key>@<org>.ingest.sentry.io/<project-id>
 SENTRY_ENVIRONMENT=prod
@@ -49,6 +50,8 @@ SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=1062331189445-ov26of8u6pb8iauq0c4n68ni1flipm1q
 ```
 
 Kakao OIDC를 활성화하면 `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`에 Kakao 앱 키를 설정합니다.
+
+브라우저 CORS 허용 origin은 `SAYNOW_CORS_ALLOWED_ORIGINS`에 comma-separated 형식으로 입력합니다. 기본 허용 origin은 `https://saynow-fe-web.vercel.app`, `http://localhost:3000`입니다.
 
 ## Sentry 운영 로그
 
@@ -93,6 +96,7 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 선택 SSM 파라미터:
 
 - `/saynow/prod/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`
+- `/saynow/prod/SAYNOW_CORS_ALLOWED_ORIGINS`
 
 선택 Sentry SSM 파라미터입니다.
 

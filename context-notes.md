@@ -1,3 +1,24 @@
+# 프론트 CORS origin 허용 컨텍스트 노트
+
+## 2026-05-12
+
+- 작업 브랜치는 `feat/cors-allowed-origins`다.
+- 기준 커밋은 `origin/main`의 `031be36`이며, 회원 탈퇴 PR #10 merge commit 위에서 시작했다.
+- 현재 코드에는 `cors`, `CorsConfigurationSource`, `Access-Control` 관련 설정이 없다.
+- 허용할 프론트 origin은 `https://saynow-fe-web.vercel.app`, `http://localhost:3000` 두 개다.
+- 현재 인증은 cookie가 아니라 Bearer access token 기반이다. 따라서 CORS `allowCredentials`는 `false`로 두고, `Authorization`, `Content-Type` 헤더를 허용한다.
+- 운영과 로컬 기본값은 `application.yml`에 두되, 필요하면 `SAYNOW_CORS_ALLOWED_ORIGINS`로 교체할 수 있게 한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고, preflight 요청이 CORS 처리 없이 인증 필터로 흘러 401로 실패하는 것을 확인했다.
+- `CorsProperties`를 추가하고 `AuthSecurityConfig`에서 Spring Security `cors`를 활성화했다.
+- `application.yml` 기본 CORS origin은 `https://saynow-fe-web.vercel.app,http://localhost:3000`이다.
+- `.env.example`, README, EC2 배포 workflow의 선택 SSM 파라미터 목록에 `SAYNOW_CORS_ALLOWED_ORIGINS`를 추가했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고 통과했다.
+- workflow YAML 검증으로 `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/deploy-prod-ec2.yml"); puts "yaml ok"'`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 회원 탈퇴 기능 컨텍스트 노트
 
 ## 2026-05-11
