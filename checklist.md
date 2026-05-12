@@ -1,3 +1,15 @@
+# 로컬 네트워크 CORS origin 추가 체크리스트
+
+- [x] main worktree를 최신 `origin/main`으로 fast-forward.
+- [x] 기존 CORS 설정과 테스트 확인.
+- [x] 신규 CORS origin 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] `http://172.30.1.89:3000`, `http://10.0.2.2:3000` 기본 허용 origin 추가.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # Swagger 서버 도메인 설정 체크리스트
 
 - [x] 현재 OpenAPI 설정과 테스트 구조 확인.

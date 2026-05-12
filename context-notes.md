@@ -1,3 +1,19 @@
+# 로컬 네트워크 CORS origin 추가 컨텍스트 노트
+
+## 2026-05-12
+
+- 사용자가 main에서 직접 작업하라고 요청했다.
+- `/Users/sangmin8817/Desktop/Soma/saynow-be` main worktree가 최신 `origin/main`보다 뒤처져 있어 `git fetch origin`과 `git merge --ff-only origin/main`으로 최신화했다.
+- 추가 origin은 `http://172.30.1.89:3000`, `http://10.0.2.2:3000`이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고, 두 신규 preflight 테스트가 200 대신 403으로 실패하는 것을 확인했다.
+- `application.yml`, `.env.example`, README의 기본 CORS origin 목록에 두 origin을 추가했다.
+- GitHub Actions 배포 workflow는 이미 `SAYNOW_CORS_ALLOWED_ORIGINS`를 SSM 선택 파라미터로 읽으므로 workflow 수정은 필요하지 않다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # Swagger 서버 도메인 설정 컨텍스트 노트
 
 ## 2026-05-12

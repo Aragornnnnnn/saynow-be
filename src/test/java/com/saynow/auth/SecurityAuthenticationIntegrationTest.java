@@ -85,6 +85,28 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 
+    @Test
+    void allowsLocalNetworkFrontendOriginForCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/sessions")
+                        .header(HttpHeaders.ORIGIN, "http://172.30.1.89:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://172.30.1.89:3000"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
+    @Test
+    void allowsAndroidEmulatorFrontendOriginForCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/sessions")
+                        .header(HttpHeaders.ORIGIN, "http://10.0.2.2:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://10.0.2.2:3000"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
     @TestConfiguration
     static class SentryTestConfiguration {
 
