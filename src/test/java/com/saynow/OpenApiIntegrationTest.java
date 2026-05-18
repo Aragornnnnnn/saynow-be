@@ -1,3 +1,4 @@
+// OpenAPI 문서가 2차 MVP API 경로와 공통 응답 예시를 노출하는지 검증한다.
 package com.saynow;
 
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
     private MockMvc mockMvc;
 
     @Test
-    void exposesOpenApiDocumentForMvpApis() throws Exception {
+    void exposesOpenApiDocumentForMvp2Apis() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("SayNow Backend API"))
@@ -25,13 +26,16 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/social-login")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/token/refresh")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/logout")))
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/categories")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios")))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}']").doesNotExist())
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions")))
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/turns")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios/{scenarioId}/sessions")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/utterances")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/feedback")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}")))
+                .andExpect(jsonPath("$.paths['/api/v1/categories']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns']").doesNotExist())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Scenario')]").exists())
-                .andExpect(jsonPath("$.tags[?(@.name == 'Practice Session')]").exists())
+                .andExpect(jsonPath("$.tags[?(@.name == 'Session')]").exists())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Feedback')]").exists());
     }
 
@@ -45,36 +49,15 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
     void separatesSuccessAndErrorResponsesPerApi() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/v1/categories'].get.responses.200").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/categories'].get.responses.200.content['application/json'].examples.SUCCESS.value.success").value(true))
-                .andExpect(jsonPath("$.paths['/api/v1/categories'].get.responses.200.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))
-                .andExpect(jsonPath("$.paths['/api/v1/categories'].get.responses.500").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.404.content['application/json'].examples.CATEGORY_NOT_FOUND.value.error.code").value("CATEGORY_NOT_FOUND"))
-                .andExpect(jsonPath("$.paths['/api/v1/categories/{categoryId}/scenarios']").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}']").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/auth/social-login'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.refreshToken").value("saynow-refresh-token"))
-                .andExpect(jsonPath("$.paths['/api/v1/auth/social-login'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.member.profileImageUrl").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/auth/token/refresh'].post.responses.401.content['application/json'].examples.REFRESH_TOKEN_INVALID.value.error.code").value("REFRESH_TOKEN_INVALID"))
-                .andExpect(jsonPath("$.paths['/api/v1/auth/logout'].post.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.200").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.201").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.success").value(true))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.401.content['application/json'].examples.AUTH_REQUIRED.value.error.code").value("AUTH_REQUIRED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.400.content['application/json'].examples.VALIDATION_FAILED.value.error.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions'].post.responses.404.content['application/json'].examples.SCENARIO_NOT_FOUND.value.error.code").value("SCENARIO_NOT_FOUND"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].get.responses.403.content['application/json'].examples.SESSION_ACCESS_DENIED.value.error.code").value("SESSION_ACCESS_DENIED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].get.responses.404.content['application/json'].examples.SESSION_NOT_FOUND.value.error.code").value("SESSION_NOT_FOUND"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/micReady'].put.responses.409.content['application/json'].examples.SESSION_ALREADY_ENDED.value.error.code").value("SESSION_ALREADY_ENDED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.requestBody.content['multipart/form-data'].schema.properties.audio").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.requestBody.content['multipart/form-data'].schema.properties.request").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.413.content['application/json'].examples.AUDIO_TOO_LARGE.value.error.code").value("AUDIO_TOO_LARGE"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.415.content['application/json'].examples.UNSUPPORTED_AUDIO_TYPE.value.error.code").value("UNSUPPORTED_AUDIO_TYPE"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns'].post.responses.503.content['application/json'].examples.AI_STT_FAILED.value.error.code").value("AI_STT_FAILED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/exit'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_ENDED.value.error.code").value("SESSION_ALREADY_ENDED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].get.responses.400.content['application/json'].examples.SESSION_IN_PROGRESS.value.error.code").value("SESSION_IN_PROGRESS"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].get.responses.404.content['application/json'].examples.FEEDBACK_NOT_FOUND.value.error.code").value("FEEDBACK_NOT_FOUND"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].get.responses.500.content['application/json'].examples.INTERNAL_SERVER_ERROR.value.error.code").value("INTERNAL_SERVER_ERROR"));
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.success").value(true))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.401.content['application/json'].examples.AUTH_REQUIRED.value.error.code").value("AUTH_REQUIRED"))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.data.feedbackAvailable").value(false))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.403.content['application/json'].examples.SCENARIO_LOCKED.value.error.code").value("SCENARIO_LOCKED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.originalQuestion").value("What size would you like?"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_ENDED.value.error.code").value("SESSION_ALREADY_ENDED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnFeedbacks[0].userUtterance").value("I want iced americano."))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.503.content['application/json'].examples.FEEDBACK_GENERATION_FAILED.value.error.code").value("FEEDBACK_GENERATION_FAILED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].delete.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()));
     }
 }

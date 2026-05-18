@@ -1,11 +1,11 @@
+// 공통 ApiResponse 래퍼 기준으로 주요 API 응답 예시를 주입하는 OpenAPI 설정
 package com.saynow.common.openapi;
 
-import com.saynow.common.exception.ErrorCode;
 import com.saynow.auth.api.AuthController;
+import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.FeedbackController;
-import com.saynow.practice.api.PracticeSessionController;
+import com.saynow.session.api.SessionController;
 import com.saynow.scenario.api.ScenarioController;
-import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.Content;
@@ -37,20 +37,14 @@ public class OpenApiResponseCustomizer {
                             "accessTokenExpiresIn", 1800,
                             "refreshToken", "saynow-refresh-token",
                             "refreshTokenExpiresIn", 1209600,
-                            "member", objectMap(
-                                    "memberId", "1",
+                            "user", objectMap(
+                                    "userId", "1",
                                     "nickname", "Ryan",
                                     "email", "ryan@example.com",
                                     "provider", "GOOGLE",
-                                    "newMember", true)
+                                    "newUser", true)
                     )),
-                    errors(
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER),
-                            error(ErrorCode.OIDC_TOKEN_INVALID),
-                            error(ErrorCode.OIDC_NONCE_MISMATCH),
-                            error(ErrorCode.OIDC_PROVIDER_UNAVAILABLE),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
+                    errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(AuthController.class, "refresh",
                     success(HttpStatus.OK, "토큰 재발급 성공", objectMap(
                             "tokenType", "Bearer",
@@ -59,151 +53,75 @@ public class OpenApiResponseCustomizer {
                             "refreshToken", "new-saynow-refresh-token",
                             "refreshTokenExpiresIn", 1209600
                     )),
-                    errors(
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.REFRESH_TOKEN_INVALID),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
+                    errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.REFRESH_TOKEN_INVALID), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(AuthController.class, "logout",
                     success(HttpStatus.OK, "로그아웃 성공", null),
-                    errors(
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(ScenarioController.class, "getCategories",
-                    success(HttpStatus.OK, "카테고리 목록 조회 성공", objectMap(
-                            "categories", List.of(objectMap("categoryId", "cafe", "name", "카페"))
-                    )),
-                    errors(error(ErrorCode.INTERNAL_SERVER_ERROR))),
+                    errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenarios",
-                    success(HttpStatus.OK, "시나리오 목록 조회 성공", objectMap(
-                            "scenarios", List.of(objectMap(
-                                    "scenarioId", "cafe_iced_americano",
-                                    "categoryId", "cafe",
-                                    "title", "아이스 아메리카노 주문하기",
-                                    "difficulty", "쉬움",
-                                    "situationDescription", "카페에서 원하는 음료를 주문해야 합니다.",
-                                    "successGoal", "아이스 아메리카노 주문에 성공하세요.",
-                                    "thumbnailUrl", null))
+                    success(HttpStatus.OK, "시나리오 전체 조회 성공", objectMap(
+                            "categories", List.of(
+                                    objectMap(
+                                            "categoryId", 1,
+                                            "categoryName", "Cafe",
+                                            "categoryLocked", false,
+                                            "categoryLockReason", null,
+                                            "scenarios", List.of(objectMap(
+                                                    "scenarioId", 1,
+                                                    "displayOrder", 1,
+                                                    "scenarioTitle", "카페에서 주문하기",
+                                                    "scenarioGoal", "원하는 음료를 자연스럽게 주문할 수 있다.",
+                                                    "scenarioEmoji", "☕",
+                                                    "cleared", false,
+                                                    "locked", false,
+                                                    "lockReason", null))),
+                                    objectMap(
+                                            "categoryId", 2,
+                                            "categoryName", "Airport",
+                                            "categoryLocked", true,
+                                            "categoryLockReason", "COMING_SOON",
+                                            "scenarios", List.of()))
                     )),
-                    errors(error(ErrorCode.CATEGORY_NOT_FOUND), error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(PracticeSessionController.class, "startSession",
-                    success(HttpStatus.CREATED, "세션 시작 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "scenarioId", "cafe_iced_americano",
-                            "status", "IN_PROGRESS",
-                            "babsaeText", "Hi! What would you like to order?",
-                            "babsaeTtsUrl", null,
-                            "followUpCount", 0,
-                            "maxFollowUpCount", 5,
-                            "startedAt", "2026-05-08T00:00:00"
-                    )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.SCENARIO_NOT_FOUND),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(PracticeSessionController.class, "getSession",
-                    success(HttpStatus.OK, "세션 상태 조회 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "scenarioId", "cafe_iced_americano",
-                            "status", "IN_PROGRESS",
-                            "babsaeText", "What size would you like?",
-                            "babsaeTtsUrl", null,
-                            "followUpCount", 1,
-                            "maxFollowUpCount", 5,
-                            "micReadyLatencyMs", 1240,
-                            "turns", List.of(objectMap(
-                                    "turnId", 1,
-                                    "turnIndex", 1,
-                                    "questionText", "Hi! What would you like to order?",
-                                    "userTranscript", "I want iced americano",
-                                    "speechStartedAfterMs", 2100,
-                                    "recordingDurationMs", 3600,
-                                    "createdAt", "2026-05-08T00:00:10"))
-                    )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.SESSION_ACCESS_DENIED),
-                            error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(PracticeSessionController.class, "recordMicReady",
-                    success(HttpStatus.OK, "마이크 준비 지연 기록 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "micReadyLatencyMs", 1240
-                    )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.SESSION_ACCESS_DENIED),
-                            error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.SESSION_ALREADY_ENDED),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(PracticeSessionController.class, "submitTurn",
-                    success(HttpStatus.OK, "턴 음성 제출 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "turnId", 1,
-                            "turnIndex", 1,
-                            "transcript", "I want iced americano",
-                            "sttConfidence", 0.86,
-                            "status", "IN_PROGRESS",
-                            "babsaeText", "What size would you like?",
-                            "babsaeTtsUrl", null,
-                            "followUpCount", 1,
-                            "maxFollowUpCount", 5,
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
+            endpoint(SessionController.class, "startSession",
+                    success(HttpStatus.CREATED, "시나리오 세션 시작 성공", objectMap(
+                            "sessionId", 12,
+                            "originalQuestion", "What would you like to order?",
+                            "translatedQuestion", "무엇을 주문하시겠어요?",
+                            "remainingHearts", 3,
                             "feedbackAvailable", false
                     )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.SESSION_ACCESS_DENIED),
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.UNSUPPORTED_INPUT_TYPE),
-                            error(ErrorCode.AUDIO_REQUIRED),
-                            error(ErrorCode.AUDIO_READ_FAILED),
-                            error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.SESSION_ALREADY_ENDED),
-                            error(ErrorCode.AUDIO_TOO_LARGE),
-                            error(ErrorCode.UNSUPPORTED_AUDIO_TYPE),
-                            error(ErrorCode.AI_STT_FAILED),
-                            error(ErrorCode.AI_RESPONSE_INVALID),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(PracticeSessionController.class, "exitSession",
-                    success(HttpStatus.OK, "세션 중도 종료 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "status", "ABANDONED",
-                            "endedAt", "2026-05-08T00:03:00"
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SCENARIO_NOT_FOUND), error(ErrorCode.SCENARIO_LOCKED), error(ErrorCode.CATEGORY_LOCKED))),
+            endpoint(SessionController.class, "submitUtterance",
+                    success(HttpStatus.OK, "세션 사용자 발화 제출 성공", objectMap(
+                            "sessionId", 12,
+                            "originalQuestion", "What size would you like?",
+                            "translatedQuestion", "어떤 사이즈로 드릴까요?",
+                            "remainingHearts", 2,
+                            "feedbackAvailable", false
                     )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.SESSION_ACCESS_DENIED),
-                            error(ErrorCode.VALIDATION_FAILED),
-                            error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.SESSION_ALREADY_ENDED),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR))),
-            endpoint(FeedbackController.class, "getFeedback",
-                    success(HttpStatus.OK, "세션 피드백 조회 성공", objectMap(
-                            "sessionId", "550e8400-e29b-41d4-a716-446655440000",
-                            "scenarioResult", "SUCCESS",
-                            "totalUnderstoodScore", 85,
-                            "summary", "주문 의도가 명확했고 핵심 표현을 잘 전달했습니다.",
-                            "turnFeedback", List.of(objectMap(
-                                    "turnId", 1,
-                                    "turnIndex", 1,
-                                    "questionText", "Hi! What would you like to order?",
-                                    "userTranscript", "I want iced americano",
-                                    "speechStartedAfterMs", 2100,
-                                    "speechStartedAfterSeconds", 2.1,
-                                    "understoodScore", 80,
-                                    "heardAs", "I want iced americano",
-                                    "betterExpression", "I'd like an iced Americano, please.",
-                                    "scoreDelta", 10,
-                                    "improvedUnderstoodScore", 90,
-                                    "reason", "정중한 주문 표현을 쓰면 더 자연스럽습니다."))
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_ENDED), error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.AI_RESPONSE_INVALID))),
+            endpoint(SessionController.class, "deleteSession",
+                    success(HttpStatus.OK, "세션 중도 종료 성공", null),
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED))),
+            endpoint(FeedbackController.class, "createFeedback",
+                    success(HttpStatus.OK, "세션 최종 피드백 생성 성공", objectMap(
+                            "sessionId", 12,
+                            "cleared", true,
+                            "comprehensionScore", 82,
+                            "feedbackSummary", "전체적으로 의도는 잘 전달됐지만 주문 표현이 조금 짧게 들립니다.",
+                            "remainingHearts", 1,
+                            "turnFeedbacks", List.of(objectMap(
+                                    "turnId", 101,
+                                    "sequence", 1,
+                                    "originalQuestion", "What would you like to order?",
+                                    "translatedQuestion", "무엇을 주문하시겠어요?",
+                                    "userUtterance", "I want iced americano.",
+                                    "feedbackRequired", true,
+                                    "nativeUnderstanding", "아이스 아메리카노를 주문하고 싶다는 의미로 이해됩니다.",
+                                    "nativeLanguageInterpretation", "조금 짧고 문법적으로 어색하게 들립니다.",
+                                    "betterExpression", "I'd like an iced Americano, please."))
                     )),
-                    errors(
-                            error(ErrorCode.AUTH_REQUIRED),
-                            error(ErrorCode.SESSION_ACCESS_DENIED),
-                            error(ErrorCode.SESSION_IN_PROGRESS),
-                            error(ErrorCode.SESSION_NOT_FOUND),
-                            error(ErrorCode.FEEDBACK_NOT_FOUND),
-                            error(ErrorCode.INTERNAL_SERVER_ERROR)))
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED)))
     );
 
     @Bean
