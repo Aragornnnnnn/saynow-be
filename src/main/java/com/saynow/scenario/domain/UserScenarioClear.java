@@ -1,5 +1,7 @@
+// 사용자별 시나리오 클리어 여부를 저장하는 엔티티
 package com.saynow.scenario.domain;
 
+import com.saynow.auth.domain.User;
 import com.saynow.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,20 +17,33 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "scenario_slots")
+@Table(name = "user_scenario_clears")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ScenarioSlot extends BaseTimeEntity {
+public class UserScenarioClear extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scenario_id", nullable = false)
     private Scenario scenario;
 
-    @Column(nullable = false, length = 80)
-    private String name;
+    @Column(name = "is_cleared", nullable = false)
+    private boolean cleared;
 
+    public UserScenarioClear(User user, Scenario scenario) {
+        this.user = user;
+        this.scenario = scenario;
+        this.cleared = false;
+    }
+
+    public void markCleared() {
+        this.cleared = true;
+    }
 }
