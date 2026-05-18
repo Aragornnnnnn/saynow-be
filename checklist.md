@@ -78,6 +78,23 @@
 - [x] 전체 `./gradlew test` 통과.
 - [x] diff 최종 점검 후 커밋.
 - [x] Google Web Client ID audience를 환경 변수로 연결.
+
+---
+
+# 2차 MVP API 재설계 체크리스트
+
+- [x] 확정 기준과 애매한 결정 사항을 `context-notes.md`에 기록한다.
+- [x] 기존 Flyway migration을 2차 MVP 기준 단일 초기 스키마로 정리한다.
+- [x] 사용자, 시나리오, 세션, 턴, 슬롯 상태, 피드백 도메인을 ERD 기준으로 재구성한다.
+- [x] `GET /api/v1/scenarios` 카테고리별 시나리오 목록 API를 구현한다.
+- [x] `POST /api/v1/scenarios/{scenarioId}/sessions` 세션 시작 API를 구현한다.
+- [x] `POST /api/v1/sessions/{sessionId}/utterances` 사용자 발화 제출 API를 구현한다.
+- [x] `POST /api/v1/sessions/{sessionId}/feedback` 세션 완료 및 피드백 생성 API를 구현한다.
+- [x] `DELETE /api/v1/sessions/{sessionId}` 세션 중도 종료 API를 구현한다.
+- [x] AI 꼬리 질문 생성 계약을 새 명세로 교체한다.
+- [x] AI 대화 피드백 생성 계약을 새 명세로 교체한다.
+- [x] 관련 통합 테스트와 OpenAPI 검증을 2차 MVP 기준으로 갱신한다.
+- [x] `./gradlew test`로 전체 검증한다.
 - [x] 운영 배포 SSM 파라미터 문서화와 workflow 반영.
 - [x] 검증 후 PR 브랜치 갱신.
 - [x] 인증 구조를 Spring Security `OncePerRequestFilter` 기반으로 전환하는 테스트 추가.
@@ -273,3 +290,13 @@
 - [x] Wiki의 Sentry 수집 기준을 4xx 포함으로 수정한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위 점검 후 커밋하고 PR 브랜치를 갱신한다.
+
+---
+
+# 2차 MVP 도메인 명칭 정리 체크리스트
+
+- [x] `Member`, `Practice`, `ScenarioCategory` 계열 잔여 명칭을 `src/main`, `src/test`에서 검색한다.
+- [x] 실제 테이블 개념에 맞춰 `User`, `Session`, `Category` 계열 클래스와 패키지명으로 정리한다.
+- [x] 인증 응답 필드도 `newMember`에서 `newUser`로 정리한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.

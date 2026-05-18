@@ -79,6 +79,39 @@
 
 # 소셜 로그인 OIDC 컨텍스트 노트
 
+---
+
+# 2차 MVP API 재설계 컨텍스트 노트
+
+## 확정된 기준
+
+- `develop`은 2차 MVP breaking change 브랜치로 사용한다.
+- `main`은 1차 MVP 운영 서버 기준으로 유지한다.
+- 프론트 API 응답은 기존 공통 응답 객체 `ApiResponse<T>`로 계속 감싼다.
+- 기존 1차 MVP 엔티티, 클래스, API, DTO, 서비스는 호환성 유지 없이 삭제하거나 재구성해도 된다.
+- Flyway migration은 `develop` 전용으로 기존 V1~V4를 정리하고 2차 MVP 새 스키마 기준으로 다시 시작한다.
+- 사용자 발화 필드명은 API, DB, AI 계약에서 `userUtterance`로 통일한다.
+- `SCENARIOS.originalQuestion`은 세션 시작 시 첫 AI 질문이다.
+
+## 구현 결정
+
+- 세션 ID는 API 명세와 ERD에 맞춰 DB PK `Long`을 사용한다.
+- `users` 테이블은 기존 `members` 개념을 대체하고, 소셜 로그인 식별자인 `provider`, `sub`를 직접 가진다.
+- 탈퇴 사용자는 `deleted_at`을 기록하고, 재가입을 허용하기 위해 `provider`, `sub`를 비운다.
+- refresh token은 인증 흐름 유지를 위해 계속 별도 테이블로 관리한다.
+- 시나리오 시작 시 첫 턴을 `session_turns`에 `sequence=1`, `user_utterance=null` 상태로 생성한다.
+- 사용자 발화 제출은 현재 답변이 비어 있는 가장 이른 턴을 채우고, AI가 다음 질문을 반환하면 다음 턴을 생성한다.
+- 하트는 세션 시작 시 `scenarios.heart`로 시작하고, 이번 2차 MVP에서는 발화 제출 1회마다 1개 감소한다.
+- 모든 슬롯이 충족되면 세션은 성공 완료 가능 상태가 된다.
+- 하트가 0이 되면 세션은 실패 완료 가능 상태가 된다.
+- 성공 또는 실패로 완료 가능해진 세션에서만 피드백 생성 API를 호출할 수 있다.
+- 잠긴 시나리오나 잠긴 카테고리는 세션 시작을 막는다.
+- `DELETE /api/v1/sessions/{sessionId}`는 `ApiResponse<T>` 유지 기준에 맞춰 200 OK와 `ApiResponse.success(null)`을 반환한다.
+
+## 검증 결과
+
+- `./gradlew test`를 실행했고 통과했다.
+
 ## 2026-05-09
 
 - 작업 브랜치는 `feat/3`이다.
@@ -288,3 +321,17 @@
 - Sentry SDK MVC 리졸버 순서는 그대로 Spring 예외 핸들러 뒤에 둔다. 4xx 전송은 자동 리졸버가 아니라 애플리케이션의 명시 캡처 정책으로 보장한다.
 - RED 검증으로 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest`를 실행했고, 4xx `ApiException`, validation 예외, 인증 실패 401 캡처 기대 테스트가 실패하는 것을 확인했다.
 - GREEN 검증으로 `./gradlew test --tests com.saynow.common.exception.GlobalExceptionHandlerTest --tests com.saynow.auth.SecurityAuthenticationIntegrationTest --tests com.saynow.SentryProdConfigurationTest`와 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 2차 MVP 도메인 명칭 정리 컨텍스트 노트
+
+## 2026-05-19
+
+- 사용자 피드백에 따라 2차 MVP ERD와 실제 테이블 이름을 기준으로 코드 명칭을 다시 정렬한다.
+- `members` 테이블 개념이 사라지고 `users` 테이블이 기준이므로 엔티티와 저장소는 `Member`가 아니라 `User`로 둔다.
+- 2차 MVP ERD의 세션 테이블은 `sessions`, `session_turns`, `session_slot_statuses`이므로 `practice` 패키지와 `PracticeSession`, `PracticeTurn` 이름을 `session` 패키지와 `Session`, `SessionTurn`으로 정리한다.
+- 시나리오 카테고리 테이블은 `categories`이므로 `ScenarioCategory`는 `Category`로 정리한다.
+- 인증 응답의 신규 가입 여부도 `newMember` 대신 `newUser`로 맞춘다.
+- `src/main`, `src/test`에서 `Member`, `Practice`, `ScenarioCategory`, `newMember` 잔여 문자열을 검색했고 남아 있지 않았다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
