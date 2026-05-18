@@ -21,11 +21,15 @@ public enum ErrorCode {
 
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
     SCENARIO_NOT_FOUND(HttpStatus.NOT_FOUND, "시나리오를 찾을 수 없습니다."),
+    CATEGORY_LOCKED(HttpStatus.FORBIDDEN, "잠긴 카테고리입니다."),
+    SCENARIO_LOCKED(HttpStatus.FORBIDDEN, "잠긴 시나리오입니다."),
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "세션을 찾을 수 없습니다."),
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "피드백을 찾을 수 없습니다."),
 
     SESSION_ALREADY_ENDED(HttpStatus.CONFLICT, "이미 종료된 세션입니다."),
+    SESSION_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 세션입니다."),
     SESSION_IN_PROGRESS(HttpStatus.BAD_REQUEST, "아직 진행 중인 세션입니다."),
+    SESSION_NOT_COMPLETABLE(HttpStatus.CONFLICT, "세션을 완료할 수 없습니다."),
 
     AUDIO_REQUIRED(HttpStatus.BAD_REQUEST, "음성 파일이 필요합니다."),
     AUDIO_READ_FAILED(HttpStatus.BAD_REQUEST, "음성 파일을 읽을 수 없습니다."),
@@ -34,7 +38,8 @@ public enum ErrorCode {
     UNSUPPORTED_INPUT_TYPE(HttpStatus.BAD_REQUEST, "MVP에서는 AUDIO 입력만 지원합니다."),
 
     AI_STT_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버가 transcript를 반환하지 않았습니다."),
-    AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 응답이 올바르지 않습니다.");
+    AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버 응답이 올바르지 않습니다."),
+    FEEDBACK_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "피드백 생성에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;
