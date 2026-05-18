@@ -7,7 +7,7 @@ import com.saynow.auth.api.dto.SocialLoginRequest;
 import com.saynow.auth.api.dto.TokenRefreshRequest;
 import com.saynow.auth.api.dto.TokenRefreshResponse;
 import com.saynow.auth.application.AuthService;
-import com.saynow.auth.security.AuthMemberPrincipal;
+import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,9 +48,9 @@ public class AuthController {
     }
 
     @DeleteMapping("/me")
-    @Operation(summary = "회원 탈퇴", description = "현재 회원을 탈퇴 처리하고 refresh token과 소셜 계정 연결을 정리합니다.")
-    public ApiResponse<Void> withdraw(@AuthenticationPrincipal AuthMemberPrincipal principal) {
-        authService.withdraw(principal.memberId());
+    @Operation(summary = "사용자 탈퇴", description = "현재 사용자을 탈퇴 처리하고 refresh token과 소셜 계정 연결을 정리합니다.")
+    public ApiResponse<Void> withdraw(@AuthenticationPrincipal AuthUserPrincipal principal) {
+        authService.withdraw(principal.userId());
         return ApiResponse.success(null);
     }
 }

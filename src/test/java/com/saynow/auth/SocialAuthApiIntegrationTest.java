@@ -27,7 +27,7 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void socialLoginCreatesMemberAndReturnsTokensWithoutProfileImage() throws Exception {
+    void socialLoginCreatesUserAndReturnsTokensWithoutProfileImage() throws Exception {
         MvcResult firstLogin = mockMvc.perform(post("/api/v1/auth/social-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -45,16 +45,16 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.accessTokenExpiresIn").value(1800))
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshTokenExpiresIn").value(1209600))
-                .andExpect(jsonPath("$.data.member.memberId").isNotEmpty())
-                .andExpect(jsonPath("$.data.member.nickname").value("Ryan"))
-                .andExpect(jsonPath("$.data.member.email").value("ryan@example.com"))
-                .andExpect(jsonPath("$.data.member.provider").value("GOOGLE"))
-                .andExpect(jsonPath("$.data.member.newMember").value(true))
-                .andExpect(jsonPath("$.data.member.profileImageUrl").doesNotExist())
+                .andExpect(jsonPath("$.data.user.userId").isNotEmpty())
+                .andExpect(jsonPath("$.data.user.nickname").value("Ryan"))
+                .andExpect(jsonPath("$.data.user.email").value("ryan@example.com"))
+                .andExpect(jsonPath("$.data.user.provider").value("GOOGLE"))
+                .andExpect(jsonPath("$.data.user.newUser").value(true))
+                .andExpect(jsonPath("$.data.user.profileImageUrl").doesNotExist())
                 .andReturn();
 
         JsonNode firstBody = objectMapper.readTree(firstLogin.getResponse().getContentAsByteArray());
-        String memberId = firstBody.get("data").get("member").get("memberId").asText();
+        String userId = firstBody.get("data").get("user").get("userId").asText();
 
         mockMvc.perform(post("/api/v1/auth/social-login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -66,8 +66,8 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.member.memberId").value(memberId))
-                .andExpect(jsonPath("$.data.member.newMember").value(false));
+                .andExpect(jsonPath("$.data.user.userId").value(userId))
+                .andExpect(jsonPath("$.data.user.newUser").value(false));
     }
 
     @Test
@@ -118,7 +118,7 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void socialLoginKeepsExistingProfileWhenProviderOmitsOptionalClaims() throws Exception {
         JsonNode firstLogin = login("test-google-sub-3|keep@example.com|Keep User");
-        String memberId = firstLogin.get("data").get("member").get("memberId").asText();
+        String userId = firstLogin.get("data").get("user").get("userId").asText();
 
         mockMvc.perform(post("/api/v1/auth/social-login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,10 +130,10 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.member.memberId").value(memberId))
-                .andExpect(jsonPath("$.data.member.nickname").value("Keep User"))
-                .andExpect(jsonPath("$.data.member.email").value("keep@example.com"))
-                .andExpect(jsonPath("$.data.member.newMember").value(false));
+                .andExpect(jsonPath("$.data.user.userId").value(userId))
+                .andExpect(jsonPath("$.data.user.nickname").value("Keep User"))
+                .andExpect(jsonPath("$.data.user.email").value("keep@example.com"))
+                .andExpect(jsonPath("$.data.user.newUser").value(false));
     }
 
     @Test
@@ -141,7 +141,7 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
         JsonNode loginBody = login("withdraw-sub|withdraw@example.com|Withdraw User");
         String accessToken = loginBody.get("data").get("accessToken").asText();
         String refreshToken = loginBody.get("data").get("refreshToken").asText();
-        String memberId = loginBody.get("data").get("member").get("memberId").asText();
+        String userId = loginBody.get("data").get("user").get("userId").asText();
 
         mockMvc.perform(delete("/api/v1/auth/me")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -167,8 +167,8 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.error.code").value("AUTH_REQUIRED"));
 
         JsonNode reloginBody = login("withdraw-sub|withdraw@example.com|Withdraw User");
-        assertThat(reloginBody.get("data").get("member").get("newMember").asBoolean()).isTrue();
-        assertThat(reloginBody.get("data").get("member").get("memberId").asText()).isNotEqualTo(memberId);
+        assertThat(reloginBody.get("data").get("user").get("newUser").asBoolean()).isTrue();
+        assertThat(reloginBody.get("data").get("user").get("userId").asText()).isNotEqualTo(userId);
     }
 
     private JsonNode login(String idToken) throws Exception {

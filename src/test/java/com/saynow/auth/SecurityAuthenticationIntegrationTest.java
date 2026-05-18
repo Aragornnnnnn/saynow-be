@@ -2,7 +2,7 @@
 package com.saynow.auth;
 
 import com.saynow.IntegrationTestSupport;
-import com.saynow.auth.security.AuthMemberPrincipal;
+import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.common.observability.SentryEventReporter;
@@ -49,7 +49,7 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
                 .containsKey("authTokenFilter");
         assertThat(applicationContext.getBeansOfType(HandlerInterceptor.class))
                 .doesNotContainKey("authInterceptor");
-        assertThat(UserDetails.class).isAssignableFrom(AuthMemberPrincipal.class);
+        assertThat(UserDetails.class).isAssignableFrom(AuthUserPrincipal.class);
     }
 
     @Test

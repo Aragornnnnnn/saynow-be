@@ -28,8 +28,8 @@ public class RefreshToken extends BaseTimeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "token_hash", nullable = false, unique = true, length = 255)
     private String tokenHash;
@@ -40,8 +40,8 @@ public class RefreshToken extends BaseTimeEntity {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
-    public RefreshToken(Member member, String tokenHash, LocalDateTime expiresAt) {
-        this.member = member;
+    public RefreshToken(User user, String tokenHash, LocalDateTime expiresAt) {
+        this.user = user;
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
     }

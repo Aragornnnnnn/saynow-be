@@ -1,19 +1,17 @@
 // 소셜 로그인과 SayNow token 발급 흐름을 처리하는 서비스
 package com.saynow.auth.application;
 
-import com.saynow.auth.api.dto.AuthMemberResponse;
+import com.saynow.auth.api.dto.AuthUserResponse;
 import com.saynow.auth.api.dto.AuthTokenResponse;
 import com.saynow.auth.api.dto.LogoutRequest;
 import com.saynow.auth.api.dto.SocialLoginRequest;
 import com.saynow.auth.api.dto.TokenRefreshRequest;
 import com.saynow.auth.api.dto.TokenRefreshResponse;
-import com.saynow.auth.domain.Member;
+import com.saynow.auth.domain.User;
 import com.saynow.auth.domain.RefreshToken;
-import com.saynow.auth.domain.SocialAccount;
 import com.saynow.auth.domain.SocialProvider;
-import com.saynow.auth.infrastructure.MemberRepository;
+import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.auth.infrastructure.RefreshTokenRepository;
-import com.saynow.auth.infrastructure.SocialAccountRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -31,42 +29,31 @@ public class AuthService {
     private final OidcTokenVerifier oidcTokenVerifier;
     private final SaynowTokenService saynowTokenService;
     private final TokenProperties tokenProperties;
-    private final MemberRepository memberRepository;
-    private final SocialAccountRepository socialAccountRepository;
+    private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public AuthTokenResponse socialLogin(SocialLoginRequest request) {
         SocialProvider provider = parseProvider(request.provider());
         OidcUserInfo userInfo = oidcTokenVerifier.verify(provider, request.idToken(), request.nonce());
-        SocialAccount socialAccount = socialAccountRepository.findByProviderAndProviderSubject(provider, userInfo.subject())
+        User user = userRepository.findByProviderAndSubAndDeletedAtIsNull(provider, userInfo.subject())
                 .orElse(null);
 
-        boolean newMember = socialAccount == null;
-        Member member;
-        if (newMember) {
-            member = memberRepository.save(new Member(userInfo.nickname(), userInfo.email()));
-            socialAccount = socialAccountRepository.save(new SocialAccount(
-                    member,
-                    provider,
-                    userInfo.subject(),
-                    userInfo.email(),
-                    userInfo.emailVerified(),
-                    userInfo.nickname()));
+        boolean newUser = user == null;
+        if (newUser) {
+            user = userRepository.save(new User(userInfo.nickname(), userInfo.email(), userInfo.subject(), provider));
         } else {
-            member = socialAccount.getMember();
-            member.updateProfile(userInfo.nickname(), userInfo.email());
-            socialAccount.updateProfile(userInfo.email(), userInfo.emailVerified(), userInfo.nickname());
+            user.updateProfile(userInfo.nickname(), userInfo.email());
         }
 
-        IssuedTokens issuedTokens = issueTokens(member);
+        IssuedTokens issuedTokens = issueTokens(user);
         return new AuthTokenResponse(
                 TOKEN_TYPE,
                 issuedTokens.accessToken(),
                 tokenProperties.getAccessExpiresInSeconds(),
                 issuedTokens.refreshToken(),
                 tokenProperties.getRefreshExpiresInSeconds(),
-                new AuthMemberResponse(member.getId().toString(), member.getNickname(), member.getEmail(), provider.name(), newMember));
+                new AuthUserResponse(user.getId().toString(), user.getNickname(), user.getEmail(), provider.name(), newUser));
     }
 
     @Transactional
@@ -79,7 +66,7 @@ public class AuthService {
         }
 
         refreshToken.revoke(now);
-        IssuedTokens issuedTokens = issueTokens(refreshToken.getMember());
+        IssuedTokens issuedTokens = issueTokens(refreshToken.getUser());
         return new TokenRefreshResponse(
                 TOKEN_TYPE,
                 issuedTokens.accessToken(),
@@ -95,21 +82,20 @@ public class AuthService {
     }
 
     @Transactional
-    public void withdraw(Long memberId) {
+    public void withdraw(Long userId) {
         LocalDateTime now = LocalDateTime.now();
-        Member member = memberRepository.findByIdAndWithdrawnAtIsNull(memberId)
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_REQUIRED));
 
-        refreshTokenRepository.revokeAllActiveByMemberId(memberId, now);
-        socialAccountRepository.deleteByMemberId(memberId);
-        member.withdraw(now);
+        refreshTokenRepository.revokeAllActiveByUserId(userId, now);
+        user.withdraw(now);
     }
 
-    private IssuedTokens issueTokens(Member member) {
-        String accessToken = saynowTokenService.createAccessToken(member.getId());
+    private IssuedTokens issueTokens(User user) {
+        String accessToken = saynowTokenService.createAccessToken(user.getId());
         String refreshToken = saynowTokenService.createRefreshToken();
         refreshTokenRepository.save(new RefreshToken(
-                member,
+                user,
                 saynowTokenService.hashRefreshToken(refreshToken),
                 LocalDateTime.now().plusSeconds(tokenProperties.getRefreshExpiresInSeconds())));
         return new IssuedTokens(accessToken, refreshToken);

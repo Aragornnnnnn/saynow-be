@@ -2,7 +2,7 @@
 package com.saynow.auth.security;
 
 import com.saynow.auth.application.SaynowTokenService;
-import com.saynow.auth.infrastructure.MemberRepository;
+import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import jakarta.servlet.FilterChain;
@@ -26,7 +26,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final SaynowTokenService saynowTokenService;
-    private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
     private final AuthFailureResponseWriter failureResponseWriter;
 
     @Override
@@ -41,19 +41,19 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        Long memberId;
+        Long userId;
         try {
-            memberId = saynowTokenService.parseAccessToken(authorization.substring(BEARER_PREFIX.length()));
+            userId = saynowTokenService.parseAccessToken(authorization.substring(BEARER_PREFIX.length()));
         } catch (ApiException exception) {
             failureResponseWriter.write(response, exception.getErrorCode());
             return;
         }
-        if (!memberRepository.existsByIdAndWithdrawnAtIsNull(memberId)) {
+        if (!userRepository.existsByIdAndDeletedAtIsNull(userId)) {
             failureResponseWriter.write(response, ErrorCode.AUTH_REQUIRED);
             return;
         }
 
-        AuthMemberPrincipal principal = new AuthMemberPrincipal(memberId);
+        AuthUserPrincipal principal = new AuthUserPrincipal(userId);
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
         SecurityContextHolder.setContext(securityContext);

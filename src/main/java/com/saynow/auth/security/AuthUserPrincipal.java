@@ -1,4 +1,4 @@
-// 인증된 회원 ID를 Spring Security principal로 표현하는 객체
+// 인증된 사용자 ID를 Spring Security principal로 표현하는 객체
 package com.saynow.auth.security;
 
 import org.springframework.security.core.GrantedAuthority;
@@ -7,11 +7,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-public record AuthMemberPrincipal(Long memberId) implements UserDetails {
+public record AuthUserPrincipal(Long userId) implements UserDetails {
 
-    public AuthMemberPrincipal {
-        if (memberId == null) {
-            throw new IllegalArgumentException("memberId must not be null");
+    public AuthUserPrincipal {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
         }
     }
 
@@ -27,6 +27,6 @@ public record AuthMemberPrincipal(Long memberId) implements UserDetails {
 
     @Override
     public String getUsername() {
-        return memberId.toString();
+        return userId.toString();
     }
 }
