@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface TurnFeedbackRepository extends JpaRepository<TurnFeedback, Long> {
 
-    List<TurnFeedback> findBySessionFeedbackOrderByTurnTurnIndexAsc(SessionFeedback sessionFeedback);
+    List<TurnFeedback> findBySessionFeedbackOrderByTurnSequenceAsc(SessionFeedback sessionFeedback);
 }
