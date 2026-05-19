@@ -17,7 +17,7 @@ env:
   AWS_REGION: ap-northeast-2
   EC2_PORT: "22"
   JAR_PATH: /opt/saynow/app.jar
-  PARAMETER_PATH: /saynow/dev
+  PARAMETER_PATH: /saynow/develop
   SERVICE_NAME: saynow-backend
   UPLOAD_PATH: /tmp/saynow-app.jar
 
