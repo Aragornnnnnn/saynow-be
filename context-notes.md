@@ -109,6 +109,7 @@
 - 잠긴 시나리오나 잠긴 카테고리는 세션 시작을 막는다.
 - `DELETE /api/v1/sessions/{sessionId}`는 `ApiResponse<T>` 유지 기준에 맞춰 200 OK와 `ApiResponse.success(null)`을 반환한다.
 - `session_feedbacks`는 세션 단위 피드백 결과를 저장한다. `turn_feedbacks`는 `session_feedbacks`에 속한 턴별 피드백 결과를 저장한다.
+- 사용자별 시나리오 진행 상태 테이블은 `user_scenario_progress`로 명명한다. boolean 저장 컬럼은 `is_cleared`가 아니라 상태명인 `cleared`를 사용한다.
 
 ## 검증 결과
 
@@ -118,6 +119,10 @@
 - 관련 검증으로 `./gradlew test --tests com.saynow.common.response.ApiResponseTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- `UserScenarioProgress` 스키마 테스트 추가 전 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`가 `user_scenario_progress` 테이블 부재로 실패하는 것을 확인했다.
+- `user_scenario_clears.is_cleared`를 `user_scenario_progress.cleared`로 변경하고, 도메인과 저장소 이름을 `UserScenarioProgress` 기준으로 맞췄다.
+- 관련 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 
 ## 2026-05-09
 
@@ -379,8 +384,8 @@
 ## 2026-05-19
 
 - 시나리오 성공 판정은 발화 제출 API에서 백엔드가 수행하므로, 사용자별 클리어 기록도 같은 트랜잭션에서 저장한다.
-- 기존 구현은 `sessions.status = SUCCESS`는 발화 제출 시 저장하지만, `user_scenario_clears.is_cleared = true`는 피드백 생성 API에서 저장했다.
-- 새 기준은 `SessionService.submitUtterance`에서 모든 슬롯이 충족되어 성공 처리되는 즉시 `UserScenarioClear.markCleared()`를 호출하는 것이다.
+- 기존 구현은 `sessions.status = SUCCESS`는 발화 제출 시 저장하지만, 사용자별 시나리오 진행 상태의 `cleared = true`는 피드백 생성 API에서 저장했다.
+- 새 기준은 `SessionService.submitUtterance`에서 모든 슬롯이 충족되어 성공 처리되는 즉시 `UserScenarioProgress.markCleared()`를 호출하는 것이다.
 - 피드백 생성 API는 더 이상 사용자별 클리어 기록을 변경하지 않고 피드백 생성만 담당한다.
 - RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, 피드백 생성 전 홈 목록의 클리어 상태 기대값에서 실패하는 것을 확인했다.
 - GREEN 검증으로 같은 명령을 재실행했고 통과했다.

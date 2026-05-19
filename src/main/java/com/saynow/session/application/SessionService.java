@@ -22,10 +22,10 @@ import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.scenario.application.ScenarioService;
 import com.saynow.scenario.domain.Scenario;
-import com.saynow.scenario.domain.UserScenarioClear;
+import com.saynow.scenario.domain.UserScenarioProgress;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
-import com.saynow.scenario.infrastructure.UserScenarioClearRepository;
+import com.saynow.scenario.infrastructure.UserScenarioProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +48,7 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final SessionTurnRepository turnRepository;
     private final SessionSlotStatusRepository slotStatusRepository;
-    private final UserScenarioClearRepository userScenarioClearRepository;
+    private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final UserRepository userRepository;
     private final AiConversationClient aiConversationClient;
 
@@ -58,8 +58,8 @@ public class SessionService {
         Scenario scenario = scenarioRepository.findById(scenarioId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
         assertPlayable(user, scenario);
-        userScenarioClearRepository.findByUserAndScenario(user, scenario)
-                .orElseGet(() -> userScenarioClearRepository.save(new UserScenarioClear(user, scenario)));
+        userScenarioProgressRepository.findByUserAndScenario(user, scenario)
+                .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(user, scenario)));
 
         Session session = sessionRepository.save(new Session(user, scenario));
         turnRepository.save(new SessionTurn(session, 1, scenario.getOriginalQuestion(), scenario.getTranslatedQuestion()));
@@ -165,9 +165,9 @@ public class SessionService {
     }
 
     private void markScenarioCleared(Session session) {
-        UserScenarioClear clear = userScenarioClearRepository.findByUserAndScenario(session.getUser(), session.getScenario())
-                .orElseGet(() -> userScenarioClearRepository.save(new UserScenarioClear(session.getUser(), session.getScenario())));
-        clear.markCleared();
+        UserScenarioProgress progress = userScenarioProgressRepository.findByUserAndScenario(session.getUser(), session.getScenario())
+                .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(session.getUser(), session.getScenario())));
+        progress.markCleared();
     }
 
     private void assertPlayable(User user, Scenario scenario) {
@@ -176,11 +176,11 @@ public class SessionService {
         }
 
         List<Scenario> scenarios = scenarioRepository.findByCategoryOrderByDisplayOrderAsc(scenario.getCategory());
-        Map<Long, Boolean> clearedByScenarioId = userScenarioClearRepository.findByUserIdAndScenarioIdIn(
+        Map<Long, Boolean> clearedByScenarioId = userScenarioProgressRepository.findByUserIdAndScenarioIdIn(
                         user.getId(),
                         scenarios.stream().map(Scenario::getId).toList())
                 .stream()
-                .collect(Collectors.toMap(clear -> clear.getScenario().getId(), UserScenarioClear::isCleared));
+                .collect(Collectors.toMap(progress -> progress.getScenario().getId(), UserScenarioProgress::isCleared));
 
         boolean previousCleared = true;
         for (Scenario candidate : scenarios) {

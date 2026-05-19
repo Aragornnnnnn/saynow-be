@@ -6,10 +6,10 @@ import com.saynow.scenario.api.dto.CategoryResponse;
 import com.saynow.scenario.api.dto.ScenarioResponse;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.Category;
-import com.saynow.scenario.domain.UserScenarioClear;
+import com.saynow.scenario.domain.UserScenarioProgress;
 import com.saynow.scenario.infrastructure.CategoryRepository;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
-import com.saynow.scenario.infrastructure.UserScenarioClearRepository;
+import com.saynow.scenario.infrastructure.UserScenarioProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,16 +30,16 @@ public class ScenarioService {
 
     private final CategoryRepository categoryRepository;
     private final ScenarioRepository scenarioRepository;
-    private final UserScenarioClearRepository userScenarioClearRepository;
+    private final UserScenarioProgressRepository userScenarioProgressRepository;
 
     public CategoryListResponse getScenarios(Long userId) {
         List<Category> categories = categoryRepository.findAllByOrderByIdAsc();
         List<Scenario> scenarios = scenarioRepository.findAllByOrderByCategoryIdAscDisplayOrderAsc();
-        Map<Long, Boolean> clearedByScenarioId = userScenarioClearRepository.findByUserIdAndScenarioIdIn(
+        Map<Long, Boolean> clearedByScenarioId = userScenarioProgressRepository.findByUserIdAndScenarioIdIn(
                         userId,
                         scenarios.stream().map(Scenario::getId).toList())
                 .stream()
-                .collect(Collectors.toMap(clear -> clear.getScenario().getId(), UserScenarioClear::isCleared));
+                .collect(Collectors.toMap(progress -> progress.getScenario().getId(), UserScenarioProgress::isCleared));
         Map<Long, List<Scenario>> scenariosByCategoryId = scenarios.stream()
                 .collect(Collectors.groupingBy(scenario -> scenario.getCategory().getId()));
 
