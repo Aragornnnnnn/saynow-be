@@ -25,7 +25,7 @@ jobs:
   deploy:
     name: Deploy dev to EC2
     runs-on: ubuntu-latest
-    environment: dev
+    environment: develop
     timeout-minutes: 20
 
     steps:

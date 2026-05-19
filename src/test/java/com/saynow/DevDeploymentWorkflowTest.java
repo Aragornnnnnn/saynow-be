@@ -12,14 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DevDeploymentWorkflowTest {
 
     @Test
-    void devDeployWorkflowUsesDevEnvironmentAndParameterPath() throws IOException {
+    void devDeployWorkflowUsesDevelopEnvironmentAndParameterPath() throws IOException {
         String workflow = Files.readString(Path.of(".github/workflows/deploy-dev-ec2.yml"));
 
         assertThat(workflow).contains("name: Deploy Dev EC2");
         assertThat(workflow).contains("group: deploy-dev-ec2");
         assertThat(workflow).contains("PARAMETER_PATH: /saynow/develop");
         assertThat(workflow).contains("name: Deploy dev to EC2");
-        assertThat(workflow).contains("environment: dev");
+        assertThat(workflow).contains("environment: develop");
         assertThat(workflow).contains("~/.ssh/saynow_dev");
         assertThat(workflow).contains("values[\"SPRING_PROFILES_ACTIVE\"] = \"dev\"");
     }

@@ -126,6 +126,10 @@
 - [x] dev 배포 SSM path를 `/saynow/develop` 기준으로 수정한다.
 - [x] 관련 workflow 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위를 점검하고 커밋한다.
+- [x] GitHub Actions 배포 environment를 `develop` 기준으로 수정한다.
+- [x] dev 프로필 Swagger server URL을 `https://dev-api.p-e.kr`로 설정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
 
 ---
 

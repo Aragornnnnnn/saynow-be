@@ -111,7 +111,7 @@
 - `session_feedbacks`는 세션 단위 피드백 결과를 저장한다. `turn_feedbacks`는 `session_feedbacks`에 속한 턴별 피드백 결과를 저장한다.
 - 사용자별 시나리오 진행 상태 테이블은 `user_scenario_progress`로 명명한다. boolean 저장 컬럼은 `is_cleared`가 아니라 상태명인 `cleared`를 사용한다.
 - dev 배포는 prod EC2 배포 방식과 동일하게 GitHub Actions 수동 실행, EC2 SSH 업로드, SSM Parameter Store 기반 `.env` 생성, systemd restart, health check 순서로 처리한다.
-- dev 배포는 GitHub Environment `dev`, SSM path `/saynow/develop`, Spring profile `dev`를 사용한다.
+- dev 배포는 GitHub Environment `develop`, SSM path `/saynow/develop`, Spring profile `dev`를 사용한다.
 
 ## 검증 결과
 
@@ -127,13 +127,17 @@
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - dev 배포 workflow와 dev profile 테스트 추가 전 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevAiClientModeTest`가 workflow 파일 부재와 dev AI mode `local` 기본값으로 실패하는 것을 확인했다.
 - `Deploy Dev EC2` workflow는 prod 배포와 같은 build, OIDC, 임시 SSH ingress, jar upload, SSM `.env` 생성, systemd restart, health check, ingress revoke 흐름으로 구성했다.
-- dev workflow는 GitHub Environment `dev`의 `AWS_ROLE_ARN`, `EC2_HOST`, `EC2_USER`, `EC2_SECURITY_GROUP_ID`, `EC2_SSH_KEY`를 사용하고, `/saynow/develop` SSM path에서 런타임 환경변수를 읽는다.
+- dev workflow는 GitHub Environment `develop`의 `AWS_ROLE_ARN`, `EC2_HOST`, `EC2_USER`, `EC2_SECURITY_GROUP_ID`, `EC2_SSH_KEY`를 사용하고, `/saynow/develop` SSM path에서 런타임 환경변수를 읽는다.
 - dev profile은 PostgreSQL, Flyway validate, 원격 AI 클라이언트 기본값, Sentry environment `dev` 기준으로 추가했다.
 - 관련 검증으로 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevAiClientModeTest`를 실행했고 통과했다.
 - YAML 검증으로 `ruby -e 'require "yaml"; YAML.load_file(ARGV[0]); puts "yaml ok"' .github/workflows/deploy-dev-ec2.yml`와 같은 명령을 `application-dev.yml`에도 실행했고 통과했다.
 - 전체 검증으로 `./gradlew test`와 `./gradlew build`를 실행했고 통과했다.
 - dev 배포 SSM path는 `/saynow/dev`가 아니라 `/saynow/develop`로 확정했다.
 - 회귀 테스트 기대값을 먼저 `/saynow/develop`로 변경한 뒤 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest`가 실패하는 것을 확인했고, workflow와 README, 작업 메모를 같은 기준으로 수정한 뒤 해당 테스트와 전체 테스트가 통과했다.
+- GitHub Actions Environment 이름은 `develop`로 확정했다.
+- dev 프로필 Swagger/OpenAPI server URL 기본값은 `https://dev-api.p-e.kr`로 설정한다. SSM의 `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값이 있으면 그 값으로 override할 수 있다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, workflow environment와 dev OpenAPI server URL 기대값이 맞지 않아 실패했다.
+- workflow `environment`를 `develop`로 수정하고 `application-dev.yml`에 `saynow.openapi.server-url` 기본값을 추가한 뒤 같은 테스트가 통과했다.
 
 ## 2026-05-09
 
