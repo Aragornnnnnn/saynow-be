@@ -81,12 +81,14 @@ public class RemoteOidcTokenVerifier implements OidcTokenVerifier {
             case GOOGLE -> new ProviderSettings(
                     List.of("https://accounts.google.com", "accounts.google.com"),
                     "https://www.googleapis.com/oauth2/v3/certs",
-                    configuredAudiences(oidcProperties.getGoogleAudiences())
+                    configuredAudiences(oidcProperties.getGoogleAudiences()),
+                    oidcProperties.isNonceRequired()
             );
             case KAKAO -> new ProviderSettings(
                     List.of("https://kauth.kakao.com"),
                     "https://kauth.kakao.com/.well-known/jwks.json",
-                    configuredAudiences(oidcProperties.getKakaoAudiences())
+                    configuredAudiences(oidcProperties.getKakaoAudiences()),
+                    oidcProperties.isNonceRequired()
             );
         };
     }
@@ -165,7 +167,9 @@ public class RemoteOidcTokenVerifier implements OidcTokenVerifier {
         if (issuedAt != null && issuedAt > now + ALLOWED_CLOCK_SKEW_SECONDS) {
             throw new ApiException(ErrorCode.OIDC_TOKEN_INVALID);
         }
-        if (nonce == null || nonce.isBlank() || !MessageDigest.isEqual(nonce.getBytes(), text(claims.get("nonce")).getBytes())) {
+        if (settings.nonceRequired()
+                && (nonce == null || nonce.isBlank()
+                || !MessageDigest.isEqual(nonce.getBytes(), text(claims.get("nonce")).getBytes()))) {
             throw new ApiException(ErrorCode.OIDC_NONCE_MISMATCH);
         }
     }
@@ -192,6 +196,6 @@ public class RemoteOidcTokenVerifier implements OidcTokenVerifier {
         return value instanceof Number number ? number.longValue() : null;
     }
 
-    private record ProviderSettings(List<String> issuers, String jwksUri, List<String> audiences) {
+    private record ProviderSettings(List<String> issuers, String jwksUri, List<String> audiences, boolean nonceRequired) {
     }
 }

@@ -145,6 +145,10 @@
 - Swagger UI에 Bearer token 입력 칸이 나오려면 OpenAPI `components.securitySchemes.bearerAuth`와 security requirement가 필요하다.
 - 공개 auth API인 `socialLogin`, `refresh`는 Bearer security requirement를 빈 배열로 override하고, 그 외 API는 전역 Bearer security requirement를 따른다.
 - RED 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `components.securitySchemes.bearerAuth`가 없어 실패했다.
+- nonce 검증은 기본값 `true`로 유지하고, dev 프로필에서는 `saynow.auth.oidc.nonce-required=false`를 기본값으로 둔다.
+- `SocialLoginRequest.nonce`는 설정 기반 검증을 위해 validation 필수값에서 제외한다. nonce가 필수인 환경에서는 verifier가 `OIDC_NONCE_MISMATCH`를 반환한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest.socialLoginRejectsMissingNonceByDefault --tests com.saynow.auth.DevSocialAuthNonceIntegrationTest`를 실행했고, 기본 validation과 dev 비활성화 설정이 기존 구현과 맞지 않아 실패했다.
+- dev SSM `/saynow/develop/SAYNOW_AUTH_OIDC_NONCE_REQUIRED`는 존재하지 않았다. 배포 시 `application-dev.yml` 기본값 `false`가 적용된다.
 
 ## 2026-05-09
 

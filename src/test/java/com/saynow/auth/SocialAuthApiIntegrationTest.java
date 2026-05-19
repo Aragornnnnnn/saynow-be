@@ -137,6 +137,20 @@ class SocialAuthApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void socialLoginRejectsMissingNonceByDefault() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/social-login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider":"GOOGLE",
+                                  "idToken":"nonce-required-sub|nonce@example.com|Nonce User"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("OIDC_NONCE_MISMATCH"));
+    }
+
+    @Test
     void withdrawRevokesTokensRejectsExistingAccessTokenAndAllowsFreshSocialSignup() throws Exception {
         JsonNode loginBody = login("withdraw-sub|withdraw@example.com|Withdraw User");
         String accessToken = loginBody.get("data").get("accessToken").asText();

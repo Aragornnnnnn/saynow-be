@@ -18,6 +18,7 @@ class DevDeploymentWorkflowTest {
         assertThat(workflow).contains("name: Deploy Dev EC2");
         assertThat(workflow).contains("group: deploy-dev-ec2");
         assertThat(workflow).contains("PARAMETER_PATH: /saynow/develop");
+        assertThat(workflow).contains("SAYNOW_AUTH_OIDC_NONCE_REQUIRED");
         assertThat(workflow).contains("name: Deploy dev to EC2");
         assertThat(workflow).contains("environment: develop");
         assertThat(workflow).contains("~/.ssh/saynow_dev");

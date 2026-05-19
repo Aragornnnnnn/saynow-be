@@ -170,6 +170,7 @@ jobs:
           optional = [
               "SAYNOW_AI_BASE_URL",
               "SAYNOW_AI_CLIENT_MODE",
+              "SAYNOW_AUTH_OIDC_NONCE_REQUIRED",
               "SAYNOW_CORS_ALLOWED_ORIGINS",
               "SAYNOW_OPENAPI_SERVER_URL",
               "SENTRY_DSN",

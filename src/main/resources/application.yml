@@ -22,6 +22,7 @@ saynow:
       allowed-origins: ${SAYNOW_CORS_ALLOWED_ORIGINS:https://saynow-fe-web.vercel.app,http://localhost:3000,http://172.30.1.89:3000,http://10.0.2.2:3000}
   auth:
     oidc:
+      nonce-required: ${SAYNOW_AUTH_OIDC_NONCE_REQUIRED:true}
       google-audiences: ${SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES:}
       kakao-audiences: ${SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES:}
     token:
