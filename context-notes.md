@@ -335,3 +335,17 @@
 - 인증 응답의 신규 가입 여부도 `newMember` 대신 `newUser`로 맞춘다.
 - `src/main`, `src/test`에서 `Member`, `Practice`, `ScenarioCategory`, `newMember` 잔여 문자열을 검색했고 남아 있지 않았다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 발화 하트 차감 정책 컨텍스트 노트
+
+## 2026-05-19
+
+- 사용자 발화마다 하트를 무조건 차감하는 것이 아니라, AI 서버의 `filledSlots` 응답이 빈 배열일 때만 동문서답으로 보고 하트를 1 차감한다.
+- 슬롯이 하나라도 반환되면 백엔드는 해당 슬롯을 `SESSION_SLOT_STATUS`에 반영하고 하트는 유지한다.
+- 성공 여부는 여전히 백엔드가 `SESSION_SLOT_STATUS` 전체 충족 여부로 판단한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, 슬롯이 채워진 발화의 하트 유지 기대값에서 실패하는 것을 확인했다.
+- 구현은 `SessionService.submitUtterance`에서 `aiResponse.filledSlots().isEmpty()`일 때만 `session.decreaseHeart()`를 호출하도록 제한했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test --rerun-tasks`를 실행했고 통과했다.

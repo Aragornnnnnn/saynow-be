@@ -97,7 +97,9 @@ public class SessionService {
         validateNextQuestionResponse(aiResponse);
 
         applyFilledSlots(slotStatuses, aiResponse.filledSlots());
-        session.decreaseHeart();
+        if (aiResponse.filledSlots().isEmpty()) {
+            session.decreaseHeart();
+        }
 
         if (allFulfilled(slotStatuses)) {
             session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
