@@ -20,6 +20,6 @@ class DevOpenApiIntegrationTest extends IntegrationTestSupport {
     void devProfileExposesDevelopServerUrl() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.servers[0].url").value("https://dev-api.p-e.kr"));
+                .andExpect(jsonPath("$.servers[0].url").value("https://dev-saynow.p-e.kr"));
     }
 }

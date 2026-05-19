@@ -135,9 +135,13 @@
 - dev 배포 SSM path는 `/saynow/dev`가 아니라 `/saynow/develop`로 확정했다.
 - 회귀 테스트 기대값을 먼저 `/saynow/develop`로 변경한 뒤 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest`가 실패하는 것을 확인했고, workflow와 README, 작업 메모를 같은 기준으로 수정한 뒤 해당 테스트와 전체 테스트가 통과했다.
 - GitHub Actions Environment 이름은 `develop`로 확정했다.
-- dev 프로필 Swagger/OpenAPI server URL 기본값은 `https://dev-api.p-e.kr`로 설정한다. SSM의 `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값이 있으면 그 값으로 override할 수 있다.
+- dev 프로필 Swagger/OpenAPI server URL 기본값은 `https://dev-saynow.p-e.kr`로 설정한다. SSM의 `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값이 있으면 그 값으로 override할 수 있다.
 - RED 검증으로 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, workflow environment와 dev OpenAPI server URL 기대값이 맞지 않아 실패했다.
 - workflow `environment`를 `develop`로 수정하고 `application-dev.yml`에 `saynow.openapi.server-url` 기본값을 추가한 뒤 같은 테스트가 통과했다.
+- dev 서버 도메인은 `https://dev-api.p-e.kr`에서 `https://dev-saynow.p-e.kr`로 변경했다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, dev OpenAPI server URL 기대값이 맞지 않아 실패했다.
+- SSM `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값이 기존 `https://dev-api.p-e.kr`로 설정되어 있어, 배포 시 코드 기본값보다 SSM override가 우선 적용되는 상태였다.
+- SSM `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값을 `https://dev-saynow.p-e.kr`로 갱신했고, 재조회로 새 값이 반영된 것을 확인했다.
 
 ## 2026-05-09
 
