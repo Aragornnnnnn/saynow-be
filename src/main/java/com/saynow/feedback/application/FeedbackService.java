@@ -19,8 +19,6 @@ import com.saynow.session.infrastructure.ai.AiFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiFeedbackTurnRequest;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
-import com.saynow.scenario.domain.UserScenarioClear;
-import com.saynow.scenario.infrastructure.UserScenarioClearRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +38,6 @@ public class FeedbackService {
     private final SessionTurnRepository turnRepository;
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final TurnFeedbackRepository turnFeedbackRepository;
-    private final UserScenarioClearRepository userScenarioClearRepository;
     private final AiConversationClient aiConversationClient;
 
     @Transactional
@@ -77,12 +74,6 @@ public class FeedbackService {
         List<TurnFeedback> savedTurnFeedbacks = turns.stream()
                 .map(turn -> saveTurnFeedback(sessionFeedback, turn, aiFeedbackByTurnId.get(turn.getId())))
                 .toList();
-
-        if (session.getStatus() == SessionStatus.SUCCESS) {
-            UserScenarioClear clear = userScenarioClearRepository.findByUserAndScenario(session.getUser(), session.getScenario())
-                    .orElseGet(() -> userScenarioClearRepository.save(new UserScenarioClear(session.getUser(), session.getScenario())));
-            clear.markCleared();
-        }
 
         return toResponse(session, sessionFeedback, savedTurnFeedbacks);
     }

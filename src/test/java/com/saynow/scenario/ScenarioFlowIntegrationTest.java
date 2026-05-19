@@ -95,6 +95,12 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.originalQuestion").value(nullValue()))
                 .andExpect(jsonPath("$.data.translatedQuestion").value(nullValue()));
 
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.categories[0].scenarios[0].cleared").value(true))
+                .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(false));
+
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/feedback", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())

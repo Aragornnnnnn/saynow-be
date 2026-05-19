@@ -104,6 +104,7 @@ public class SessionService {
 
         if (allFulfilled(slotStatuses)) {
             session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
+            markScenarioCleared(session);
             return completedResponse(session);
         }
         if (session.getRemainingHearts() <= 0) {
@@ -161,6 +162,12 @@ public class SessionService {
         if (request == null || request.userUtterance() == null || request.userUtterance().isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST);
         }
+    }
+
+    private void markScenarioCleared(Session session) {
+        UserScenarioClear clear = userScenarioClearRepository.findByUserAndScenario(session.getUser(), session.getScenario())
+                .orElseGet(() -> userScenarioClearRepository.save(new UserScenarioClear(session.getUser(), session.getScenario())));
+        clear.markCleared();
     }
 
     private void assertPlayable(User user, Scenario scenario) {
