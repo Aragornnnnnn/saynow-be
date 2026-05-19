@@ -134,6 +134,10 @@
 - [x] SSM override 여부를 확인하고 필요하면 배포 결과를 검증한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위를 점검하고 커밋한다.
+- [x] Swagger UI Bearer token 입력을 위한 OpenAPI security scheme 테스트를 추가한다.
+- [x] OpenAPI `bearerAuth` security scheme을 등록한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
 
 ---
 

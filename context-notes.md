@@ -142,6 +142,9 @@
 - RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, dev OpenAPI server URL 기대값이 맞지 않아 실패했다.
 - SSM `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값이 기존 `https://dev-api.p-e.kr`로 설정되어 있어, 배포 시 코드 기본값보다 SSM override가 우선 적용되는 상태였다.
 - SSM `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL` 값을 `https://dev-saynow.p-e.kr`로 갱신했고, 재조회로 새 값이 반영된 것을 확인했다.
+- Swagger UI에 Bearer token 입력 칸이 나오려면 OpenAPI `components.securitySchemes.bearerAuth`와 security requirement가 필요하다.
+- 공개 auth API인 `socialLogin`, `refresh`는 Bearer security requirement를 빈 배열로 override하고, 그 외 API는 전역 Bearer security requirement를 따른다.
+- RED 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `components.securitySchemes.bearerAuth`가 없어 실패했다.
 
 ## 2026-05-09
 
