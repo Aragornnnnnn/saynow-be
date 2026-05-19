@@ -117,6 +117,12 @@
 - [x] `UserScenarioClear` 도메인과 저장소명을 `UserScenarioProgress` 기준으로 변경한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위를 점검하고 커밋한다.
+- [x] dev EC2 배포 workflow 기대 동작을 테스트로 추가한다.
+- [x] dev profile이 배포 환경에서 원격 AI 클라이언트를 기본 사용하는지 테스트를 추가한다.
+- [x] prod와 동일한 방식의 `Deploy Dev EC2` workflow를 추가한다.
+- [x] `application-dev.yml`과 README dev 배포 안내를 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
 
 ---
 

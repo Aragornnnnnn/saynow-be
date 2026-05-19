@@ -109,3 +109,41 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 - `/saynow/prod/SENTRY_ENVIRONMENT`
 - `/saynow/prod/SENTRY_LOGS_ENABLED`
 - `/saynow/prod/SENTRY_RELEASE`
+
+## 개발 배포
+
+GitHub Actions의 `Deploy Dev EC2` workflow를 수동 실행해 선택한 브랜치를 개발 EC2에 배포합니다. 운영 배포와 동일하게 JAR를 빌드해 EC2로 업로드하고, SSM Parameter Store 값을 `/opt/saynow/.env`로 생성한 뒤 systemd 서비스를 재시작합니다.
+
+GitHub `dev` Environment에는 운영과 같은 이름의 값을 개발 서버 기준으로 설정합니다.
+
+- Secret: `EC2_SSH_KEY`
+- Variable: `AWS_ROLE_ARN`
+- Variable: `EC2_HOST`
+- Variable: `EC2_USER`
+- Variable: `EC2_SECURITY_GROUP_ID`
+
+애플리케이션 런타임 환경변수는 EC2 IAM Role로 AWS SSM Parameter Store의 `/saynow/dev` 경로에서 읽어 `/opt/saynow/.env`로 생성합니다.
+
+필수 SSM 파라미터입니다.
+
+- `/saynow/dev/DB_URL`
+- `/saynow/dev/DB_USERNAME`
+- `/saynow/dev/DB_PASSWORD`
+- `/saynow/dev/SAYNOW_AUTH_TOKEN_SECRET`
+- `/saynow/dev/SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`
+- `/saynow/dev/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`
+
+선택 SSM 파라미터입니다.
+
+- `/saynow/dev/SAYNOW_AI_BASE_URL`
+- `/saynow/dev/SAYNOW_AI_CLIENT_MODE`
+- `/saynow/dev/SAYNOW_CORS_ALLOWED_ORIGINS`
+- `/saynow/dev/SAYNOW_OPENAPI_SERVER_URL`
+
+선택 Sentry SSM 파라미터입니다.
+
+- `/saynow/dev/SENTRY_ENABLED`
+- `/saynow/dev/SENTRY_DSN`
+- `/saynow/dev/SENTRY_ENVIRONMENT`
+- `/saynow/dev/SENTRY_LOGS_ENABLED`
+- `/saynow/dev/SENTRY_RELEASE`

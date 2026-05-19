@@ -110,6 +110,8 @@
 - `DELETE /api/v1/sessions/{sessionId}`는 `ApiResponse<T>` 유지 기준에 맞춰 200 OK와 `ApiResponse.success(null)`을 반환한다.
 - `session_feedbacks`는 세션 단위 피드백 결과를 저장한다. `turn_feedbacks`는 `session_feedbacks`에 속한 턴별 피드백 결과를 저장한다.
 - 사용자별 시나리오 진행 상태 테이블은 `user_scenario_progress`로 명명한다. boolean 저장 컬럼은 `is_cleared`가 아니라 상태명인 `cleared`를 사용한다.
+- dev 배포는 prod EC2 배포 방식과 동일하게 GitHub Actions 수동 실행, EC2 SSH 업로드, SSM Parameter Store 기반 `.env` 생성, systemd restart, health check 순서로 처리한다.
+- dev 배포는 GitHub Environment `dev`, SSM path `/saynow/dev`, Spring profile `dev`를 사용한다.
 
 ## 검증 결과
 
@@ -123,6 +125,13 @@
 - `user_scenario_clears.is_cleared`를 `user_scenario_progress.cleared`로 변경하고, 도메인과 저장소 이름을 `UserScenarioProgress` 기준으로 맞췄다.
 - 관련 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- dev 배포 workflow와 dev profile 테스트 추가 전 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevAiClientModeTest`가 workflow 파일 부재와 dev AI mode `local` 기본값으로 실패하는 것을 확인했다.
+- `Deploy Dev EC2` workflow는 prod 배포와 같은 build, OIDC, 임시 SSH ingress, jar upload, SSM `.env` 생성, systemd restart, health check, ingress revoke 흐름으로 구성했다.
+- dev workflow는 GitHub Environment `dev`의 `AWS_ROLE_ARN`, `EC2_HOST`, `EC2_USER`, `EC2_SECURITY_GROUP_ID`, `EC2_SSH_KEY`를 사용하고, `/saynow/dev` SSM path에서 런타임 환경변수를 읽는다.
+- dev profile은 PostgreSQL, Flyway validate, 원격 AI 클라이언트 기본값, Sentry environment `dev` 기준으로 추가했다.
+- 관련 검증으로 `./gradlew test --tests com.saynow.DevDeploymentWorkflowTest --tests com.saynow.DevAiClientModeTest`를 실행했고 통과했다.
+- YAML 검증으로 `ruby -e 'require "yaml"; YAML.load_file(ARGV[0]); puts "yaml ok"' .github/workflows/deploy-dev-ec2.yml`와 같은 명령을 `application-dev.yml`에도 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`와 `./gradlew build`를 실행했고 통과했다.
 
 ## 2026-05-09
 
