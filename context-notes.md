@@ -88,6 +88,7 @@
 - `develop`은 2차 MVP breaking change 브랜치로 사용한다.
 - `main`은 1차 MVP 운영 서버 기준으로 유지한다.
 - 프론트 API 응답은 기존 공통 응답 객체 `ApiResponse<T>`로 계속 감싼다.
+- `ApiResponse<T>` 성공 응답은 API별 HTTP status를 명시할 수 있어야 한다. 세션 시작 API는 201 Created를 유지한다.
 - 기존 1차 MVP 엔티티, 클래스, API, DTO, 서비스는 호환성 유지 없이 삭제하거나 재구성해도 된다.
 - Flyway migration은 `develop` 전용으로 기존 V1~V4를 정리하고 2차 MVP 새 스키마 기준으로 다시 시작한다.
 - 사용자 발화 필드명은 API, DB, AI 계약에서 `userUtterance`로 통일한다.
@@ -107,10 +108,16 @@
 - 성공 또는 실패로 완료 가능해진 세션에서만 피드백 생성 API를 호출할 수 있다.
 - 잠긴 시나리오나 잠긴 카테고리는 세션 시작을 막는다.
 - `DELETE /api/v1/sessions/{sessionId}`는 `ApiResponse<T>` 유지 기준에 맞춰 200 OK와 `ApiResponse.success(null)`을 반환한다.
+- `session_feedbacks`는 세션 단위 피드백 결과를 저장한다. `turn_feedbacks`는 `session_feedbacks`에 속한 턴별 피드백 결과를 저장한다.
 
 ## 검증 결과
 
 - `./gradlew test`를 실행했고 통과했다.
+- `ApiResponse.success(HttpStatus, data)` 헬퍼 추가 전 `./gradlew test --tests com.saynow.common.response.ApiResponseTest`가 메서드 미존재 컴파일 오류로 실패하는 것을 확인했다.
+- `ApiResponse.success(HttpStatus, data)` 헬퍼를 추가하고 2차 MVP 시나리오, 세션, 피드백 컨트롤러가 명시적인 HTTP status를 반환하도록 정리했다.
+- 관련 검증으로 `./gradlew test --tests com.saynow.common.response.ApiResponseTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
 
 ## 2026-05-09
 

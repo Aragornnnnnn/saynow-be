@@ -34,27 +34,26 @@ public class SessionController {
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long scenarioId
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(sessionService.startSession(principal.userId(), scenarioId)));
+        return ApiResponse.success(HttpStatus.CREATED, sessionService.startSession(principal.userId(), scenarioId));
     }
 
     @PostMapping("/sessions/{sessionId}/utterances")
     @Operation(summary = "세션 사용자 발화 제출", description = "사용자가 AI 질문에 대한 발화를 제출합니다.")
-    public ApiResponse<UserUtteranceResponse> submitUtterance(
+    public ResponseEntity<ApiResponse<UserUtteranceResponse>> submitUtterance(
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long sessionId,
             @RequestBody UserUtteranceRequest request
     ) {
-        return ApiResponse.success(sessionService.submitUtterance(principal.userId(), sessionId, request));
+        return ApiResponse.success(HttpStatus.OK, sessionService.submitUtterance(principal.userId(), sessionId, request));
     }
 
     @DeleteMapping("/sessions/{sessionId}")
     @Operation(summary = "세션 중도 종료", description = "사용자가 진행 중인 세션을 중도 종료하고 해당 세션 데이터를 삭제합니다.")
-    public ApiResponse<Void> deleteSession(
+    public ResponseEntity<ApiResponse<Void>> deleteSession(
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long sessionId
     ) {
         sessionService.deleteSession(principal.userId(), sessionId);
-        return ApiResponse.success(null);
+        return ApiResponse.success(HttpStatus.OK, null);
     }
 }

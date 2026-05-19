@@ -3,6 +3,8 @@ package com.saynow.common.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.saynow.common.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @Schema(description = "공통 API 응답 객체")
@@ -19,6 +21,10 @@ public record ApiResponse<T>(
 
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, data, null);
+    }
+
+    public static <T> ResponseEntity<ApiResponse<T>> success(HttpStatus status, T data) {
+        return ResponseEntity.status(status).body(success(data));
     }
 
     public static ApiResponse<Void> error(ErrorCode errorCode) {

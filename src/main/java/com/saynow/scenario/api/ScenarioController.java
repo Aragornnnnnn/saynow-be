@@ -8,6 +8,8 @@ import com.saynow.scenario.application.ScenarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +25,7 @@ public class ScenarioController {
 
     @GetMapping("/scenarios")
     @Operation(summary = "시나리오 전체 조회", description = "카테고리별 시나리오 목록, 사용자별 클리어 여부, 잠금 여부를 조회합니다.")
-    public ApiResponse<CategoryListResponse> getScenarios(@AuthenticationPrincipal AuthUserPrincipal principal) {
-        return ApiResponse.success(scenarioService.getScenarios(principal.userId()));
+    public ResponseEntity<ApiResponse<CategoryListResponse>> getScenarios(@AuthenticationPrincipal AuthUserPrincipal principal) {
+        return ApiResponse.success(HttpStatus.OK, scenarioService.getScenarios(principal.userId()));
     }
 }
