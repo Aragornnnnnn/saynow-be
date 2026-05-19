@@ -349,3 +349,18 @@
 - 구현은 `SessionService.submitUtterance`에서 `aiResponse.filledSlots().isEmpty()`일 때만 `session.decreaseHeart()`를 호출하도록 제한했다.
 - GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test --rerun-tasks`를 실행했고 통과했다.
+
+---
+
+# 사용자 발화 제출 API 명세 반영 컨텍스트 노트
+
+## 2026-05-19
+
+- 사용자 발화 제출 API의 요청 필드명과 응답 필드는 이미 새 명세의 `userUtterance`, `originalQuestion`, `translatedQuestion`, `remainingHearts`, `feedbackAvailable`과 맞아 있었다.
+- 차이는 오류 코드였다. 빈 발화는 `VALIDATION_FAILED`, 완료 세션 재요청은 `SESSION_ALREADY_ENDED`, 다른 사용자 세션 접근은 `SESSION_ACCESS_DENIED`로 반환되고 있었다.
+- 새 명세에 맞춰 발화 제출 API는 빈 발화에 `INVALID_REQUEST`, 완료 세션 재요청에 `SESSION_ALREADY_COMPLETED`, 다른 사용자 세션 접근에 `FORBIDDEN`을 반환한다.
+- `AI_RESPONSE_INVALID`의 기본 메시지는 명세 문구인 `AI 응답을 처리할 수 없습니다.`로 맞춘다.
+- 더 이상 사용하지 않는 `SESSION_ACCESS_DENIED`, `SESSION_ALREADY_ENDED` 오류 코드는 제거한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 새 오류 코드 기대값에서 실패하는 것을 확인했다.
+- GREEN 검증으로 같은 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test --rerun-tasks`를 실행했고 통과했다.

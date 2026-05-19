@@ -9,7 +9,6 @@ import com.saynow.session.api.dto.UserUtteranceResponse;
 import com.saynow.session.application.SessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +43,7 @@ public class SessionController {
     public ApiResponse<UserUtteranceResponse> submitUtterance(
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long sessionId,
-            @Valid @RequestBody UserUtteranceRequest request
+            @RequestBody UserUtteranceRequest request
     ) {
         return ApiResponse.success(sessionService.submitUtterance(principal.userId(), sessionId, request));
     }

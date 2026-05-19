@@ -136,6 +136,62 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void submitUtteranceRejectsBlankUserUtterance() throws Exception {
+        String accessToken = login("mvp2-sub-3|blank@example.com|Blank User");
+        long sessionId = startSession(accessToken, 1);
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"   "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void submitUtteranceRejectsCompletedSession() throws Exception {
+        String accessToken = login("mvp2-sub-4|completed@example.com|Completed User");
+        long sessionId = startSession(accessToken, 1);
+        completeSession(accessToken, sessionId);
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"One more answer."}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SESSION_ALREADY_COMPLETED"));
+    }
+
+    @Test
+    void submitUtteranceRejectsOtherUsersSession() throws Exception {
+        String ownerAccessToken = login("mvp2-sub-5|owner@example.com|Owner User");
+        String otherAccessToken = login("mvp2-sub-6|other@example.com|Other User");
+        long sessionId = startSession(ownerAccessToken, 1);
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(otherAccessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I want an iced americano."}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+    }
+
+    @Test
     void scenarioApisRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/scenarios"))
                 .andExpect(status().isUnauthorized());
@@ -156,6 +212,25 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andReturn();
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
         return body.get("data").get("sessionId").asLong();
+    }
+
+    private void completeSession(String accessToken, long sessionId) throws Exception {
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I want an iced americano."}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Medium size, please."}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.feedbackAvailable").value(true));
     }
 
     private String login(String idToken) throws Exception {

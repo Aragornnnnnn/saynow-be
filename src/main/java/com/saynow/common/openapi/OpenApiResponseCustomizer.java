@@ -96,13 +96,13 @@ public class OpenApiResponseCustomizer {
                             "sessionId", 12,
                             "originalQuestion", "What size would you like?",
                             "translatedQuestion", "어떤 사이즈로 드릴까요?",
-                            "remainingHearts", 2,
+                            "remainingHearts", 3,
                             "feedbackAvailable", false
                     )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_ENDED), error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.AI_RESPONSE_INVALID))),
+                    errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_RESPONSE_INVALID))),
             endpoint(SessionController.class, "deleteSession",
                     success(HttpStatus.OK, "세션 중도 종료 성공", null),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED))),
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED))),
             endpoint(FeedbackController.class, "createFeedback",
                     success(HttpStatus.OK, "세션 최종 피드백 생성 성공", objectMap(
                             "sessionId", 12,
@@ -121,7 +121,7 @@ public class OpenApiResponseCustomizer {
                                     "nativeLanguageInterpretation", "조금 짧고 문법적으로 어색하게 들립니다.",
                                     "betterExpression", "I'd like an iced Americano, please."))
                     )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SESSION_ACCESS_DENIED), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED)))
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED)))
     );
 
     @Bean

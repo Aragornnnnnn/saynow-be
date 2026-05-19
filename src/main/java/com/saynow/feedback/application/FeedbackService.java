@@ -48,7 +48,7 @@ public class FeedbackService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
         if (!session.isOwnedBy(userId)) {
-            throw new ApiException(ErrorCode.SESSION_ACCESS_DENIED);
+            throw new ApiException(ErrorCode.FORBIDDEN);
         }
         if (sessionFeedbackRepository.existsBySession(session)) {
             throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);

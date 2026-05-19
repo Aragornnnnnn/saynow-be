@@ -311,3 +311,15 @@
 - [x] `filledSlots`가 비었을 때만 하트를 차감하도록 세션 발화 처리 로직을 수정한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# 사용자 발화 제출 API 명세 반영 체크리스트
+
+- [x] 명세와 현재 구현의 요청, 응답, 오류 코드를 대조한다.
+- [x] 빈 `userUtterance`, 완료 세션 재요청, 다른 사용자 세션 접근 오류 기대 테스트를 추가한다.
+- [x] OpenAPI 문서 예시의 발화 제출 오류 코드를 새 명세 기준으로 수정하는 테스트를 추가한다.
+- [x] 기존 구현에서 `VALIDATION_FAILED`, `SESSION_ALREADY_ENDED`, `SESSION_ACCESS_DENIED`가 반환되어 테스트가 실패하는 것을 확인한다.
+- [x] 발화 제출 API가 `INVALID_REQUEST`, `SESSION_ALREADY_COMPLETED`, `FORBIDDEN`을 반환하도록 수정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.

@@ -78,6 +78,7 @@ public class SessionService {
     public UserUtteranceResponse submitUtterance(Long userId, Long sessionId, UserUtteranceRequest request) {
         Session session = findOwnedSession(userId, sessionId);
         assertInProgress(session);
+        validateUserUtterance(request);
 
         SessionTurn currentTurn = turnRepository.findBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
                 .stream()
@@ -111,7 +112,7 @@ public class SessionService {
         }
         if (aiResponse.nextQuestion() == null || aiResponse.nextQuestion().isBlank()
                 || aiResponse.translatedQuestion() == null || aiResponse.translatedQuestion().isBlank()) {
-            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "다음 질문을 생성할 수 없습니다.");
+            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
 
         turnRepository.save(new SessionTurn(
@@ -145,14 +146,20 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_FOUND));
         if (!session.isOwnedBy(userId)) {
-            throw new ApiException(ErrorCode.SESSION_ACCESS_DENIED);
+            throw new ApiException(ErrorCode.FORBIDDEN);
         }
         return session;
     }
 
     private void assertInProgress(Session session) {
         if (!session.isInProgress()) {
-            throw new ApiException(ErrorCode.SESSION_ALREADY_ENDED);
+            throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
+        }
+    }
+
+    private void validateUserUtterance(UserUtteranceRequest request) {
+        if (request == null || request.userUtterance() == null || request.userUtterance().isBlank()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST);
         }
     }
 

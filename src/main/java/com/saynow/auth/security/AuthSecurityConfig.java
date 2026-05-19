@@ -71,6 +71,6 @@ public class AuthSecurityConfig {
     }
 
     private AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, accessDeniedException) -> failureResponseWriter.write(response, ErrorCode.SESSION_ACCESS_DENIED);
+        return (request, response, accessDeniedException) -> failureResponseWriter.write(response, ErrorCode.FORBIDDEN);
     }
 }
