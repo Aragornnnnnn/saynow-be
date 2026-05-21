@@ -9,12 +9,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @RestController
 @RequestMapping("/api/v1/sessions")
@@ -31,5 +33,16 @@ public class FeedbackController {
             @PathVariable Long sessionId
     ) {
         return ApiResponse.success(HttpStatus.OK, feedbackService.createFeedback(principal.userId(), sessionId));
+    }
+
+    @PostMapping(value = "/{sessionId}/feedback/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "세션 최종 피드백 스트림 생성", description = "AI 서버의 최종 피드백 SSE 이벤트를 프론트로 중계합니다.")
+    public ResponseEntity<StreamingResponseBody> streamFeedback(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId
+    ) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(feedbackService.streamFeedback(principal.userId(), sessionId));
     }
 }

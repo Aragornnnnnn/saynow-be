@@ -3,6 +3,7 @@ package com.saynow.auth.security;
 
 import com.saynow.common.web.CorsProperties;
 import com.saynow.common.exception.ErrorCode;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +45,7 @@ public class AuthSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/auth/me").authenticated()
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/scenarios").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/scenarios/*/sessions").authenticated()
