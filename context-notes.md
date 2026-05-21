@@ -416,3 +416,14 @@
 - RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, 피드백 생성 전 홈 목록의 클리어 상태 기대값에서 실패하는 것을 확인했다.
 - GREEN 검증으로 같은 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test --rerun-tasks`를 실행했고 통과했다.
+
+---
+
+# MVP2 프론트 CORS origin 교체 컨텍스트 노트
+
+## 2026-05-21
+
+- 요청 CORS origin 목록은 `http://localhost:3000`, `http://10.0.2.2:3000`, `http://172.16.103.142:3000`, `http://192.168.219.107:3000`, `https://saynow-fe-web-git-mvp2-with-ai.vercel.app`이다.
+- develop SSM `/saynow/develop/SAYNOW_CORS_ALLOWED_ORIGINS`는 존재하지 않았고, dev 서버는 코드 기본값을 사용 중이었다.
+- 런타임 반영을 위해 develop SSM에 요청 목록을 설정하고 dev 배포로 `/opt/saynow/.env`를 갱신한다.
+- 운영 SSM은 이번 작업에서 건드리지 않는다.

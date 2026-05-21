@@ -369,3 +369,15 @@
 - [x] 피드백 생성 서비스의 중복 클리어 저장 로직을 제거한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# MVP2 프론트 CORS origin 교체 체크리스트
+
+- [x] 현재 CORS 기본값과 develop 런타임 SSM override 여부를 확인한다.
+- [x] `application.yml`, `.env.example`, README의 CORS origin 목록을 요청 목록으로 교체한다.
+- [x] CORS preflight 통합 테스트의 허용 origin 기대값을 요청 목록으로 수정한다.
+- [x] develop SSM `SAYNOW_CORS_ALLOWED_ORIGINS`를 요청 목록으로 설정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] 변경 범위 점검 후 커밋하고 push한다.
+- [ ] dev 배포 후 실제 preflight 응답을 확인한다.
