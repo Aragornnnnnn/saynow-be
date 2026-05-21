@@ -427,3 +427,5 @@
 - develop SSM `/saynow/develop/SAYNOW_CORS_ALLOWED_ORIGINS`는 존재하지 않았고, dev 서버는 코드 기본값을 사용 중이었다.
 - 런타임 반영을 위해 develop SSM에 요청 목록을 설정하고 dev 배포로 `/opt/saynow/.env`를 갱신한다.
 - 운영 SSM은 이번 작업에서 건드리지 않는다.
+- CORS 변경 커밋 `e41a4e2`를 `origin/develop`에 push했고, dev 배포 run `26223225452`가 성공했다.
+- 배포 후 `https://dev-saynow.p-e.kr/api/v1/scenarios`에 OPTIONS preflight를 보내 요청 origin 5개가 모두 `Access-Control-Allow-Origin`으로 그대로 반환되는 것을 확인했다.

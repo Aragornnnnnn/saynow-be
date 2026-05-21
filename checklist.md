@@ -379,5 +379,5 @@
 - [x] CORS preflight 통합 테스트의 허용 origin 기대값을 요청 목록으로 수정한다.
 - [x] develop SSM `SAYNOW_CORS_ALLOWED_ORIGINS`를 요청 목록으로 설정한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
-- [ ] 변경 범위 점검 후 커밋하고 push한다.
-- [ ] dev 배포 후 실제 preflight 응답을 확인한다.
+- [x] 변경 범위 점검 후 커밋하고 push한다.
+- [x] dev 배포 후 실제 preflight 응답을 확인한다.
