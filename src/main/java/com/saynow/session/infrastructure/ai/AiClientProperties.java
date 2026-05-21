@@ -3,6 +3,7 @@ package com.saynow.session.infrastructure.ai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
 import java.net.URI;
 
 @ConfigurationProperties(prefix = "saynow.ai")
@@ -10,7 +11,9 @@ public record AiClientProperties(
         URI baseUrl,
         String clientMode,
         String nextQuestionPath,
-        String feedbackPath
+        String feedbackPath,
+        String feedbackStreamPath,
+        Duration feedbackStreamTimeout
 ) {
 
     public AiClientProperties {
@@ -19,6 +22,12 @@ public record AiClientProperties(
         }
         if (feedbackPath == null || feedbackPath.isBlank()) {
             feedbackPath = "/api/v1/conversation/feedback";
+        }
+        if (feedbackStreamPath == null || feedbackStreamPath.isBlank()) {
+            feedbackStreamPath = "/api/v1/conversation/feedback/stream";
+        }
+        if (feedbackStreamTimeout == null || feedbackStreamTimeout.isNegative() || feedbackStreamTimeout.isZero()) {
+            feedbackStreamTimeout = Duration.ofSeconds(180);
         }
     }
 }

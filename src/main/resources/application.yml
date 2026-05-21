@@ -32,6 +32,8 @@ saynow:
     client-mode: ${SAYNOW_AI_CLIENT_MODE:local}
     next-question-path: ${SAYNOW_AI_NEXT_QUESTION_PATH:/api/v1/conversation/next-question}
     feedback-path: ${SAYNOW_AI_FEEDBACK_PATH:/api/v1/conversation/feedback}
+    feedback-stream-path: ${SAYNOW_AI_FEEDBACK_STREAM_PATH:/api/v1/conversation/feedback/stream}
+    feedback-stream-timeout: ${SAYNOW_AI_FEEDBACK_STREAM_TIMEOUT:180s}
 
 sentry:
   enabled: ${SENTRY_ENABLED:false}
