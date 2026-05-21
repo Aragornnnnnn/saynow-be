@@ -1,3 +1,28 @@
+# AI SSE 피드백 스트림 중계 컨텍스트 노트
+
+## 2026-05-21
+
+- 작업 브랜치는 `feat/feedback-sse-stream`이다.
+- 현재 백엔드는 `spring-boot-starter-webmvc` 기반이며, 동기 AI 호출은 `RemoteAiConversationClient`에서 Java `HttpClient`로 처리한다.
+- 기존 동기 피드백 API `POST /api/v1/sessions/{sessionId}/feedback`는 유지한다.
+- 새 백엔드 SSE API는 기존 라우팅 규칙을 따라 `POST /api/v1/sessions/{sessionId}/feedback/stream`으로 둔다.
+- 현재 DB에는 `feedbackStatus` 컬럼이 없다. 이번 MVP에서는 `summary`와 `turnFeedback`를 프론트에 즉시 relay하되, DB 저장은 `done` 수신 후 한 번에 확정한다.
+- 중간 실패나 AI `error` 이벤트가 오면 `session_feedbacks`를 만들지 않는다. 이 정책이면 기존 동기 API나 스트림 API를 다시 시도할 수 있다.
+- AI 요청 body는 기존 동기 피드백과 같은 `AiFeedbackRequest`를 사용한다.
+- 원격 SSE 호출은 사용자 요청의 참고 방향에 맞춰 `WebClient`와 Reactor `Flux`를 사용한다. MVC 앱은 그대로 유지하고, 컨트롤러 응답은 `StreamingResponseBody`로 `text/event-stream`을 직접 쓴다.
+- RED 검증으로 `./gradlew test --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고, `AiFeedbackStreamClient`, `AiFeedbackStreamEvent`, `AiFeedbackStreamException`, Reactor `Flux`가 없어 컴파일 실패하는 것을 확인했다.
+- `spring-boot-starter-webflux`를 추가하고, `AiFeedbackStreamClient` 계약과 로컬/원격 구현을 추가했다.
+- 원격 SSE 호출은 `POST /api/v1/conversation/feedback/stream`, `Accept: text/event-stream`, `Content-Type: application/json` 기준이다. 설정 override는 `SAYNOW_AI_FEEDBACK_STREAM_PATH`, `SAYNOW_AI_FEEDBACK_STREAM_TIMEOUT`으로 둔다.
+- 백엔드 SSE endpoint는 `POST /api/v1/sessions/{sessionId}/feedback/stream`이다.
+- MockMvc SSE 테스트에서 ASYNC dispatch가 Bearer token 없이 다시 Security 필터를 타면서 `AuthorizationDeniedException`이 발생했다. 초기 REQUEST는 이미 인증되므로 `DispatcherType.ASYNC`, `DispatcherType.ERROR`는 permit 처리했다.
+- 전체 테스트 첫 실행에서 dev/prod 원격 AI 프로필 컨텍스트가 `WebClient.Builder` 빈 부재로 실패했다. `AiClientConfiguration`에 명시적인 `WebClient.Builder` Bean을 추가했다.
+- 원격 스트림에는 `timeout`과 `take`를 모두 적용한다. idle gap과 전체 스트림 시간이 `saynow.ai.feedback-stream-timeout`을 넘으면 백엔드는 `done` 없이 종료된 스트림으로 보고 `error` 이벤트를 내려준다.
+- 관련 검증으로 `./gradlew test --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
+- 컨텍스트 회귀 검증으로 `./gradlew test --tests com.saynow.DevAiClientModeTest --tests com.saynow.DevOpenApiIntegrationTest --tests com.saynow.ProdAiClientModeTest --tests com.saynow.SentryProdConfigurationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # 로컬 네트워크 CORS origin 추가 컨텍스트 노트
 
 ## 2026-05-12

@@ -1,3 +1,22 @@
+# AI SSE 피드백 스트림 중계 체크리스트
+
+- [x] 현재 피드백 생성 API와 AI 클라이언트 구조 확인.
+- [x] SSE relay 구현 계획 작성.
+- [x] SSE 정상 스트림 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI error 이벤트 relay 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI SSE 연결 실패 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 기존 동기 피드백 API 회귀 테스트를 먼저 작성하고 실패 확인.
+- [x] AI feedback stream 클라이언트 계약 추가.
+- [x] 원격 AI SSE endpoint 호출과 timeout 설정 추가.
+- [x] 백엔드 SSE relay endpoint 추가.
+- [x] done 수신 시 피드백 저장 확정 처리 추가.
+- [x] error 또는 연결 실패 시 SSE error 이벤트 반환 처리 추가.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # 로컬 네트워크 CORS origin 추가 체크리스트
 
 - [x] main worktree를 최신 `origin/main`으로 fast-forward.
