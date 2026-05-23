@@ -61,6 +61,8 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.data.feedbackAvailable").value(false))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.403.content['application/json'].examples.SCENARIO_LOCKED.value.error.code").value("SCENARIO_LOCKED"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.originalQuestion").value("What size would you like?"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.heartDeducted").value(false))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnClassification").value("ANSWER"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.400.content['application/json'].examples.INVALID_REQUEST.value.error.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.403.content['application/json'].examples.FORBIDDEN.value.error.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_COMPLETED.value.error.code").value("SESSION_ALREADY_COMPLETED"))

@@ -20,6 +20,7 @@ import com.saynow.session.infrastructure.ai.AiFilledSlot;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
+import com.saynow.session.infrastructure.ai.TurnClassification;
 import com.saynow.scenario.application.ScenarioService;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.UserScenarioProgress;
@@ -97,19 +98,20 @@ public class SessionService {
                         .toList()));
         validateNextQuestionResponse(aiResponse);
 
+        boolean heartDeducted = shouldDeductHeart(session, aiResponse);
         applyFilledSlots(slotStatuses, aiResponse.filledSlots());
-        if (aiResponse.filledSlots().isEmpty()) {
+        if (heartDeducted) {
             session.decreaseHeart();
         }
 
         if (allFulfilled(slotStatuses)) {
             session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
             markScenarioCleared(session);
-            return completedResponse(session);
+            return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
         if (session.getRemainingHearts() <= 0) {
             session.complete(SessionStatus.FAILURE, LocalDateTime.now());
-            return completedResponse(session);
+            return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
         if (aiResponse.nextQuestion() == null || aiResponse.nextQuestion().isBlank()
                 || aiResponse.translatedQuestion() == null || aiResponse.translatedQuestion().isBlank()) {
@@ -126,7 +128,9 @@ public class SessionService {
                 aiResponse.nextQuestion(),
                 aiResponse.translatedQuestion(),
                 session.getRemainingHearts(),
-                false);
+                false,
+                heartDeducted,
+                aiResponse.turnClassification());
     }
 
     @Transactional
@@ -195,9 +199,14 @@ public class SessionService {
     }
 
     private void validateNextQuestionResponse(AiNextQuestionResponse response) {
-        if (response == null || response.filledSlots() == null) {
+        if (response == null || response.filledSlots() == null || response.turnClassification() == null) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
+    }
+
+    private boolean shouldDeductHeart(Session session, AiNextQuestionResponse response) {
+        return response.turnClassification() == TurnClassification.INVALID_RESPONSE
+                && session.getRemainingHearts() > 0;
     }
 
     private void applyFilledSlots(List<SessionSlotStatus> slotStatuses, List<AiFilledSlot> filledSlots) {
@@ -218,12 +227,18 @@ public class SessionService {
         return slotStatuses.stream().allMatch(SessionSlotStatus::isFulfilled);
     }
 
-    private UserUtteranceResponse completedResponse(Session session) {
+    private UserUtteranceResponse completedResponse(
+            Session session,
+            boolean heartDeducted,
+            TurnClassification turnClassification
+    ) {
         return new UserUtteranceResponse(
                 session.getId(),
                 null,
                 null,
                 session.getRemainingHearts(),
-                true);
+                true,
+                heartDeducted,
+                turnClassification);
     }
 }

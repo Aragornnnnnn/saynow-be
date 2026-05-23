@@ -6,6 +6,7 @@ import java.util.List;
 public record AiNextQuestionResponse(
         String nextQuestion,
         String translatedQuestion,
-        List<AiFilledSlot> filledSlots
+        List<AiFilledSlot> filledSlots,
+        TurnClassification turnClassification
 ) {
 }

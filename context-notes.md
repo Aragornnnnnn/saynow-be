@@ -149,6 +149,17 @@
 - `SocialLoginRequest.nonce`는 설정 기반 검증을 위해 validation 필수값에서 제외한다. nonce가 필수인 환경에서는 verifier가 `OIDC_NONCE_MISMATCH`를 반환한다.
 - RED 검증으로 `./gradlew test --tests com.saynow.auth.SocialAuthApiIntegrationTest.socialLoginRejectsMissingNonceByDefault --tests com.saynow.auth.DevSocialAuthNonceIntegrationTest`를 실행했고, 기본 validation과 dev 비활성화 설정이 기존 구현과 맞지 않아 실패했다.
 - dev SSM `/saynow/develop/SAYNOW_AUTH_OIDC_NONCE_REQUIRED`는 존재하지 않았다. 배포 시 `application-dev.yml` 기본값 `false`가 적용된다.
+- 2026-05-24 작업은 사용자가 요청한 대로 `origin/develop` 기준 새 브랜치 `feat/develop-ai-turn-policy`에서 다시 진행한다.
+- AI next-question 응답에는 `turnClassification`을 추가한다. 값은 `ANSWER`, `ASSISTANCE_REQUEST`, `INVALID_RESPONSE`만 허용한다.
+- 하트 차감은 `filledSlots`가 비어 있는지와 무관하게 `turnClassification == INVALID_RESPONSE`일 때만 수행한다.
+- `ASSISTANCE_REQUEST`는 메뉴 추천, 메뉴 보기, 옵션 확인 같은 정상 대화 턴이다. 슬롯을 채우지 않아도 실패 턴으로 처리하지 않고 AI가 내려준 `nextQuestion`을 다음 질문으로 사용한다.
+- 사용자 발화 API 응답에는 프론트가 정책을 추론하지 않도록 백엔드 계산값 `heartDeducted`, `remainingHearts`, `turnClassification`을 포함한다.
+- 최소 검증 케이스는 `Can you recommend a menu?`, `Can I see the menu?`, `That’s all.`, `I want coffee.`, `I want drink.` 다섯 발화다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, `TurnClassification` 타입이 아직 없어 테스트 컴파일이 실패하는 것을 확인했다.
+- `TurnClassification` enum을 추가하고 AI next-question 내부 DTO, 원격 AI 응답 매핑, 로컬 AI 대체 클라이언트, 사용자 발화 응답 DTO를 같은 분류값 기준으로 연결했다.
+- `SessionService`는 이제 `filledSlots` 비어 있음이 아니라 `turnClassification == INVALID_RESPONSE`일 때만 하트를 차감한다.
+- 관련 GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest`, `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`, `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고 모두 통과했다.
+- 전체 검증으로 `./gradlew test`와 `git diff --check`를 실행했고 모두 통과했다.
 
 ## 2026-05-09
 

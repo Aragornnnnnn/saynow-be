@@ -26,7 +26,7 @@ public class LocalAiConversationClient implements AiConversationClient {
                 .filter(slot -> !slot.filled())
                 .count() - newlyFilled.size();
         if (remainingAfterFill <= 0) {
-            return new AiNextQuestionResponse(null, null, newlyFilled);
+            return new AiNextQuestionResponse(null, null, newlyFilled, TurnClassification.ANSWER);
         }
 
         String nextSlot = slots.stream()
@@ -38,7 +38,8 @@ public class LocalAiConversationClient implements AiConversationClient {
         return new AiNextQuestionResponse(
                 "Could you tell me your " + nextSlot + "?",
                 nextSlot + "에 대해 말해주시겠어요?",
-                newlyFilled);
+                newlyFilled,
+                TurnClassification.ANSWER);
     }
 
     @Override

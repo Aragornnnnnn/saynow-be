@@ -112,6 +112,12 @@
 - [x] 공통 응답 헬퍼와 컨트롤러 반환 타입을 상태 코드 지정 방식으로 정리한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위를 점검하고 커밋한다.
+- [x] AI next-question 응답의 `turnClassification` 계약을 develop 기준으로 반영한다.
+- [x] 하트 차감 기준을 `INVALID_RESPONSE`로만 변경하는 통합 테스트를 먼저 추가한다.
+- [x] `ASSISTANCE_REQUEST`와 `ANSWER`는 `filledSlots=[]`여도 하트가 차감되지 않게 한다.
+- [x] 프론트 발화 응답에 `heartDeducted`, `turnClassification`, `remainingHearts` 정책 결과를 포함한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] 변경 범위를 점검하고 커밋한다.
 - [x] 사용자별 시나리오 진행 테이블 이름 변경 스키마 테스트를 추가한다.
 - [x] `user_scenario_clears.is_cleared`를 `user_scenario_progress.cleared`로 변경한다.
 - [x] `UserScenarioClear` 도메인과 저장소명을 `UserScenarioProgress` 기준으로 변경한다.

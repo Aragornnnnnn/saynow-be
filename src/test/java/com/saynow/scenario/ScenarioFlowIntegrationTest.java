@@ -12,6 +12,7 @@ import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
+import com.saynow.session.infrastructure.ai.TurnClassification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,30 +121,73 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void emptyFilledSlotsDecreasesHeart() throws Exception {
-        String accessToken = login("mvp2-sub-2|empty@example.com|Empty Slots User");
-        long sessionId = startSession(accessToken, 1);
-        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
-                "Could you tell me what drink you want?",
-                "원하는 음료를 말씀해 주시겠어요?",
-                List.of()));
+    void recommendationRequestDoesNotDeductHeartWhenFilledSlotsAreEmpty() throws Exception {
+        assertTurnPolicy(
+                "mvp2-sub-2|recommend@example.com|Recommend User",
+                "Can you recommend a menu?",
+                TurnClassification.ASSISTANCE_REQUEST,
+                List.of(),
+                "The menu includes iced Americano, latte, cappuccino, and tea. What would you like to order?",
+                "메뉴에는 아이스 아메리카노, 라떼, 카푸치노, 차가 있어요. 무엇을 주문하시겠어요?",
+                3,
+                false);
+    }
 
-        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"userUtterance":"The weather is nice today."}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data.remainingHearts").value(2))
-                .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
-                .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me what drink you want?"));
+    @Test
+    void menuRequestDoesNotDeductHeartWhenFilledSlotsAreEmpty() throws Exception {
+        assertTurnPolicy(
+                "mvp2-sub-3|menu@example.com|Menu User",
+                "Can I see the menu?",
+                TurnClassification.ASSISTANCE_REQUEST,
+                List.of(),
+                "The menu includes iced Americano, latte, cappuccino, and tea. What would you like to order?",
+                "메뉴에는 아이스 아메리카노, 라떼, 카푸치노, 차가 있어요. 무엇을 주문하시겠어요?",
+                3,
+                false);
+    }
+
+    @Test
+    void answerWithoutFilledSlotsDoesNotDeductHeart() throws Exception {
+        assertTurnPolicy(
+                "mvp2-sub-4|answer-empty@example.com|Answer Empty User",
+                "That’s all.",
+                TurnClassification.ANSWER,
+                List.of(),
+                "What drink would you like to order?",
+                "어떤 음료를 주문하고 싶으신가요?",
+                3,
+                false);
+    }
+
+    @Test
+    void answerWithFilledSlotDoesNotDeductHeart() throws Exception {
+        assertTurnPolicy(
+                "mvp2-sub-5|answer-filled@example.com|Answer Filled User",
+                "I want coffee.",
+                TurnClassification.ANSWER,
+                List.of(new AiFilledSlot("drink")),
+                "What size would you like?",
+                "어떤 사이즈로 드릴까요?",
+                3,
+                false);
+    }
+
+    @Test
+    void invalidResponseDeductsHeart() throws Exception {
+        assertTurnPolicy(
+                "mvp2-sub-6|invalid@example.com|Invalid User",
+                "I want drink.",
+                TurnClassification.INVALID_RESPONSE,
+                List.of(),
+                "What drink would you like to order?",
+                "어떤 음료를 주문하고 싶으신가요?",
+                2,
+                true);
     }
 
     @Test
     void submitUtteranceRejectsBlankUserUtterance() throws Exception {
-        String accessToken = login("mvp2-sub-3|blank@example.com|Blank User");
+        String accessToken = login("mvp2-sub-7|blank@example.com|Blank User");
         long sessionId = startSession(accessToken, 1);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
@@ -167,7 +211,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void submitUtteranceRejectsCompletedSession() throws Exception {
-        String accessToken = login("mvp2-sub-4|completed@example.com|Completed User");
+        String accessToken = login("mvp2-sub-8|completed@example.com|Completed User");
         long sessionId = startSession(accessToken, 1);
         completeSession(accessToken, sessionId);
 
@@ -183,8 +227,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void submitUtteranceRejectsOtherUsersSession() throws Exception {
-        String ownerAccessToken = login("mvp2-sub-5|owner@example.com|Owner User");
-        String otherAccessToken = login("mvp2-sub-6|other@example.com|Other User");
+        String ownerAccessToken = login("mvp2-sub-9|owner@example.com|Owner User");
+        String otherAccessToken = login("mvp2-sub-10|other@example.com|Other User");
         long sessionId = startSession(ownerAccessToken, 1);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
@@ -218,6 +262,40 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andReturn();
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsByteArray());
         return body.get("data").get("sessionId").asLong();
+    }
+
+    private void assertTurnPolicy(
+            String idToken,
+            String userUtterance,
+            TurnClassification turnClassification,
+            List<AiFilledSlot> filledSlots,
+            String nextQuestion,
+            String translatedQuestion,
+            int expectedRemainingHearts,
+            boolean expectedHeartDeducted
+    ) throws Exception {
+        String accessToken = login(idToken);
+        long sessionId = startSession(accessToken, 1);
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                nextQuestion,
+                translatedQuestion,
+                filledSlots,
+                turnClassification));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"%s"}
+                                """.formatted(userUtterance)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.remainingHearts").value(expectedRemainingHearts))
+                .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
+                .andExpect(jsonPath("$.data.heartDeducted").value(expectedHeartDeducted))
+                .andExpect(jsonPath("$.data.turnClassification").value(turnClassification.name()))
+                .andExpect(jsonPath("$.data.originalQuestion").value(nextQuestion))
+                .andExpect(jsonPath("$.data.translatedQuestion").value(translatedQuestion));
     }
 
     private void completeSession(String accessToken, long sessionId) throws Exception {
@@ -301,7 +379,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     .filter(slot -> !slot.filled())
                     .count() - newlyFilled.size();
             if (remainingAfterFill <= 0) {
-                return new AiNextQuestionResponse(null, null, newlyFilled);
+                return new AiNextQuestionResponse(null, null, newlyFilled, TurnClassification.ANSWER);
             }
 
             String nextSlot = slots.stream()
@@ -313,7 +391,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             return new AiNextQuestionResponse(
                     "Could you tell me your " + nextSlot + "?",
                     nextSlot + "에 대해 말해주시겠어요?",
-                    newlyFilled);
+                    newlyFilled,
+                    TurnClassification.ANSWER);
         }
 
         @Override

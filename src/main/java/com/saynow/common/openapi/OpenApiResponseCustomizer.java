@@ -97,7 +97,9 @@ public class OpenApiResponseCustomizer {
                             "originalQuestion", "What size would you like?",
                             "translatedQuestion", "어떤 사이즈로 드릴까요?",
                             "remainingHearts", 3,
-                            "feedbackAvailable", false
+                            "feedbackAvailable", false,
+                            "heartDeducted", false,
+                            "turnClassification", "ANSWER"
                     )),
                     errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_RESPONSE_INVALID))),
             endpoint(SessionController.class, "deleteSession",

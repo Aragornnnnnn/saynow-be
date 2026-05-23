@@ -75,24 +75,33 @@ public class RemoteAiConversationClient implements AiConversationClient {
     private record RemoteNextQuestionResponse(
             String nextQuestion,
             String translatedQuestion,
-            List<RemoteFilledSlot> filledSlots
+            List<RemoteFilledSlot> filledSlots,
+            TurnClassification turnClassification
     ) {
 
         private AiNextQuestionResponse toResponse() {
-            if (filledSlots == null) {
+            if (filledSlots == null || turnClassification == null) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 꼬리 질문 응답이 올바르지 않습니다.");
             }
             return new AiNextQuestionResponse(
                     nextQuestion,
                     translatedQuestion,
                     filledSlots.stream()
-                            .map(slot -> new AiFilledSlot(slot.slotName()))
-                            .toList());
+                            .map(RemoteFilledSlot::toResponse)
+                            .toList(),
+                    turnClassification);
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record RemoteFilledSlot(String slotName) {
+
+        private AiFilledSlot toResponse() {
+            if (slotName == null || slotName.isBlank()) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 꼬리 질문 응답이 올바르지 않습니다.");
+            }
+            return new AiFilledSlot(slotName);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
