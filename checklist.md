@@ -1,3 +1,47 @@
+# AI SSE 피드백 스트림 중계 체크리스트
+
+- [x] AI 피드백 요청에 `sessionResult`를 포함하는 계약 변경 범위를 기록한다.
+- [x] 기본 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] SSE 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] 원격 AI 피드백 요청 JSON에 `sessionResult`가 직렬화되는 테스트를 먼저 작성하고 실패 확인.
+- [x] `AiFeedbackRequest`에 `sessionResult` 필드 추가.
+- [x] 기본 API와 SSE API 공통 요청 생성 경로에서 세션 상태를 `sessionResult`로 매핑한다.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
+- [x] 세션 성공/실패 결과 조회 API 구현 범위를 기록한다.
+- [x] 성공 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 실패 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 진행 중 세션 결과 조회 거부 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 세션 결과 응답 DTO와 서비스 메서드 추가.
+- [x] `GET /api/v1/sessions/{sessionId}/result` 컨트롤러 추가.
+- [x] OpenAPI 응답 예시와 경로 검증 갱신.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
+- [x] 현재 피드백 생성 API와 AI 클라이언트 구조 확인.
+- [x] SSE relay 구현 계획 작성.
+- [x] SSE 정상 스트림 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI error 이벤트 relay 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI SSE 연결 실패 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 기존 동기 피드백 API 회귀 테스트를 먼저 작성하고 실패 확인.
+- [x] AI feedback stream 클라이언트 계약 추가.
+- [x] 원격 AI SSE endpoint 호출과 timeout 설정 추가.
+- [x] 백엔드 SSE relay endpoint 추가.
+- [x] done 수신 시 피드백 저장 확정 처리 추가.
+- [x] error 또는 연결 실패 시 SSE error 이벤트 반환 처리 추가.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # 로컬 네트워크 CORS origin 추가 체크리스트
 
 - [x] main worktree를 최신 `origin/main`으로 fast-forward.

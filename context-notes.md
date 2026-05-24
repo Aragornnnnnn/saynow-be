@@ -1,3 +1,42 @@
+# AI SSE 피드백 스트림 중계 컨텍스트 노트
+
+## 2026-05-24
+
+- AI 피드백 생성 요청에 세션 성공/실패 결과를 함께 보내기로 했다. 필드명은 AI 계약 기준으로 `sessionResult`이고 값은 현재 세션 상태의 `SUCCESS` 또는 `FAILURE` 문자열이다.
+- 기존 기본 피드백 API와 SSE 피드백 API는 모두 `FeedbackService.toAiFeedbackRequest(...)`를 통해 AI 요청 DTO를 만들기 때문에, DTO 필드와 공통 매핑을 함께 바꾸면 두 API에 반영된다.
+- `loadFeedbackContext(...)`가 이미 `SUCCESS`, `FAILURE` 세션만 피드백 생성 가능하게 제한하므로 `sessionResult`에는 `IN_PROGRESS`, `ABANDONED`가 들어가지 않는다.
+
+- 사용자가 피드백 생성 대기 시간을 줄이기 위해 피드백 생성과 무관하게 시나리오 성공/실패 여부를 먼저 조회하는 API를 요청했다.
+- 현재 세션 성공/실패는 `SessionStatus.SUCCESS`, `SessionStatus.FAILURE`로 백엔드가 이미 알고 있다. 피드백 생성 결과나 AI 최종 피드백 응답에 의존하지 않는다.
+- 새 API는 세션 도메인 책임으로 둔다. 경로는 기존 세션 라우팅을 따라 `GET /api/v1/sessions/{sessionId}/result`로 추가한다.
+- 응답 데이터는 목적에 맞게 `scenarioResult` 하나만 반환한다. `sessionId`, `remainingHearts`, `feedbackAvailable`은 path나 기존 API에서 알 수 있으므로 이번 응답에는 포함하지 않는다.
+- `SUCCESS`, `FAILURE`만 정상 응답한다. `IN_PROGRESS`, `ABANDONED`는 성공/실패가 확정되지 않았거나 피드백 결과 보기 흐름이 아니므로 `SESSION_NOT_COMPLETABLE`로 거부한다.
+
+---
+
+## 2026-05-21
+
+- 작업 브랜치는 `feat/feedback-sse-stream`이다.
+- 현재 백엔드는 `spring-boot-starter-webmvc` 기반이며, 동기 AI 호출은 `RemoteAiConversationClient`에서 Java `HttpClient`로 처리한다.
+- 기존 동기 피드백 API `POST /api/v1/sessions/{sessionId}/feedback`는 유지한다.
+- 새 백엔드 SSE API는 기존 라우팅 규칙을 따라 `POST /api/v1/sessions/{sessionId}/feedback/stream`으로 둔다.
+- 현재 DB에는 `feedbackStatus` 컬럼이 없다. 이번 MVP에서는 `summary`와 `turnFeedback`를 프론트에 즉시 relay하되, DB 저장은 `done` 수신 후 한 번에 확정한다.
+- 중간 실패나 AI `error` 이벤트가 오면 `session_feedbacks`를 만들지 않는다. 이 정책이면 기존 동기 API나 스트림 API를 다시 시도할 수 있다.
+- AI 요청 body는 기존 동기 피드백과 같은 `AiFeedbackRequest`를 사용한다.
+- 원격 SSE 호출은 사용자 요청의 참고 방향에 맞춰 `WebClient`와 Reactor `Flux`를 사용한다. MVC 앱은 그대로 유지하고, 컨트롤러 응답은 `StreamingResponseBody`로 `text/event-stream`을 직접 쓴다.
+- RED 검증으로 `./gradlew test --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고, `AiFeedbackStreamClient`, `AiFeedbackStreamEvent`, `AiFeedbackStreamException`, Reactor `Flux`가 없어 컴파일 실패하는 것을 확인했다.
+- `spring-boot-starter-webflux`를 추가하고, `AiFeedbackStreamClient` 계약과 로컬/원격 구현을 추가했다.
+- 원격 SSE 호출은 `POST /api/v1/conversation/feedback/stream`, `Accept: text/event-stream`, `Content-Type: application/json` 기준이다. 설정 override는 `SAYNOW_AI_FEEDBACK_STREAM_PATH`, `SAYNOW_AI_FEEDBACK_STREAM_TIMEOUT`으로 둔다.
+- 백엔드 SSE endpoint는 `POST /api/v1/sessions/{sessionId}/feedback/stream`이다.
+- MockMvc SSE 테스트에서 ASYNC dispatch가 Bearer token 없이 다시 Security 필터를 타면서 `AuthorizationDeniedException`이 발생했다. 초기 REQUEST는 이미 인증되므로 `DispatcherType.ASYNC`, `DispatcherType.ERROR`는 permit 처리했다.
+- 전체 테스트 첫 실행에서 dev/prod 원격 AI 프로필 컨텍스트가 `WebClient.Builder` 빈 부재로 실패했다. `AiClientConfiguration`에 명시적인 `WebClient.Builder` Bean을 추가했다.
+- 원격 스트림에는 `timeout`과 `take`를 모두 적용한다. idle gap과 전체 스트림 시간이 `saynow.ai.feedback-stream-timeout`을 넘으면 백엔드는 `done` 없이 종료된 스트림으로 보고 `error` 이벤트를 내려준다.
+- 관련 검증으로 `./gradlew test --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
+- 컨텍스트 회귀 검증으로 `./gradlew test --tests com.saynow.DevAiClientModeTest --tests com.saynow.DevOpenApiIntegrationTest --tests com.saynow.ProdAiClientModeTest --tests com.saynow.SentryProdConfigurationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # 로컬 네트워크 CORS origin 추가 컨텍스트 노트
 
 ## 2026-05-12

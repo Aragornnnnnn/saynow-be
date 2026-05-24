@@ -7,12 +7,15 @@ import com.saynow.common.exception.ErrorCode;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -62,6 +65,37 @@ class RemoteAiConversationClientTest {
                 .isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
     }
 
+    @Test
+    void feedbackRequestIncludesSessionResult() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        RemoteAiConversationClient client = clientWithFeedbackResponse(requestBody, """
+                {
+                  "comprehensionScore":82,
+                  "feedbackSummary":"전체적으로 의도는 잘 전달됐습니다.",
+                  "turnFeedbacks":[
+                    {
+                      "turnId":101,
+                      "feedbackRequired":true,
+                      "nativeUnderstanding":"의도를 이해했습니다.",
+                      "nativeLanguageInterpretation":"자연스럽게 들립니다.",
+                      "betterExpression":"I'd like an iced Americano, please."
+                    }
+                  ]
+                }
+                """);
+
+        client.generateFeedback(new AiFeedbackRequest(
+                "카페에서 주문하기",
+                "원하는 음료를 자연스럽게 주문할 수 있다.",
+                "SUCCESS",
+                List.of(new AiFeedbackTurnRequest(
+                        101L,
+                        "What would you like to order?",
+                        "I want an iced americano."))));
+
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("sessionResult").asText()).isEqualTo("SUCCESS");
+    }
+
     private RemoteAiConversationClient clientWithNextQuestionResponse(String responseBody) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/api/v1/conversation/next-question", exchange -> {
@@ -78,8 +112,36 @@ class RemoteAiConversationClientTest {
                 baseUrl,
                 "remote",
                 "/api/v1/conversation/next-question",
-                "/api/v1/conversation/feedback");
-        return new RemoteAiConversationClient(new ObjectMapper(), properties);
+                "/api/v1/conversation/feedback",
+                "/api/v1/conversation/feedback/stream",
+                Duration.ofSeconds(180));
+        return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
+    }
+
+    private RemoteAiConversationClient clientWithFeedbackResponse(
+            AtomicReference<String> requestBody,
+            String responseBody
+    ) throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/v1/conversation/feedback", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            exchange.getResponseBody().write(responseBytes);
+            exchange.close();
+        });
+        server.start();
+
+        URI baseUrl = URI.create("http://127.0.0.1:" + server.getAddress().getPort());
+        AiClientProperties properties = new AiClientProperties(
+                baseUrl,
+                "remote",
+                "/api/v1/conversation/next-question",
+                "/api/v1/conversation/feedback",
+                "/api/v1/conversation/feedback/stream",
+                Duration.ofSeconds(180));
+        return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
     }
 
     private AiNextQuestionRequest nextQuestionRequest() {

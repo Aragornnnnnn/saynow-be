@@ -8,7 +8,13 @@ import com.saynow.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,11 +28,12 @@ import java.util.List;
 @ConditionalOnProperty(prefix = "saynow.ai", name = "client-mode", havingValue = "remote")
 @RequiredArgsConstructor
 @Slf4j
-public class RemoteAiConversationClient implements AiConversationClient {
+public class RemoteAiConversationClient implements AiConversationClient, AiFeedbackStreamClient {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper;
     private final AiClientProperties properties;
+    private final WebClient.Builder webClientBuilder;
 
     @Override
     public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
@@ -36,6 +43,35 @@ public class RemoteAiConversationClient implements AiConversationClient {
     @Override
     public AiFeedbackResponse generateFeedback(AiFeedbackRequest request) {
         return post(feedbackUri(), request, RemoteFeedbackResponse.class).toResponse();
+    }
+
+    @Override
+    public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
+        URI uri = feedbackStreamUri();
+        return webClientBuilder.build()
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .bodyValue(request)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .map(body -> {
+                            log.warn("AI 서버 SSE 호출이 실패했습니다. uri={}, status={}, body={}", uri, response.statusCode(), body);
+                            return new AiFeedbackStreamException("AI 서버 SSE 호출에 실패했습니다.");
+                        }))
+                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
+                })
+                .timeout(properties.feedbackStreamTimeout())
+                .take(properties.feedbackStreamTimeout())
+                .filter(event -> event.event() != null && event.data() != null)
+                .map(event -> new AiFeedbackStreamEvent(event.event(), event.data()))
+                .onErrorMap(exception -> !(exception instanceof AiFeedbackStreamException),
+                        exception -> {
+                            log.warn("AI 서버 SSE 연결에 실패했습니다. uri={}", uri, exception);
+                            return new AiFeedbackStreamException("AI 서버 SSE 연결에 실패했습니다.", exception);
+                        });
     }
 
     private <T> T post(URI uri, Object payload, Class<T> responseType) {
@@ -69,6 +105,10 @@ public class RemoteAiConversationClient implements AiConversationClient {
 
     private URI feedbackUri() {
         return properties.baseUrl().resolve(properties.feedbackPath());
+    }
+
+    private URI feedbackStreamUri() {
+        return properties.baseUrl().resolve(properties.feedbackStreamPath());
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

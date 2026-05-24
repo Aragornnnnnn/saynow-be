@@ -239,6 +239,65 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(otherAccessToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void sessionResultReturnsSuccessWhenSessionSucceeded() throws Exception {
+        String accessToken = login("mvp2-sub-11|result-success@example.com|Result Success User");
+        long sessionId = startSession(accessToken, 1);
+        completeSession(accessToken, sessionId);
+
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.scenarioResult").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.sessionId").doesNotExist())
+                .andExpect(jsonPath("$.data.remainingHearts").doesNotExist())
+                .andExpect(jsonPath("$.data.feedbackAvailable").doesNotExist());
+    }
+
+    @Test
+    void sessionResultReturnsFailureWhenSessionFailed() throws Exception {
+        String accessToken = login("mvp2-sub-12|result-failure@example.com|Result Failure User");
+        long sessionId = startSession(accessToken, 1);
+        for (int index = 0; index < 3; index++) {
+            aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                    "What drink would you like to order?",
+                    "어떤 음료를 주문하고 싶으신가요?",
+                    List.of(),
+                    TurnClassification.INVALID_RESPONSE));
+        }
+
+        for (int index = 0; index < 3; index++) {
+            mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                            .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"userUtterance":"I want drink."}
+                                    """))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.scenarioResult").value("FAILURE"));
+    }
+
+    @Test
+    void sessionResultRejectsInProgressSession() throws Exception {
+        String accessToken = login("mvp2-sub-13|result-progress@example.com|Result Progress User");
+        long sessionId = startSession(accessToken, 1);
+
+        mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("SESSION_NOT_COMPLETABLE"));
     }
 
     @Test
@@ -247,6 +306,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/scenarios/1/sessions"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/sessions/1/result"))
                 .andExpect(status().isUnauthorized());
     }
 
