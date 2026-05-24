@@ -1,5 +1,15 @@
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
+## 2026-05-24
+
+- 사용자가 피드백 생성 대기 시간을 줄이기 위해 피드백 생성과 무관하게 시나리오 성공/실패 여부를 먼저 조회하는 API를 요청했다.
+- 현재 세션 성공/실패는 `SessionStatus.SUCCESS`, `SessionStatus.FAILURE`로 백엔드가 이미 알고 있다. 피드백 생성 결과나 AI 최종 피드백 응답에 의존하지 않는다.
+- 새 API는 세션 도메인 책임으로 둔다. 경로는 기존 세션 라우팅을 따라 `GET /api/v1/sessions/{sessionId}/result`로 추가한다.
+- 응답 데이터는 목적에 맞게 `scenarioResult` 하나만 반환한다. `sessionId`, `remainingHearts`, `feedbackAvailable`은 path나 기존 API에서 알 수 있으므로 이번 응답에는 포함하지 않는다.
+- `SUCCESS`, `FAILURE`만 정상 응답한다. `IN_PROGRESS`, `ABANDONED`는 성공/실패가 확정되지 않았거나 피드백 결과 보기 흐름이 아니므로 `SESSION_NOT_COMPLETABLE`로 거부한다.
+
+---
+
 ## 2026-05-21
 
 - 작업 브랜치는 `feat/feedback-sse-stream`이다.

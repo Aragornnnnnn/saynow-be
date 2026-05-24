@@ -102,6 +102,11 @@ public class OpenApiResponseCustomizer {
                             "turnClassification", "ANSWER"
                     )),
                     errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_RESPONSE_INVALID))),
+            endpoint(SessionController.class, "getSessionResult",
+                    success(HttpStatus.OK, "세션 시나리오 결과 조회 성공", objectMap(
+                            "scenarioResult", "SUCCESS"
+                    )),
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE))),
             endpoint(SessionController.class, "deleteSession",
                     success(HttpStatus.OK, "세션 중도 종료 성공", null),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED))),

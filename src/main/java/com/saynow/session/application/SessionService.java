@@ -5,6 +5,7 @@ import com.saynow.auth.domain.User;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.session.api.dto.SessionResultResponse;
 import com.saynow.session.api.dto.SessionStartResponse;
 import com.saynow.session.api.dto.UserUtteranceRequest;
 import com.saynow.session.api.dto.UserUtteranceResponse;
@@ -131,6 +132,15 @@ public class SessionService {
                 false,
                 heartDeducted,
                 aiResponse.turnClassification());
+    }
+
+    @Transactional(readOnly = true)
+    public SessionResultResponse getSessionResult(Long userId, Long sessionId) {
+        Session session = findOwnedSession(userId, sessionId);
+        if (session.getStatus() != SessionStatus.SUCCESS && session.getStatus() != SessionStatus.FAILURE) {
+            throw new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE);
+        }
+        return new SessionResultResponse(session.getStatus().name());
     }
 
     @Transactional

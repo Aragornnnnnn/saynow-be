@@ -35,6 +35,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios/{scenarioId}/sessions")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/utterances")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/result")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/feedback")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}")))
                 .andExpect(jsonPath("$.paths['/api/v1/categories']").doesNotExist())
@@ -66,6 +67,8 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.400.content['application/json'].examples.INVALID_REQUEST.value.error.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.403.content['application/json'].examples.FORBIDDEN.value.error.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_COMPLETED.value.error.code").value("SESSION_ALREADY_COMPLETED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.scenarioResult").value("SUCCESS"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result'].get.responses.409.content['application/json'].examples.SESSION_NOT_COMPLETABLE.value.error.code").value("SESSION_NOT_COMPLETABLE"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnFeedbacks[0].userUtterance").value("I want iced americano."))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.503.content['application/json'].examples.FEEDBACK_GENERATION_FAILED.value.error.code").value("FEEDBACK_GENERATION_FAILED"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].delete.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()));

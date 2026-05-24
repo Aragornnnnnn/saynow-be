@@ -3,6 +3,7 @@ package com.saynow.session.api;
 
 import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.response.ApiResponse;
+import com.saynow.session.api.dto.SessionResultResponse;
 import com.saynow.session.api.dto.SessionStartResponse;
 import com.saynow.session.api.dto.UserUtteranceRequest;
 import com.saynow.session.api.dto.UserUtteranceResponse;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,6 +47,15 @@ public class SessionController {
             @RequestBody UserUtteranceRequest request
     ) {
         return ApiResponse.success(HttpStatus.OK, sessionService.submitUtterance(principal.userId(), sessionId, request));
+    }
+
+    @GetMapping("/sessions/{sessionId}/result")
+    @Operation(summary = "세션 시나리오 결과 조회", description = "완료된 세션의 시나리오 성공 또는 실패 결과를 반환합니다.")
+    public ResponseEntity<ApiResponse<SessionResultResponse>> getSessionResult(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId
+    ) {
+        return ApiResponse.success(HttpStatus.OK, sessionService.getSessionResult(principal.userId(), sessionId));
     }
 
     @DeleteMapping("/sessions/{sessionId}")
