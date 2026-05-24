@@ -2,6 +2,10 @@
 
 ## 2026-05-24
 
+- AI 피드백 생성 요청에 세션 성공/실패 결과를 함께 보내기로 했다. 필드명은 AI 계약 기준으로 `sessionResult`이고 값은 현재 세션 상태의 `SUCCESS` 또는 `FAILURE` 문자열이다.
+- 기존 기본 피드백 API와 SSE 피드백 API는 모두 `FeedbackService.toAiFeedbackRequest(...)`를 통해 AI 요청 DTO를 만들기 때문에, DTO 필드와 공통 매핑을 함께 바꾸면 두 API에 반영된다.
+- `loadFeedbackContext(...)`가 이미 `SUCCESS`, `FAILURE` 세션만 피드백 생성 가능하게 제한하므로 `sessionResult`에는 `IN_PROGRESS`, `ABANDONED`가 들어가지 않는다.
+
 - 사용자가 피드백 생성 대기 시간을 줄이기 위해 피드백 생성과 무관하게 시나리오 성공/실패 여부를 먼저 조회하는 API를 요청했다.
 - 현재 세션 성공/실패는 `SessionStatus.SUCCESS`, `SessionStatus.FAILURE`로 백엔드가 이미 알고 있다. 피드백 생성 결과나 AI 최종 피드백 응답에 의존하지 않는다.
 - 새 API는 세션 도메인 책임으로 둔다. 경로는 기존 세션 라우팅을 따라 `GET /api/v1/sessions/{sessionId}/result`로 추가한다.

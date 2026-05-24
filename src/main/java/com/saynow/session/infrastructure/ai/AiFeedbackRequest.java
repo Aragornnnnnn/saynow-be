@@ -6,6 +6,7 @@ import java.util.List;
 public record AiFeedbackRequest(
         String scenarioTitle,
         String scenarioGoal,
+        String sessionResult,
         List<AiFeedbackTurnRequest> turns
 ) {
 }

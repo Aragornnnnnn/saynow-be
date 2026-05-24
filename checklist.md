@@ -1,5 +1,17 @@
 # AI SSE 피드백 스트림 중계 체크리스트
 
+- [x] AI 피드백 요청에 `sessionResult`를 포함하는 계약 변경 범위를 기록한다.
+- [x] 기본 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] SSE 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] 원격 AI 피드백 요청 JSON에 `sessionResult`가 직렬화되는 테스트를 먼저 작성하고 실패 확인.
+- [x] `AiFeedbackRequest`에 `sessionResult` 필드 추가.
+- [x] 기본 API와 SSE API 공통 요청 생성 경로에서 세션 상태를 `sessionResult`로 매핑한다.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 - [x] 세션 성공/실패 결과 조회 API 구현 범위를 기록한다.
 - [x] 성공 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.
 - [x] 실패 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.

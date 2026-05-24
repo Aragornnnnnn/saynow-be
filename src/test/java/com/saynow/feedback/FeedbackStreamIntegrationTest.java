@@ -88,6 +88,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         assertThat(body.trim()).endsWith("data: {\"turnCount\":2}");
         aiConversationClient.lastStreamRequest.turns()
                 .forEach(turn -> assertThat(body).contains("\"turnId\":" + turn.turnId()));
+        assertThat(aiConversationClient.lastStreamSessionResult()).isEqualTo("SUCCESS");
 
         Session session = sessionRepository.findById(sessionId).orElseThrow();
         SessionFeedback savedFeedback = sessionFeedbackRepository.findBySession(session).orElseThrow();
@@ -137,6 +138,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.comprehensionScore").value(82))
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(2));
+        assertThat(aiConversationClient.lastGenerateFeedbackSessionResult()).isEqualTo("SUCCESS");
     }
 
     private String performFeedbackStream(String accessToken, long sessionId) throws Exception {
@@ -226,11 +228,21 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
 
         private final ObjectMapper objectMapper = new ObjectMapper();
         private StreamMode streamMode = StreamMode.NORMAL;
+        private AiFeedbackRequest lastGenerateFeedbackRequest;
         private AiFeedbackRequest lastStreamRequest;
 
         void reset() {
             streamMode = StreamMode.NORMAL;
+            lastGenerateFeedbackRequest = null;
             lastStreamRequest = null;
+        }
+
+        String lastGenerateFeedbackSessionResult() {
+            return lastGenerateFeedbackRequest.sessionResult();
+        }
+
+        String lastStreamSessionResult() {
+            return lastStreamRequest.sessionResult();
         }
 
         @Override
@@ -265,6 +277,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
 
         @Override
         public AiFeedbackResponse generateFeedback(AiFeedbackRequest request) {
+            lastGenerateFeedbackRequest = request;
             List<AiTurnFeedbackResponse> turnFeedbacks = request.turns().stream()
                     .map(turn -> new AiTurnFeedbackResponse(
                             turn.turnId(),
