@@ -7,11 +7,13 @@ import com.saynow.common.exception.ErrorCode;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,8 +80,10 @@ class RemoteAiConversationClientTest {
                 baseUrl,
                 "remote",
                 "/api/v1/conversation/next-question",
-                "/api/v1/conversation/feedback");
-        return new RemoteAiConversationClient(new ObjectMapper(), properties);
+                "/api/v1/conversation/feedback",
+                "/api/v1/conversation/feedback/stream",
+                Duration.ofSeconds(180));
+        return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
     }
 
     private AiNextQuestionRequest nextQuestionRequest() {

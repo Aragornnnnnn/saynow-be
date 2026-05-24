@@ -20,6 +20,7 @@ import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
+import com.saynow.session.infrastructure.ai.TurnClassification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -247,7 +248,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                     .filter(slot -> !slot.filled())
                     .count() - newlyFilled.size();
             if (remainingAfterFill <= 0) {
-                return new AiNextQuestionResponse(null, null, newlyFilled);
+                return new AiNextQuestionResponse(null, null, newlyFilled, TurnClassification.ANSWER);
             }
             String nextSlot = slots.stream()
                     .filter(slot -> !slot.filled())
@@ -258,7 +259,8 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
             return new AiNextQuestionResponse(
                     "Could you tell me your " + nextSlot + "?",
                     nextSlot + "에 대해 말해주시겠어요?",
-                    newlyFilled);
+                    newlyFilled,
+                    TurnClassification.ANSWER);
         }
 
         @Override
