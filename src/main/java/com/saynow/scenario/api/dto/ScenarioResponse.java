@@ -6,6 +6,7 @@ public record ScenarioResponse(
         int displayOrder,
         String scenarioTitle,
         String scenarioGoal,
+        String scenarioSituation,
         String scenarioEmoji,
         boolean cleared,
         boolean locked,

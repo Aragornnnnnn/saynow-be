@@ -431,3 +431,15 @@
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위 점검 후 커밋하고 push한다.
 - [x] dev 배포 후 실제 preflight 응답을 확인한다.
+
+---
+
+# 시나리오 상황 필드 응답 추가 체크리스트
+
+- [x] `origin/develop` 기준으로 `feat/15` 브랜치를 생성한다.
+- [x] 현재 시나리오 목록 API, DTO, DB 스키마, OpenAPI 예시를 확인한다.
+- [x] `GET /api/v1/scenarios` 응답의 `scenarioSituation` 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] `scenarios` 테이블, `Scenario` 엔티티, 목록 응답 DTO와 서비스 매핑에 상황 필드를 추가한다.
+- [x] OpenAPI 성공 예시에 `scenarioSituation`을 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.

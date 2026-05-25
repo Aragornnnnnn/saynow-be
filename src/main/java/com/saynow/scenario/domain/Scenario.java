@@ -40,6 +40,9 @@ public class Scenario extends BaseTimeEntity {
     @Column(nullable = false, length = 255)
     private String goal;
 
+    @Column(nullable = false, length = 255)
+    private String situation;
+
     @Column(length = 20)
     private String emoji;
 

@@ -70,6 +70,7 @@ public class OpenApiResponseCustomizer {
                                                     "displayOrder", 1,
                                                     "scenarioTitle", "카페에서 주문하기",
                                                     "scenarioGoal", "원하는 음료를 자연스럽게 주문할 수 있다.",
+                                                    "scenarioSituation", "카페에서 음료를 주문해야 하는 상황",
                                                     "scenarioEmoji", "☕",
                                                     "cleared", false,
                                                     "locked", false,

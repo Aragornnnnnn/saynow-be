@@ -21,6 +21,11 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(columnExists("user_scenario_progress", "is_cleared")).isFalse();
     }
 
+    @Test
+    void scenariosHaveSituationColumn() {
+        assertThat(columnExists("scenarios", "situation")).isTrue();
+    }
+
     private boolean tableExists(String tableName) {
         Integer count = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)

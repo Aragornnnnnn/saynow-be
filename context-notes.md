@@ -479,3 +479,19 @@
 - 운영 SSM은 이번 작업에서 건드리지 않는다.
 - CORS 변경 커밋 `e41a4e2`를 `origin/develop`에 push했고, dev 배포 run `26223225452`가 성공했다.
 - 배포 후 `https://dev-saynow.p-e.kr/api/v1/scenarios`에 OPTIONS preflight를 보내 요청 origin 5개가 모두 `Access-Control-Allow-Origin`으로 그대로 반환되는 것을 확인했다.
+
+---
+
+# 시나리오 상황 필드 응답 추가 컨텍스트 노트
+
+## 2026-05-25
+
+- `develop` 로컬 브랜치는 `origin/develop`과 1개씩 갈라져 있었다. 기능 기준점은 최신 원격 개발 브랜치로 잡기 위해 `git fetch origin develop` 후 `origin/develop`의 `4ea01ca`에서 `feat/15`를 생성했다.
+- 프론트-백엔드 계약 변경 대상은 `GET /api/v1/scenarios` 목록 응답이다.
+- 응답 필드명은 기존 `scenarioTitle`, `scenarioGoal`, `scenarioEmoji` prefix 패턴에 맞춰 `scenarioSituation`으로 둔다.
+- 현재 `origin/develop` 코드에는 `scenarios` 테이블, `Scenario` 엔티티, 목록 DTO에 상황 필드가 없다. 응답 값을 내려주려면 DB migration, 엔티티 매핑, DTO, 서비스 매핑, OpenAPI 예시를 함께 수정해야 한다.
+- 기준선 확인으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고, `scenarioSituation` JSON path와 `scenarios.situation` 컬럼이 없어 실패했다.
+- 구현은 새 migration `V2__add_scenario_situation.sql`로 `scenarios.situation` 컬럼과 기본 카페 시나리오 3개 상황 값을 추가하고, 응답 DTO에서는 `scenarioSituation`으로 노출한다.
+- GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.

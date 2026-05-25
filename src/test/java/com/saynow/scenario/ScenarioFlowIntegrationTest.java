@@ -59,6 +59,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.categories[0].categoryName").value("Cafe"))
                 .andExpect(jsonPath("$.data.categories[0].categoryLocked").value(false))
+                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioSituation").value("카페에서 음료를 주문해야 하는 상황"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].locked").value(false))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(true))
                 .andExpect(jsonPath("$.data.categories[1].categoryLocked").value(true))

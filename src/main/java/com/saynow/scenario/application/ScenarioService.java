@@ -68,6 +68,7 @@ public class ScenarioService {
                     scenario.getDisplayOrder(),
                     scenario.getTitle(),
                     scenario.getGoal(),
+                    scenario.getSituation(),
                     scenario.getEmoji(),
                     cleared,
                     locked,
