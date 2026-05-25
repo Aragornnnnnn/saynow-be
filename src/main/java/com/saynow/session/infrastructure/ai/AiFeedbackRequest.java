@@ -5,6 +5,7 @@ import java.util.List;
 
 public record AiFeedbackRequest(
         String scenarioTitle,
+        String aiRole,
         String scenarioSituation,
         String scenarioGoal,
         String sessionResult,

@@ -65,6 +65,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.categories[1].categoryName").value("Airport"))
                 .andExpect(jsonPath("$.data.categories[1].categoryLocked").value(false))
                 .andExpect(jsonPath("$.data.categories[1].scenarios[0].scenarioSituation").value("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다."))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[0].aiRole").doesNotExist())
                 .andExpect(jsonPath("$.data.categories[1].scenarios[0].locked").value(false))
                 .andExpect(jsonPath("$.data.categories[1].scenarios[1].locked").value(true));
 
@@ -91,6 +92,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
                 .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me your stay_duration?"));
+        assertThat(aiConversationClient.lastNextQuestionAiRole())
+                .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastNextQuestionScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
 
@@ -456,6 +459,10 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         String lastNextQuestionScenarioSituation() {
             return nextQuestionRequests.getLast().scenarioSituation();
+        }
+
+        String lastNextQuestionAiRole() {
+            return nextQuestionRequests.getLast().aiRole();
         }
 
         @Override

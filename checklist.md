@@ -1,5 +1,19 @@
 # AI SSE 피드백 스트림 중계 체크리스트
 
+# 시나리오 AI 역할 필드 추가 체크리스트
+
+- [x] `aiRole` 스키마와 AI 요청 계약 변경 범위를 기록한다.
+- [x] `scenarios.ai_role` 컬럼과 seed 값을 검증하는 RED 테스트를 추가한다.
+- [x] `next-question`, `feedback`, `feedback/stream` AI 요청에 `aiRole`이 포함되는 RED 테스트를 추가한다.
+- [x] Flyway migration으로 `scenarios.ai_role` 컬럼과 기존 시나리오별 값을 추가한다.
+- [x] `Scenario` 엔티티에 `aiRole`을 매핑한다.
+- [x] AI 요청 DTO와 서비스 매핑에 `aiRole`을 추가한다.
+- [x] 프론트 시나리오 목록 응답에는 `aiRole`이 노출되지 않는지 확인한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+
+---
+
 # 공항 시나리오 dev 실환경 진행 체크리스트
 
 - [x] develop 배포 workflow 완료 상태를 확인한다.

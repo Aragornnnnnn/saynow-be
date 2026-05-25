@@ -89,6 +89,8 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         aiConversationClient.lastStreamRequest.turns()
                 .forEach(turn -> assertThat(body).contains("\"turnId\":" + turn.turnId()));
         assertThat(aiConversationClient.lastStreamSessionResult()).isEqualTo("SUCCESS");
+        assertThat(aiConversationClient.lastStreamAiRole())
+                .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastStreamScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
 
@@ -141,6 +143,8 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.comprehensionScore").value(82))
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(3));
         assertThat(aiConversationClient.lastGenerateFeedbackSessionResult()).isEqualTo("SUCCESS");
+        assertThat(aiConversationClient.lastGenerateFeedbackAiRole())
+                .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastGenerateFeedbackScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
     }
@@ -257,12 +261,20 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
             return lastGenerateFeedbackRequest.scenarioSituation();
         }
 
+        String lastGenerateFeedbackAiRole() {
+            return lastGenerateFeedbackRequest.aiRole();
+        }
+
         String lastStreamSessionResult() {
             return lastStreamRequest.sessionResult();
         }
 
         String lastStreamScenarioSituation() {
             return lastStreamRequest.scenarioSituation();
+        }
+
+        String lastStreamAiRole() {
+            return lastStreamRequest.aiRole();
         }
 
         @Override

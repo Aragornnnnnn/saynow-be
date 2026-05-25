@@ -31,6 +31,11 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void scenariosHaveAiRoleColumn() {
+        assertThat(columnExists("scenarios", "ai_role")).isTrue();
+    }
+
+    @Test
     void airportScenariosAreSeededWithSituationsAndSlots() {
         List<String> scenarioTitles = jdbcTemplate.queryForList("""
                 SELECT s.title
@@ -53,6 +58,18 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                   AND s.display_order = 3
                 """, String.class);
         assertThat(transferQuestion).isEqualTo("괜찮으세요? 무슨 일 있으신가요?");
+
+        List<String> aiRoles = jdbcTemplate.queryForList("""
+                SELECT s.ai_role
+                FROM scenarios s
+                JOIN categories c ON c.id = s.category_id
+                WHERE c.name = 'Airport'
+                ORDER BY s.display_order
+                """, String.class);
+        assertThat(aiRoles).containsExactly(
+                "미국 공항 입국심사관",
+                "항공사 수하물 서비스 직원",
+                "공항 환승 안내 직원");
 
         List<String> transferSlots = jdbcTemplate.queryForList("""
                 SELECT ss.name

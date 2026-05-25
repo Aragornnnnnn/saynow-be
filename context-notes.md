@@ -1,5 +1,25 @@
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
+# 시나리오 AI 역할 필드 추가 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자는 시나리오 테이블에 `aiRole` 필드를 추가하고, AI 요청 DTO 3개 API에 모두 포함하되 프론트에는 주지 않기로 결정했다.
+- AI 요청 3개 API는 `POST /api/v1/conversation/next-question`, `POST /api/v1/conversation/feedback`, `POST /api/v1/conversation/feedback/stream`이다. 백엔드는 `AiNextQuestionRequest`와 공통 `AiFeedbackRequest`에 `aiRole`을 추가하면 세 경로에 반영된다.
+- 프론트 응답 DTO인 `ScenarioResponse`에는 `aiRole`을 추가하지 않는다.
+- 스키마는 새 Flyway migration으로 `scenarios.ai_role`을 추가한다. 기존 dev DB에 V1~V3가 이미 적용됐을 수 있으므로 기존 migration은 수정하지 않는다.
+- seed 값은 카페와 공항 기존 6개 시나리오 모두 채운다. 공항 역할은 입국심사관, 항공사 수하물 서비스 직원, 공항 환승 안내 직원 기준으로 둔다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고, `AiNextQuestionRequest`, `AiFeedbackRequest`에 `aiRole` 필드가 없어 컴파일 실패했다.
+- `V4__add_scenario_ai_role.sql`로 `scenarios.ai_role`을 추가하고 기존 시나리오 6개의 역할을 채웠다.
+- `Scenario.aiRole`을 엔티티에 매핑하고, `AiNextQuestionRequest`와 `AiFeedbackRequest`에 `aiRole`을 추가했다.
+- `SessionService`는 next-question 요청에 `session.getScenario().getAiRole()`을 넘기고, `FeedbackService`는 동기 feedback과 SSE feedback이 공유하는 `AiFeedbackRequest`에 같은 값을 넘긴다.
+- `ScenarioResponse`에는 `aiRole`을 추가하지 않았고, 통합 테스트에서 시나리오 목록 응답에 `aiRole`이 노출되지 않음을 확인한다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 공항 시나리오 dev 실환경 진행 컨텍스트 노트
 
 ## 2026-05-26
