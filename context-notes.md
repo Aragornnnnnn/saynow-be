@@ -18,6 +18,15 @@
 - GREEN 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
 - 같은 AI `next-question` payload에 `scenarioSituation`을 추가해 직접 호출하니 dev AI 서버가 `200 OK`와 `filledSlots=[visit_purpose, stay_duration, accommodation]`, `turnClassification=ANSWER`를 반환했다.
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 커밋 `5849ac0`을 `develop`에 push했고, GitHub Actions `Deploy Dev EC2` run `26409775332`가 성공했다.
+- 재배포 후 health는 `{"status":"UP"}`였다.
+- 새 임시 사용자 `airport-smoke-20260525162051@saynow.dev`를 만들고 공항 시나리오 1~3단계를 진행했다. 전체 request/response evidence는 `/private/tmp/saynow-airport-smoke-20260525T162050Z.json`에 저장했다.
+- 초기 Airport 목록은 1단계만 `locked=false`, 2~3단계는 `PREVIOUS_SCENARIO_NOT_CLEARED`였다.
+- 최종 Airport 목록은 1~3단계 모두 `cleared=true`, `locked=false`였다.
+- 1단계는 세션 `6`, 발화 1회, `scenarioResult=SUCCESS`, 점수 90, 하트 차감 없음, 남은 하트 3으로 완료됐다.
+- 2단계는 세션 `7`, 발화 3회, `scenarioResult=SUCCESS`, 점수 90, 하트 차감 없음, 남은 하트 3으로 완료됐다.
+- 3단계는 세션 `8`, 발화 2회, `scenarioResult=SUCCESS`, 점수 85, 하트 차감 없음, 남은 하트 3으로 완료됐다.
+- 3단계 품질 관찰점은 AI가 첫 발화 뒤 `Can you ask the staff if you can still board your flight?`처럼 사용자에게 다시 "직원에게 물어볼 수 있냐"고 묻는 점이다. 시나리오 목표와 맞지만 대화 상대가 공항 직원이라는 설정에서는 약간 메타적으로 들릴 수 있다.
 
 ---
 
