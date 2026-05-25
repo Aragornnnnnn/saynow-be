@@ -525,3 +525,17 @@
 - OpenAPI 시나리오 목록 예시는 Cafe 잠금, Airport 열림 기준으로 바꿨고, 세션 시작 성공 예시도 Airport 첫 질문으로 맞췄다.
 - GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 카테고리 seed 복구 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자가 기존 DB의 카테고리 데이터도 초기화됐다고 알려줬다.
+- `V3__seed_airport_scenarios.sql`는 Airport 카테고리 `id=2`가 이미 존재한다고 가정하고 있었기 때문에, 카테고리가 비어 있으면 시나리오 insert가 FK 제약에서 실패할 수 있었다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest.airportSeedMigrationRestoresCategoriesBeforeScenarios`를 실행했고, V3에 카테고리 insert가 없어 실패했다.
+- 처음에는 PostgreSQL `ON CONFLICT`로 카테고리 복구를 작성했지만 H2 PostgreSQL 모드가 해당 문법을 지원하지 않아 Flyway 적용 중 실패했다. 실제 에러는 `ON CONFLICT (id) DO UPDATE SET` 구문에서 발생했다.
+- PostgreSQL과 H2 모두 통과하도록 `UPDATE` 후 `INSERT ... WHERE NOT EXISTS` 방식으로 기본 카테고리 4개를 복구한다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,6 +64,14 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 ORDER BY ss.name
                 """, String.class);
         assertThat(transferSlots).containsExactly("boarding_possibility", "gate_location", "time_pressure");
+    }
+
+    @Test
+    void airportSeedMigrationRestoresCategoriesBeforeScenarios() throws Exception {
+        String migration = Files.readString(Path.of("src/main/resources/db/migration/V3__seed_airport_scenarios.sql"));
+
+        assertThat(migration.indexOf("INSERT INTO categories")).isLessThan(migration.indexOf("INSERT INTO scenarios"));
+        assertThat(migration).contains("SELECT 2, 'Airport'");
     }
 
     private boolean tableExists(String tableName) {

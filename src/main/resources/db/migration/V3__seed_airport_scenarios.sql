@@ -1,4 +1,26 @@
--- 공항 카테고리에 입국심사, 수하물 문제, 환승 위기 시나리오를 추가한다.
+-- 기본 카테고리를 복구하고 공항 시나리오를 추가한다.
+UPDATE categories SET name = 'Cafe', updated_at = CURRENT_TIMESTAMP WHERE id = 1;
+INSERT INTO categories (id, name, created_at, updated_at)
+SELECT 1, 'Cafe', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 1);
+
+UPDATE categories SET name = 'Airport', updated_at = CURRENT_TIMESTAMP WHERE id = 2;
+INSERT INTO categories (id, name, created_at, updated_at)
+SELECT 2, 'Airport', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 2);
+
+UPDATE categories SET name = 'Hotel', updated_at = CURRENT_TIMESTAMP WHERE id = 3;
+INSERT INTO categories (id, name, created_at, updated_at)
+SELECT 3, 'Hotel', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 3);
+
+UPDATE categories SET name = 'Restaurant', updated_at = CURRENT_TIMESTAMP WHERE id = 4;
+INSERT INTO categories (id, name, created_at, updated_at)
+SELECT 4, 'Restaurant', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE id = 4);
+
+ALTER TABLE categories ALTER COLUMN id RESTART WITH 5;
+
 INSERT INTO scenarios (
     id, title, original_question, translated_question, goal, situation, emoji, background_image,
     heart, display_order, category_id, created_at, updated_at
