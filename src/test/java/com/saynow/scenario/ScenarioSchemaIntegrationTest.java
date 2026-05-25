@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
@@ -24,6 +26,42 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     @Test
     void scenariosHaveSituationColumn() {
         assertThat(columnExists("scenarios", "situation")).isTrue();
+    }
+
+    @Test
+    void airportScenariosAreSeededWithSituationsAndSlots() {
+        List<String> scenarioTitles = jdbcTemplate.queryForList("""
+                SELECT s.title
+                FROM scenarios s
+                JOIN categories c ON c.id = s.category_id
+                WHERE c.name = 'Airport'
+                ORDER BY s.display_order
+                """, String.class);
+
+        assertThat(scenarioTitles).containsExactly(
+                "공항에서 입국심사 받기",
+                "공항에서 수하물 문제 해결하기",
+                "공항에서 환승편 놓칠 위기 설명하기");
+
+        String transferQuestion = jdbcTemplate.queryForObject("""
+                SELECT s.translated_question
+                FROM scenarios s
+                JOIN categories c ON c.id = s.category_id
+                WHERE c.name = 'Airport'
+                  AND s.display_order = 3
+                """, String.class);
+        assertThat(transferQuestion).isEqualTo("괜찮으세요? 무슨 일 있으신가요?");
+
+        List<String> transferSlots = jdbcTemplate.queryForList("""
+                SELECT ss.name
+                FROM scenario_slots ss
+                JOIN scenarios s ON s.id = ss.scenario_id
+                JOIN categories c ON c.id = s.category_id
+                WHERE c.name = 'Airport'
+                  AND s.display_order = 3
+                ORDER BY ss.name
+                """, String.class);
+        assertThat(transferSlots).containsExactly("boarding_possibility", "gate_location", "time_pressure");
     }
 
     private boolean tableExists(String tableName) {

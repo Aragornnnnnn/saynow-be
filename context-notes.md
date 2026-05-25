@@ -495,3 +495,17 @@
 - 구현은 새 migration `V2__add_scenario_situation.sql`로 `scenarios.situation` 컬럼과 기본 카페 시나리오 3개 상황 값을 추가하고, 응답 DTO에서는 `scenarioSituation`으로 노출한다.
 - GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 공항 시나리오 seed 추가 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자 확정 문구에 따라 3단계 `translated_question`은 `괜찮으세요? 무슨 일 있으신가요?`로 둔다.
+- 현재 `Airport` 카테고리는 V1 seed에 이미 존재하지만, 서비스 정책상 `Cafe`가 아닌 카테고리는 `COMING_SOON`으로 잠겨 목록 API에서 시나리오 배열이 비어 내려간다.
+- 이번 작업은 DB seed 추가에 한정한다. Airport 잠금 해제와 세션 시작 허용 정책 변경은 별도 의사결정이 필요하다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고, Airport 시나리오 seed가 없어 실패했다.
+- 구현은 새 migration `V3__seed_airport_scenarios.sql`로 Airport display order 1~3 시나리오와 각 슬롯을 추가했다. 명시 id 4~6을 사용한 뒤 `scenarios` identity 시작값을 7로 맞췄다.
+- GREEN 검증으로 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
