@@ -89,6 +89,8 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         aiConversationClient.lastStreamRequest.turns()
                 .forEach(turn -> assertThat(body).contains("\"turnId\":" + turn.turnId()));
         assertThat(aiConversationClient.lastStreamSessionResult()).isEqualTo("SUCCESS");
+        assertThat(aiConversationClient.lastStreamScenarioSituation())
+                .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
 
         Session session = sessionRepository.findById(sessionId).orElseThrow();
         SessionFeedback savedFeedback = sessionFeedbackRepository.findBySession(session).orElseThrow();
@@ -139,6 +141,8 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.comprehensionScore").value(82))
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(3));
         assertThat(aiConversationClient.lastGenerateFeedbackSessionResult()).isEqualTo("SUCCESS");
+        assertThat(aiConversationClient.lastGenerateFeedbackScenarioSituation())
+                .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
     }
 
     private String performFeedbackStream(String accessToken, long sessionId) throws Exception {
@@ -249,8 +253,16 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
             return lastGenerateFeedbackRequest.sessionResult();
         }
 
+        String lastGenerateFeedbackScenarioSituation() {
+            return lastGenerateFeedbackRequest.scenarioSituation();
+        }
+
         String lastStreamSessionResult() {
             return lastStreamRequest.sessionResult();
+        }
+
+        String lastStreamScenarioSituation() {
+            return lastStreamRequest.scenarioSituation();
         }
 
         @Override

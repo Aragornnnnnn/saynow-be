@@ -136,6 +136,7 @@ public class FeedbackService {
     private AiFeedbackRequest toAiFeedbackRequest(Session session, List<SessionTurn> turns) {
         return new AiFeedbackRequest(
                 session.getScenario().getTitle(),
+                session.getScenario().getSituation(),
                 session.getScenario().getGoal(),
                 session.getStatus().name(),
                 turns.stream()

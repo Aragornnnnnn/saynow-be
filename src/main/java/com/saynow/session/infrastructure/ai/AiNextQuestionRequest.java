@@ -7,6 +7,7 @@ public record AiNextQuestionRequest(
         String originalQuestion,
         String userUtterance,
         String scenarioTitle,
+        String scenarioSituation,
         String scenarioGoal,
         List<AiSlotStatus> slots
 ) {

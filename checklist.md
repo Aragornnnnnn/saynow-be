@@ -1,5 +1,21 @@
 # AI SSE 피드백 스트림 중계 체크리스트
 
+# 공항 시나리오 dev 실환경 진행 체크리스트
+
+- [x] develop 배포 workflow 완료 상태를 확인한다.
+- [x] dev 환경에 임시 사용자를 만들고 Bearer token을 준비한다.
+- [x] `GET /api/v1/scenarios`로 Airport 시나리오 1~3 노출과 잠금 상태를 확인한다.
+- [x] AI 요청에 `scenarioSituation`이 누락되어 dev 진행이 막히는 현상을 RED 테스트로 고정한다.
+- [x] `next-question`, `feedback`, `feedback/stream` AI 요청에 `scenarioSituation`을 포함한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] develop에 재배포한다.
+- [ ] 공항 시나리오 1단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [ ] 공항 시나리오 2단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [ ] 공항 시나리오 3단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [ ] 세션별 request/response JSON과 품질 판단 포인트를 정리한다.
+
+---
+
 - [x] AI 피드백 요청에 `sessionResult`를 포함하는 계약 변경 범위를 기록한다.
 - [x] 기본 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
 - [x] SSE 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.

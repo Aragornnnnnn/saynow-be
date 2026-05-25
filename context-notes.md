@@ -1,5 +1,26 @@
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
+# 공항 시나리오 dev 실환경 진행 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자는 임시 사용자를 만들어 공항 시나리오 1~3단계를 실제 API로 모두 진행하고, 품질 판단이 가능하도록 과정과 결과를 설명해 달라고 요청했다.
+- 기준 환경은 사용자가 직전에 `develop` push를 요청한 dev 배포 환경 `https://dev-saynow.p-e.kr`이다.
+- 가짜 OIDC 로그인은 dev 환경에서 실제 ID token 검증에 막힐 수 있으므로, 필요하면 dev DB에 임시 사용자를 만들고 백엔드 토큰 서명 방식과 같은 HS256 access token으로 API를 검증한다.
+- 검증 결과는 세션별 request/response JSON과 함께 성공 여부, 잠금 해제 흐름, AI 응답 품질 판단 포인트를 나눠 기록한다.
+- GitHub Actions `Deploy Dev EC2` run `26409253056`은 `develop` HEAD `5b04918` 기준으로 성공했다.
+- 첫 dev smoke 실행은 임시 사용자와 Bearer token 준비, 시나리오 목록 조회까지 성공했다.
+- 시나리오 1 첫 발화에서 백엔드가 `503 AI_RESPONSE_INVALID`를 반환했고, 같은 payload를 AI 서버 `POST /api/v1/conversation/next-question`에 직접 보내도 `400 INVALID_REQUEST`가 반환됐다.
+- 현재 `saynow-ai` 요청 모델은 `scenarioSituation`을 `next-question`, `feedback`, `feedback/stream` 필수 필드로 요구한다. 백엔드 AI 요청 DTO에는 아직 이 필드가 없어 dev AI 서버와 계약이 어긋난 상태다.
+- 해결 범위는 저장된 `Scenario.situation`을 AI 요청 DTO에 포함하는 것으로 제한한다. 프론트 응답 필드 `scenarioSituation`은 이미 반영되어 있으므로 별도 변경하지 않는다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고, `AiNextQuestionRequest`, `AiFeedbackRequest`에 `scenarioSituation` 필드가 없어 컴파일 실패했다.
+- `AiNextQuestionRequest`, `AiFeedbackRequest`에 `scenarioSituation` 필드를 추가하고, `SessionService`와 `FeedbackService`가 `session.getScenario().getSituation()`을 넘기도록 수정했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
+- 같은 AI `next-question` payload에 `scenarioSituation`을 추가해 직접 호출하니 dev AI 서버가 `200 OK`와 `filledSlots=[visit_purpose, stay_duration, accommodation]`, `turnClassification=ANSWER`를 반환했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 ## 2026-05-24
 
 - AI 피드백 생성 요청에 세션 성공/실패 결과를 함께 보내기로 했다. 필드명은 AI 계약 기준으로 `sessionResult`이고 값은 현재 세션 상태의 `SUCCESS` 또는 `FAILURE` 문자열이다.

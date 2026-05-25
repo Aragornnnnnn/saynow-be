@@ -93,6 +93,7 @@ public class SessionService {
                 currentTurn.getAiQuestion(),
                 currentTurn.getUserUtterance(),
                 session.getScenario().getTitle(),
+                session.getScenario().getSituation(),
                 session.getScenario().getGoal(),
                 slotStatuses.stream()
                         .map(slot -> new AiSlotStatus(slot.getSlotName(), slot.isFulfilled()))

@@ -33,7 +33,8 @@ class RemoteAiConversationClientTest {
 
     @Test
     void mapsNextQuestionTurnClassification() throws Exception {
-        RemoteAiConversationClient client = clientWithNextQuestionResponse("""
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        RemoteAiConversationClient client = clientWithNextQuestionResponse(requestBody, """
                 {
                   "nextQuestion":"The menu includes iced Americano, latte, cappuccino, and tea. What would you like to order?",
                   "translatedQuestion":"메뉴에는 아이스 아메리카노, 라떼, 카푸치노, 차가 있어요. 무엇을 주문하시겠어요?",
@@ -47,6 +48,8 @@ class RemoteAiConversationClientTest {
         assertThat(response.nextQuestion()).contains("The menu includes iced Americano");
         assertThat(response.filledSlots()).isEmpty();
         assertThat(response.turnClassification()).isEqualTo(TurnClassification.ASSISTANCE_REQUEST);
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
+                .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
     }
 
     @Test
@@ -66,7 +69,7 @@ class RemoteAiConversationClientTest {
     }
 
     @Test
-    void feedbackRequestIncludesSessionResult() throws Exception {
+    void feedbackRequestIncludesSessionResultAndScenarioSituation() throws Exception {
         AtomicReference<String> requestBody = new AtomicReference<>();
         RemoteAiConversationClient client = clientWithFeedbackResponse(requestBody, """
                 {
@@ -86,6 +89,7 @@ class RemoteAiConversationClientTest {
 
         client.generateFeedback(new AiFeedbackRequest(
                 "카페에서 주문하기",
+                "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
                 "원하는 음료를 자연스럽게 주문할 수 있다.",
                 "SUCCESS",
                 List.of(new AiFeedbackTurnRequest(
@@ -93,12 +97,23 @@ class RemoteAiConversationClientTest {
                         "What would you like to order?",
                         "I want an iced americano."))));
 
-        assertThat(new ObjectMapper().readTree(requestBody.get()).get("sessionResult").asText()).isEqualTo("SUCCESS");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("sessionResult").asText())
+                .isEqualTo("SUCCESS");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
+                .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
     }
 
     private RemoteAiConversationClient clientWithNextQuestionResponse(String responseBody) throws IOException {
+        return clientWithNextQuestionResponse(new AtomicReference<>(), responseBody);
+    }
+
+    private RemoteAiConversationClient clientWithNextQuestionResponse(
+            AtomicReference<String> requestBody,
+            String responseBody
+    ) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/api/v1/conversation/next-question", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, responseBytes.length);
@@ -149,6 +164,7 @@ class RemoteAiConversationClientTest {
                 "What would you like to order?",
                 "Can I see the menu?",
                 "카페에서 주문하기",
+                "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
                 "원하는 음료를 자연스럽게 주문할 수 있다.",
                 List.of(new AiSlotStatus("drink", false)));
     }

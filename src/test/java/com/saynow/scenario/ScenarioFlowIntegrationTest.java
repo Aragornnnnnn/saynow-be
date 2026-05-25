@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -90,6 +91,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
                 .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me your stay_duration?"));
+        assertThat(aiConversationClient.lastNextQuestionScenarioSituation())
+                .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -440,17 +443,24 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     static class TestAiConversationClient implements AiConversationClient {
 
         private final Queue<AiNextQuestionResponse> nextQuestionResponses = new ArrayDeque<>();
+        private final List<AiNextQuestionRequest> nextQuestionRequests = new ArrayList<>();
 
         void reset() {
             nextQuestionResponses.clear();
+            nextQuestionRequests.clear();
         }
 
         void enqueueNextQuestion(AiNextQuestionResponse response) {
             nextQuestionResponses.add(response);
         }
 
+        String lastNextQuestionScenarioSituation() {
+            return nextQuestionRequests.getLast().scenarioSituation();
+        }
+
         @Override
         public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
+            nextQuestionRequests.add(request);
             AiNextQuestionResponse queuedResponse = nextQuestionResponses.poll();
             if (queuedResponse != null) {
                 return queuedResponse;
