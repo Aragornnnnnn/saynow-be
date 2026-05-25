@@ -63,31 +63,32 @@ public class OpenApiResponseCustomizer {
                                     objectMap(
                                             "categoryId", 1,
                                             "categoryName", "Cafe",
-                                            "categoryLocked", false,
-                                            "categoryLockReason", null,
-                                            "scenarios", List.of(objectMap(
-                                                    "scenarioId", 1,
-                                                    "displayOrder", 1,
-                                                    "scenarioTitle", "카페에서 주문하기",
-                                                    "scenarioGoal", "원하는 음료를 자연스럽게 주문할 수 있다.",
-                                                    "scenarioSituation", "카페에서 음료를 주문해야 하는 상황",
-                                                    "scenarioEmoji", "☕",
-                                                    "cleared", false,
-                                                    "locked", false,
-                                                    "lockReason", null))),
+                                            "categoryLocked", true,
+                                            "categoryLockReason", "COMING_SOON",
+                                            "scenarios", List.of()),
                                     objectMap(
                                             "categoryId", 2,
                                             "categoryName", "Airport",
-                                            "categoryLocked", true,
-                                            "categoryLockReason", "COMING_SOON",
-                                            "scenarios", List.of()))
+                                            "categoryLocked", false,
+                                            "categoryLockReason", null,
+                                            "scenarios", List.of(objectMap(
+                                                    "scenarioId", 4,
+                                                    "displayOrder", 1,
+                                                    "scenarioTitle", "공항에서 입국심사 받기",
+                                                    "scenarioGoal", "입국 목적과 체류 정보를 설명하고 입국심사를 통과할 수 있다.",
+                                                    "scenarioSituation", "미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.",
+                                                    "scenarioEmoji", "🛂",
+                                                    "cleared", false,
+                                                    "locked", false,
+                                                    "lockReason", null)))
+                                    )
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(SessionController.class, "startSession",
                     success(HttpStatus.CREATED, "시나리오 세션 시작 성공", objectMap(
                             "sessionId", 12,
-                            "originalQuestion", "What would you like to order?",
-                            "translatedQuestion", "무엇을 주문하시겠어요?",
+                            "originalQuestion", "Hi, what's the purpose of your visit?",
+                            "translatedQuestion", "안녕하세요. 방문 목적이 어떻게 되시나요?",
                             "remainingHearts", 3,
                             "feedbackAvailable", false
                     )),

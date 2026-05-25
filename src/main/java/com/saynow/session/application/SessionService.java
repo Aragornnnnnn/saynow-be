@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SessionService {
 
-    private static final String OPEN_CATEGORY_NAME = "Cafe";
+    private static final String OPEN_CATEGORY_NAME = "Airport";
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioSlotRepository scenarioSlotRepository;

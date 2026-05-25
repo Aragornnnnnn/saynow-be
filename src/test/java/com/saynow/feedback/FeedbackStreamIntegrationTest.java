@@ -85,7 +85,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 "event: turnFeedback",
                 "event: done"
         );
-        assertThat(body.trim()).endsWith("data: {\"turnCount\":2}");
+        assertThat(body.trim()).endsWith("data: {\"turnCount\":3}");
         aiConversationClient.lastStreamRequest.turns()
                 .forEach(turn -> assertThat(body).contains("\"turnId\":" + turn.turnId()));
         assertThat(aiConversationClient.lastStreamSessionResult()).isEqualTo("SUCCESS");
@@ -94,7 +94,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         SessionFeedback savedFeedback = sessionFeedbackRepository.findBySession(session).orElseThrow();
         assertThat(savedFeedback.getComprehensionScore()).isEqualTo(82);
         assertThat(savedFeedback.getFeedbackSummary()).contains("의도는 잘 전달됐지만");
-        assertThat(turnFeedbackRepository.findBySessionFeedbackOrderByTurnSequenceAsc(savedFeedback)).hasSize(2);
+        assertThat(turnFeedbackRepository.findBySessionFeedbackOrderByTurnSequenceAsc(savedFeedback)).hasSize(3);
     }
 
     @Test
@@ -137,7 +137,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.comprehensionScore").value(82))
-                .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(2));
+                .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(3));
         assertThat(aiConversationClient.lastGenerateFeedbackSessionResult()).isEqualTo("SUCCESS");
     }
 
@@ -163,7 +163,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I want an iced americano."}
+                                {"userUtterance":"I'm here for sightseeing."}
                                 """))
                 .andExpect(status().isOk());
 
@@ -171,7 +171,15 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"Medium size, please."}
+                                {"userUtterance":"I'll stay for five days."}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I'll stay at the Midtown Hotel."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(true));
@@ -180,7 +188,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
     }
 
     private long startSession(String accessToken) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/scenarios/1/sessions")
+        MvcResult result = mockMvc.perform(post("/api/v1/scenarios/4/sessions")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isCreated())
                 .andReturn();

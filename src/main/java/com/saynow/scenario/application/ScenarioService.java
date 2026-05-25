@@ -26,7 +26,7 @@ public class ScenarioService {
 
     public static final String COMING_SOON = "COMING_SOON";
     public static final String PREVIOUS_SCENARIO_NOT_CLEARED = "PREVIOUS_SCENARIO_NOT_CLEARED";
-    private static final String OPEN_CATEGORY_NAME = "Cafe";
+    private static final String OPEN_CATEGORY_NAME = "Airport";
 
     private final CategoryRepository categoryRepository;
     private final ScenarioRepository scenarioRepository;

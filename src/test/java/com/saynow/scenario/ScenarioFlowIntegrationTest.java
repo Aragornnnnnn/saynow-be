@@ -58,37 +58,56 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.categories[0].categoryName").value("Cafe"))
-                .andExpect(jsonPath("$.data.categories[0].categoryLocked").value(false))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioSituation").value("카페에서 음료를 주문해야 하는 상황"))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].locked").value(false))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(true))
-                .andExpect(jsonPath("$.data.categories[1].categoryLocked").value(true))
-                .andExpect(jsonPath("$.data.categories[1].categoryLockReason").value("COMING_SOON"));
+                .andExpect(jsonPath("$.data.categories[0].categoryLocked").value(true))
+                .andExpect(jsonPath("$.data.categories[0].categoryLockReason").value("COMING_SOON"))
+                .andExpect(jsonPath("$.data.categories[0].scenarios.length()").value(0))
+                .andExpect(jsonPath("$.data.categories[1].categoryName").value("Airport"))
+                .andExpect(jsonPath("$.data.categories[1].categoryLocked").value(false))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[0].scenarioSituation").value("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다."))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[0].locked").value(false))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[1].locked").value(true));
 
-        mockMvc.perform(post("/api/v1/scenarios/2/sessions")
+        mockMvc.perform(post("/api/v1/scenarios/1/sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("CATEGORY_LOCKED"));
+
+        mockMvc.perform(post("/api/v1/scenarios/5/sessions")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("SCENARIO_LOCKED"));
 
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I want an iced americano."}
+                                {"userUtterance":"I'm here for sightseeing."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
-                .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me your size?"));
+                .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me your stay_duration?"));
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"Medium size, please."}
+                                {"userUtterance":"I'll stay for five days."}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.remainingHearts").value(3))
+                .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
+                .andExpect(jsonPath("$.data.originalQuestion").value("Could you tell me your accommodation?"));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I'll stay at the Midtown Hotel."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
@@ -100,8 +119,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].cleared").value(true))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(false));
+                .andExpect(jsonPath("$.data.categories[1].scenarios[0].cleared").value(true))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[1].locked").value(false));
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/feedback", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -110,15 +129,15 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.cleared").value(true))
                 .andExpect(jsonPath("$.data.comprehensionScore").value(82))
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
-                .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(2))
+                .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(3))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
-                .andExpect(jsonPath("$.data.turnFeedbacks[0].userUtterance").value("I want an iced americano."));
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].userUtterance").value("I'm here for sightseeing."));
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].cleared").value(true))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(false));
+                .andExpect(jsonPath("$.data.categories[1].scenarios[0].cleared").value(true))
+                .andExpect(jsonPath("$.data.categories[1].scenarios[1].locked").value(false));
     }
 
     @Test
@@ -189,7 +208,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     @Test
     void submitUtteranceRejectsBlankUserUtterance() throws Exception {
         String accessToken = login("mvp2-sub-7|blank@example.com|Blank User");
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -213,7 +232,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     @Test
     void submitUtteranceRejectsCompletedSession() throws Exception {
         String accessToken = login("mvp2-sub-8|completed@example.com|Completed User");
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
         completeSession(accessToken, sessionId);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
@@ -230,7 +249,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     void submitUtteranceRejectsOtherUsersSession() throws Exception {
         String ownerAccessToken = login("mvp2-sub-9|owner@example.com|Owner User");
         String otherAccessToken = login("mvp2-sub-10|other@example.com|Other User");
-        long sessionId = startSession(ownerAccessToken, 1);
+        long sessionId = startSession(ownerAccessToken, 4);
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(otherAccessToken))
@@ -250,7 +269,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     @Test
     void sessionResultReturnsSuccessWhenSessionSucceeded() throws Exception {
         String accessToken = login("mvp2-sub-11|result-success@example.com|Result Success User");
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
         completeSession(accessToken, sessionId);
 
         mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
@@ -265,7 +284,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     @Test
     void sessionResultReturnsFailureWhenSessionFailed() throws Exception {
         String accessToken = login("mvp2-sub-12|result-failure@example.com|Result Failure User");
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
         for (int index = 0; index < 3; index++) {
             aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
                     "What drink would you like to order?",
@@ -293,7 +312,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     @Test
     void sessionResultRejectsInProgressSession() throws Exception {
         String accessToken = login("mvp2-sub-13|result-progress@example.com|Result Progress User");
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
 
         mockMvc.perform(get("/api/v1/sessions/{sessionId}/result", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -318,8 +337,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.sessionId").isNumber())
-                .andExpect(jsonPath("$.data.originalQuestion").value("What would you like to order?"))
-                .andExpect(jsonPath("$.data.translatedQuestion").value("무엇을 주문하시겠어요?"))
+                .andExpect(jsonPath("$.data.originalQuestion").value("Hi, what's the purpose of your visit?"))
+                .andExpect(jsonPath("$.data.translatedQuestion").value("안녕하세요. 방문 목적이 어떻게 되시나요?"))
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
                 .andReturn();
@@ -338,7 +357,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             boolean expectedHeartDeducted
     ) throws Exception {
         String accessToken = login(idToken);
-        long sessionId = startSession(accessToken, 1);
+        long sessionId = startSession(accessToken, 4);
         aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
                 nextQuestion,
                 translatedQuestion,
@@ -366,7 +385,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I want an iced americano."}
+                                {"userUtterance":"I'm here for sightseeing."}
                                 """))
                 .andExpect(status().isOk());
 
@@ -374,7 +393,15 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"Medium size, please."}
+                                {"userUtterance":"I'll stay for five days."}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I'll stay at the Midtown Hotel."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(true));

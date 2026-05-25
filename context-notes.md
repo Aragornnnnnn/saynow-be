@@ -509,3 +509,19 @@
 - 구현은 새 migration `V3__seed_airport_scenarios.sql`로 Airport display order 1~3 시나리오와 각 슬롯을 추가했다. 명시 id 4~6을 사용한 뒤 `scenarios` identity 시작값을 7로 맞췄다.
 - GREEN 검증으로 같은 테스트 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 기본 카테고리 Airport 전환 컨텍스트 노트
+
+## 2026-05-26
+
+- 기존 seed 카테고리는 V1 기준 `Cafe`, `Airport`, `Hotel`, `Restaurant` 네 개다.
+- 사용자 요청에 따라 이제 기본 열린 카테고리는 `Airport`다. `Cafe`는 다른 비기본 카테고리와 마찬가지로 `COMING_SOON` 잠금으로 처리한다.
+- 잠금 기준은 시나리오 목록 API의 카테고리 노출과 세션 시작 API의 카테고리 허용 로직에 동시에 적용해야 한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, Airport 시나리오 시작이 아직 잠겨 있고 OpenAPI 예시가 Cafe 기준이라 실패했다.
+- `ScenarioService`와 `SessionService`의 열린 카테고리 기준을 `Airport`로 변경했다.
+- Airport 시나리오는 슬롯 3개를 채워야 완료되므로 기존 Cafe 기준 통합 테스트의 완료 턴 수 기대값을 3턴으로 조정했다.
+- OpenAPI 시나리오 목록 예시는 Cafe 잠금, Airport 열림 기준으로 바꿨고, 세션 시작 성공 예시도 Airport 첫 질문으로 맞췄다.
+- GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
