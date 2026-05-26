@@ -10,7 +10,7 @@
 - [x] `AiSlotStatus`와 `SessionService` 매핑에 `description`을 추가한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위를 점검하고 커밋한다.
-- [ ] develop으로 push한다.
+- [x] develop으로 push한다.
 
 ---
 

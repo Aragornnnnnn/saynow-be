@@ -14,6 +14,7 @@
 - GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+- 커밋 `ea5d516`이 `origin/develop`에 반영된 것을 `git fetch origin develop`과 `git rev-parse`로 확인했다.
 
 ---
 
