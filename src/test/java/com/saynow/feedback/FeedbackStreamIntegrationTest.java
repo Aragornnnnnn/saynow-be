@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,6 +94,13 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastStreamScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
+        assertThat(aiConversationClient.lastStreamSlots())
+                .extracting(AiSlotStatus::slotName, AiSlotStatus::description, AiSlotStatus::filled)
+                .containsExactly(
+                        tuple("visit_purpose", "사용자가 미국 방문 목적을 여행, 출장, 유학 등으로 설명했는지 여부", true),
+                        tuple("stay_duration", "사용자가 미국에 머무를 기간이나 출국 예정 시점을 설명했는지 여부", true),
+                        tuple("accommodation", "사용자가 머무를 숙소, 호텔, 주소, 지인 집 등 체류 장소를 설명했는지 여부", true)
+                );
 
         Session session = sessionRepository.findById(sessionId).orElseThrow();
         SessionFeedback savedFeedback = sessionFeedbackRepository.findBySession(session).orElseThrow();
@@ -147,6 +155,13 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastGenerateFeedbackScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
+        assertThat(aiConversationClient.lastGenerateFeedbackSlots())
+                .extracting(AiSlotStatus::slotName, AiSlotStatus::description, AiSlotStatus::filled)
+                .containsExactly(
+                        tuple("visit_purpose", "사용자가 미국 방문 목적을 여행, 출장, 유학 등으로 설명했는지 여부", true),
+                        tuple("stay_duration", "사용자가 미국에 머무를 기간이나 출국 예정 시점을 설명했는지 여부", true),
+                        tuple("accommodation", "사용자가 머무를 숙소, 호텔, 주소, 지인 집 등 체류 장소를 설명했는지 여부", true)
+                );
     }
 
     private String performFeedbackStream(String accessToken, long sessionId) throws Exception {
@@ -265,6 +280,10 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
             return lastGenerateFeedbackRequest.aiRole();
         }
 
+        List<AiSlotStatus> lastGenerateFeedbackSlots() {
+            return lastGenerateFeedbackRequest.slots();
+        }
+
         String lastStreamSessionResult() {
             return lastStreamRequest.sessionResult();
         }
@@ -275,6 +294,10 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
 
         String lastStreamAiRole() {
             return lastStreamRequest.aiRole();
+        }
+
+        List<AiSlotStatus> lastStreamSlots() {
+            return lastStreamRequest.slots();
         }
 
         @Override

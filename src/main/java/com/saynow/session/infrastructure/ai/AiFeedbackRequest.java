@@ -9,6 +9,7 @@ public record AiFeedbackRequest(
         String scenarioSituation,
         String scenarioGoal,
         String sessionResult,
+        List<AiSlotStatus> slots,
         List<AiFeedbackTurnRequest> turns
 ) {
 }

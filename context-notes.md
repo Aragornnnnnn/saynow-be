@@ -1,5 +1,22 @@
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
+# AI 피드백 슬롯 데이터 요청 추가 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자는 AI `feedback`, `feedback/stream` 요청에도 `slots` 배열을 추가했다고 공유했다.
+- `slots`의 각 원소는 기존 `AiSlotStatus`와 같은 `slotName`, `description`, `filled` 구조를 사용한다.
+- `next-question` 요청은 이미 `slots[].description`을 포함하고 있으므로, 이번 변경은 피드백 요청 DTO와 피드백 공통 요청 생성 경로에 집중한다.
+- `FeedbackService.toAiFeedbackRequest(...)`는 동기 피드백과 SSE 피드백이 같이 쓰는 빌더이므로, 이 경로에서 세션 슬롯 충족 상태와 원본 시나리오 슬롯 설명을 조합한다.
+- 프론트 응답 계약과 DB 스키마는 변경하지 않는다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고, `AiFeedbackRequest.slots()`와 새 생성자 인자가 없어 컴파일 실패했다.
+- `AiFeedbackRequest`에 `slots`를 추가하고, `FeedbackService.toAiFeedbackRequest(...)`가 `SessionSlotStatus`와 `ScenarioSlot.description`을 조합해 `AiSlotStatus` 목록을 만들도록 변경했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.feedback.FeedbackStreamIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 시나리오 슬롯 설명 필드 추가 컨텍스트 노트
 
 ## 2026-05-26

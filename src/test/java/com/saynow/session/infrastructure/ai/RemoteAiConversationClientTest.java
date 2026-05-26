@@ -73,7 +73,7 @@ class RemoteAiConversationClientTest {
     }
 
     @Test
-    void feedbackRequestIncludesSessionResultAndScenarioSituation() throws Exception {
+    void feedbackRequestIncludesSessionResultScenarioSituationAndSlots() throws Exception {
         AtomicReference<String> requestBody = new AtomicReference<>();
         RemoteAiConversationClient client = clientWithFeedbackResponse(requestBody, """
                 {
@@ -97,6 +97,10 @@ class RemoteAiConversationClientTest {
                 "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
                 "원하는 음료를 자연스럽게 주문할 수 있다.",
                 "SUCCESS",
+                List.of(new AiSlotStatus(
+                        "drink",
+                        "사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부",
+                        true)),
                 List.of(new AiFeedbackTurnRequest(
                         101L,
                         "What would you like to order?",
@@ -108,6 +112,10 @@ class RemoteAiConversationClientTest {
                 .isEqualTo("카페 직원");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
                 .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("description").asText())
+                .isEqualTo("사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("filled").asBoolean())
+                .isTrue();
     }
 
     private RemoteAiConversationClient clientWithNextQuestionResponse(String responseBody) throws IOException {

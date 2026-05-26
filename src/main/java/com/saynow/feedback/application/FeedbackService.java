@@ -11,10 +11,14 @@ import com.saynow.feedback.domain.SessionFeedback;
 import com.saynow.feedback.domain.TurnFeedback;
 import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
 import com.saynow.feedback.infrastructure.TurnFeedbackRepository;
+import com.saynow.scenario.domain.ScenarioSlot;
+import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
 import com.saynow.session.domain.Session;
+import com.saynow.session.domain.SessionSlotStatus;
 import com.saynow.session.domain.SessionTurn;
 import com.saynow.session.domain.SessionStatus;
 import com.saynow.session.infrastructure.SessionRepository;
+import com.saynow.session.infrastructure.SessionSlotStatusRepository;
 import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.ai.AiFeedbackStreamClient;
 import com.saynow.session.infrastructure.ai.AiFeedbackStreamEvent;
@@ -23,6 +27,7 @@ import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiFeedbackTurnRequest;
+import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +58,8 @@ public class FeedbackService {
 
     private final SessionRepository sessionRepository;
     private final SessionTurnRepository turnRepository;
+    private final SessionSlotStatusRepository slotStatusRepository;
+    private final ScenarioSlotRepository scenarioSlotRepository;
     private final SessionFeedbackRepository sessionFeedbackRepository;
     private final TurnFeedbackRepository turnFeedbackRepository;
     private final AiConversationClient aiConversationClient;
@@ -140,9 +147,21 @@ public class FeedbackService {
                 session.getScenario().getSituation(),
                 session.getScenario().getGoal(),
                 session.getStatus().name(),
+                toAiSlotStatuses(session),
                 turns.stream()
                         .map(turn -> new AiFeedbackTurnRequest(turn.getId(), turn.getAiQuestion(), turn.getUserUtterance()))
                         .toList());
+    }
+
+    private List<AiSlotStatus> toAiSlotStatuses(Session session) {
+        Map<String, String> slotDescriptionByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
+                .collect(Collectors.toMap(ScenarioSlot::getName, ScenarioSlot::getDescription));
+        return slotStatusRepository.findBySessionOrderByIdAsc(session).stream()
+                .map(slot -> new AiSlotStatus(
+                        slot.getSlotName(),
+                        slotDescriptionByName.get(slot.getSlotName()),
+                        slot.isFulfilled()))
+                .toList();
     }
 
     private void relayFeedbackStream(FeedbackStreamContext context, OutputStream outputStream) throws IOException {
