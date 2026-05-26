@@ -118,6 +118,54 @@ class RemoteAiConversationClientTest {
                 .isTrue();
     }
 
+    @Test
+    void guideRequestIncludesScenarioContextAndMapsAnswer() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        RemoteAiConversationClient client = clientWithGuideResponse(requestBody, """
+                {
+                  "answer":"would는 공손한 요청이나 가정 느낌을 줄 때 써요."
+                }
+                """);
+
+        AiGuideResponse response = client.generateGuide(new AiGuideRequest(
+                "I would like coffee에서 would는 왜 쓰나요?",
+                "카페에서 주문하기",
+                "원하는 음료를 자연스럽게 주문할 수 있다.",
+                "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
+                "카페 직원"));
+
+        assertThat(response.answer()).isEqualTo("would는 공손한 요청이나 가정 느낌을 줄 때 써요.");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("question").asText())
+                .isEqualTo("I would like coffee에서 would는 왜 쓰나요?");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioTitle").asText())
+                .isEqualTo("카페에서 주문하기");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioGoal").asText())
+                .isEqualTo("원하는 음료를 자연스럽게 주문할 수 있다.");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
+                .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("aiRole").asText())
+                .isEqualTo("카페 직원");
+    }
+
+    @Test
+    void rejectsGuideResponseWithoutAnswer() throws Exception {
+        RemoteAiConversationClient client = clientWithGuideResponse(new AtomicReference<>(), """
+                {
+                  "message":"missing answer"
+                }
+                """);
+
+        assertThatThrownBy(() -> client.generateGuide(new AiGuideRequest(
+                        "would는 왜 쓰나요?",
+                        "카페에서 주문하기",
+                        "원하는 음료를 자연스럽게 주문할 수 있다.",
+                        "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
+                        "카페 직원")))
+                .isInstanceOf(ApiException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.AI_GENERATION_FAILED);
+    }
+
     private RemoteAiConversationClient clientWithNextQuestionResponse(String responseBody) throws IOException {
         return clientWithNextQuestionResponse(new AtomicReference<>(), responseBody);
     }
@@ -144,6 +192,7 @@ class RemoteAiConversationClientTest {
                 "/api/v1/conversation/next-question",
                 "/api/v1/conversation/feedback",
                 "/api/v1/conversation/feedback/stream",
+                "/api/v1/conversation/guide",
                 Duration.ofSeconds(180));
         return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
     }
@@ -170,6 +219,34 @@ class RemoteAiConversationClientTest {
                 "/api/v1/conversation/next-question",
                 "/api/v1/conversation/feedback",
                 "/api/v1/conversation/feedback/stream",
+                "/api/v1/conversation/guide",
+                Duration.ofSeconds(180));
+        return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
+    }
+
+    private RemoteAiConversationClient clientWithGuideResponse(
+            AtomicReference<String> requestBody,
+            String responseBody
+    ) throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/v1/conversation/guide", exchange -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            exchange.getResponseBody().write(responseBytes);
+            exchange.close();
+        });
+        server.start();
+
+        URI baseUrl = URI.create("http://127.0.0.1:" + server.getAddress().getPort());
+        AiClientProperties properties = new AiClientProperties(
+                baseUrl,
+                "remote",
+                "/api/v1/conversation/next-question",
+                "/api/v1/conversation/feedback",
+                "/api/v1/conversation/feedback/stream",
+                "/api/v1/conversation/guide",
                 Duration.ofSeconds(180));
         return new RemoteAiConversationClient(new ObjectMapper(), properties, WebClient.builder());
     }

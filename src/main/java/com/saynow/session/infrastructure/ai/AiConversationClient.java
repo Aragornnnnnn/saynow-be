@@ -6,4 +6,6 @@ public interface AiConversationClient {
     AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request);
 
     AiFeedbackResponse generateFeedback(AiFeedbackRequest request);
+
+    AiGuideResponse generateGuide(AiGuideRequest request);
 }

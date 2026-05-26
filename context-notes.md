@@ -624,3 +624,25 @@
 - PostgreSQL과 H2 모두 통과하도록 `UPDATE` 후 `INSERT ... WHERE NOT EXISTS` 방식으로 기본 카테고리 4개를 복구한다.
 - GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 세션 중 영어 학습 가이드 모드 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자는 가이드 모드 대화를 저장하지 않는다고 확정했다.
+- 프론트-백엔드 API는 `POST /api/v1/sessions/{sessionId}/guide`로 두고, 프론트는 `question`만 보낸다.
+- `sessionId`는 저장 키가 아니라 백엔드가 세션 소유권, 진행 상태, 시나리오 문맥을 신뢰할 수 있게 조회하기 위한 키다.
+- 백엔드는 세션의 `scenarioTitle`, `scenarioGoal`, `scenarioSituation`, `aiRole`을 조회해 AI 서버 `POST /api/v1/conversation/guide`에 전달한다.
+- 가이드 질문과 답변은 `SessionTurn`에 저장하지 않으므로 최종 피드백 생성 대상에도 포함되지 않아야 한다.
+- 명백한 프롬프트 인젝션, 시스템 지시 공개, 역할 변경, 코딩/뉴스/금융/정치 등 영어 학습 목적 밖의 요청은 AI 서버 호출 전에 차단하고 안내 답변을 반환한다.
+- 원격에는 `origin/dev`가 없어서 실제 기준 브랜치인 `origin/develop`을 fetch한 뒤 `feat/16`을 생성했다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `AiGuideRequest`와 `AiGuideResponse`가 없어 컴파일 실패했다.
+- 구현은 `POST /api/v1/sessions/{sessionId}/guide`를 추가하고, 프론트 요청은 `question`만 받으며, 백엔드가 세션 문맥으로 `AiGuideRequest`를 구성한다.
+- `AiConversationClient.generateGuide`와 원격 AI 경로 `/api/v1/conversation/guide`를 추가했다. 원격 가이드 응답이 비어 있거나 호출에 실패하면 `AI_GENERATION_FAILED`를 반환한다.
+- 차단 대상 질문은 AI 서버를 호출하지 않고 `이 기능은 영어 표현, 문법, 단어, 뉘앙스에 관한 질문만 도와드릴 수 있어요.`를 반환한다.
+- GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 사용자 요청에 따라 프론트 가이드 응답에서 `sessionId`를 제거했다. `sessionId`는 path variable로만 사용하고 응답 본문에는 `answer`만 내려준다.

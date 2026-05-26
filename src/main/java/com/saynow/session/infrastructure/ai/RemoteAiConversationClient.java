@@ -46,6 +46,16 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
     }
 
     @Override
+    public AiGuideResponse generateGuide(AiGuideRequest request) {
+        return post(
+                guideUri(),
+                request,
+                RemoteGuideResponse.class,
+                ErrorCode.AI_GENERATION_FAILED,
+                ErrorCode.AI_GENERATION_FAILED.getMessage()).toResponse();
+    }
+
+    @Override
     public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
         URI uri = feedbackStreamUri();
         return webClientBuilder.build()
@@ -75,6 +85,10 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
     }
 
     private <T> T post(URI uri, Object payload, Class<T> responseType) {
+        return post(uri, payload, responseType, ErrorCode.AI_RESPONSE_INVALID, "AI 서버 호출에 실패했습니다.");
+    }
+
+    private <T> T post(URI uri, Object payload, Class<T> responseType, ErrorCode errorCode, String message) {
         try {
             HttpRequest httpRequest = HttpRequest.newBuilder(uri)
                     .version(HttpClient.Version.HTTP_1_1)
@@ -85,17 +99,17 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
             HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
                 log.warn("AI 서버 호출이 실패했습니다. uri={}, status={}, body={}", uri, httpResponse.statusCode(), httpResponse.body());
-                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 호출에 실패했습니다.");
+                throw new ApiException(errorCode, message);
             }
             return objectMapper.readValue(httpResponse.body(), responseType);
         } catch (ApiException exception) {
             throw exception;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 호출에 실패했습니다.");
+            throw new ApiException(errorCode, message);
         } catch (IOException exception) {
             log.warn("AI 서버 호출에 실패했습니다.", exception);
-            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 호출에 실패했습니다.");
+            throw new ApiException(errorCode, message);
         }
     }
 
@@ -109,6 +123,10 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
 
     private URI feedbackStreamUri() {
         return properties.baseUrl().resolve(properties.feedbackStreamPath());
+    }
+
+    private URI guideUri() {
+        return properties.baseUrl().resolve(properties.guidePath());
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -161,6 +179,17 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
                     turnFeedbacks.stream()
                             .map(RemoteTurnFeedback::toResponse)
                             .toList());
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RemoteGuideResponse(String answer) {
+
+        private AiGuideResponse toResponse() {
+            if (answer == null || answer.isBlank()) {
+                throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
+            }
+            return new AiGuideResponse(answer);
         }
     }
 

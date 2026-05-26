@@ -5,6 +5,8 @@ import com.saynow.auth.domain.User;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.session.api.dto.GuideQuestionRequest;
+import com.saynow.session.api.dto.GuideQuestionResponse;
 import com.saynow.session.api.dto.SessionResultResponse;
 import com.saynow.session.api.dto.SessionStartResponse;
 import com.saynow.session.api.dto.UserUtteranceRequest;
@@ -18,6 +20,8 @@ import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.SessionSlotStatusRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiFilledSlot;
+import com.saynow.session.infrastructure.ai.AiGuideRequest;
+import com.saynow.session.infrastructure.ai.AiGuideResponse;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
@@ -36,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,6 +50,72 @@ import java.util.stream.Collectors;
 public class SessionService {
 
     private static final String OPEN_CATEGORY_NAME = "Airport";
+    private static final String GUIDE_BLOCKED_ANSWER = "이 기능은 영어 표현, 문법, 단어, 뉘앙스에 관한 질문만 도와드릴 수 있어요.";
+    private static final List<String> GUIDE_BLOCKED_KEYWORDS = List.of(
+            "프롬프트",
+            "시스템 지시",
+            "시스템 메시지",
+            "시스템 프롬프트",
+            "지시를 무시",
+            "이전 지시",
+            "역할을 바꿔",
+            "너는 이제",
+            "ignore",
+            "ignore all",
+            "system prompt",
+            "developer message",
+            "forget all",
+            "forget previous",
+            "previous instruction",
+            "role change",
+            "코딩",
+            "코드",
+            "개발",
+            "coding",
+            "code",
+            "뉴스",
+            "news",
+            "금융",
+            "finance",
+            "주식",
+            "stock",
+            "정치",
+            "politics",
+            "비트코인",
+            "bitcoin",
+            "hack",
+            "해킹");
+    private static final List<String> GUIDE_ALLOWED_KEYWORDS = List.of(
+            "영어",
+            "표현",
+            "문법",
+            "단어",
+            "뜻",
+            "의미",
+            "뉘앙스",
+            "발음",
+            "대체",
+            "차이",
+            "해석",
+            "문장",
+            "어휘",
+            "숙어",
+            "관용",
+            "would",
+            "could",
+            "should",
+            "can ",
+            "may ",
+            "might",
+            "instead",
+            "grammar",
+            "expression",
+            "phrase",
+            "word",
+            "meaning",
+            "pronunciation",
+            "tone",
+            "nuance");
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioSlotRepository scenarioSlotRepository;
@@ -143,6 +214,27 @@ public class SessionService {
     }
 
     @Transactional(readOnly = true)
+    public GuideQuestionResponse generateGuideAnswer(Long userId, Long sessionId, GuideQuestionRequest request) {
+        Session session = findOwnedSession(userId, sessionId);
+        assertInProgress(session);
+        String question = validateGuideQuestion(request);
+        if (shouldBlockGuideQuestion(question)) {
+            return new GuideQuestionResponse(GUIDE_BLOCKED_ANSWER);
+        }
+
+        AiGuideResponse aiResponse = aiConversationClient.generateGuide(new AiGuideRequest(
+                question,
+                session.getScenario().getTitle(),
+                session.getScenario().getGoal(),
+                session.getScenario().getSituation(),
+                session.getScenario().getAiRole()));
+        if (aiResponse == null || aiResponse.answer() == null || aiResponse.answer().isBlank()) {
+            throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
+        }
+        return new GuideQuestionResponse(aiResponse.answer().trim());
+    }
+
+    @Transactional(readOnly = true)
     public SessionResultResponse getSessionResult(Long userId, Long sessionId) {
         Session session = findOwnedSession(userId, sessionId);
         if (session.getStatus() != SessionStatus.SUCCESS && session.getStatus() != SessionStatus.FAILURE) {
@@ -184,6 +276,25 @@ public class SessionService {
         if (request == null || request.userUtterance() == null || request.userUtterance().isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST);
         }
+    }
+
+    private String validateGuideQuestion(GuideQuestionRequest request) {
+        if (request == null || request.question() == null || request.question().isBlank()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST);
+        }
+        return request.question().trim();
+    }
+
+    private boolean shouldBlockGuideQuestion(String question) {
+        String normalized = question.toLowerCase(Locale.ROOT);
+        if (containsAny(normalized, GUIDE_BLOCKED_KEYWORDS)) {
+            return true;
+        }
+        return !containsAny(normalized, GUIDE_ALLOWED_KEYWORDS);
+    }
+
+    private boolean containsAny(String value, List<String> keywords) {
+        return keywords.stream().anyMatch(value::contains);
     }
 
     private void markScenarioCleared(Session session) {

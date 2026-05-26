@@ -16,6 +16,8 @@ import com.saynow.session.infrastructure.ai.AiFeedbackStreamClient;
 import com.saynow.session.infrastructure.ai.AiFeedbackStreamEvent;
 import com.saynow.session.infrastructure.ai.AiFeedbackStreamException;
 import com.saynow.session.infrastructure.ai.AiFilledSlot;
+import com.saynow.session.infrastructure.ai.AiGuideRequest;
+import com.saynow.session.infrastructure.ai.AiGuideResponse;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
@@ -345,6 +347,11 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
                     82,
                     "전체적으로 의도는 잘 전달됐지만 주문 표현이 조금 짧게 들립니다.",
                     turnFeedbacks);
+        }
+
+        @Override
+        public AiGuideResponse generateGuide(AiGuideRequest request) {
+            return new AiGuideResponse("영어 표현에 대한 간단한 가이드 답변입니다.");
         }
 
         @Override

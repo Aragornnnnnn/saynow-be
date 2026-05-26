@@ -33,6 +33,7 @@ saynow:
     next-question-path: ${SAYNOW_AI_NEXT_QUESTION_PATH:/api/v1/conversation/next-question}
     feedback-path: ${SAYNOW_AI_FEEDBACK_PATH:/api/v1/conversation/feedback}
     feedback-stream-path: ${SAYNOW_AI_FEEDBACK_STREAM_PATH:/api/v1/conversation/feedback/stream}
+    guide-path: ${SAYNOW_AI_GUIDE_PATH:/api/v1/conversation/guide}
     feedback-stream-timeout: ${SAYNOW_AI_FEEDBACK_STREAM_TIMEOUT:180s}
 
 sentry:

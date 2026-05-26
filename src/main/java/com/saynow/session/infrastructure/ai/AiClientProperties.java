@@ -13,6 +13,7 @@ public record AiClientProperties(
         String nextQuestionPath,
         String feedbackPath,
         String feedbackStreamPath,
+        String guidePath,
         Duration feedbackStreamTimeout
 ) {
 
@@ -25,6 +26,9 @@ public record AiClientProperties(
         }
         if (feedbackStreamPath == null || feedbackStreamPath.isBlank()) {
             feedbackStreamPath = "/api/v1/conversation/feedback/stream";
+        }
+        if (guidePath == null || guidePath.isBlank()) {
+            guidePath = "/api/v1/conversation/guide";
         }
         if (feedbackStreamTimeout == null || feedbackStreamTimeout.isNegative() || feedbackStreamTimeout.isZero()) {
             feedbackStreamTimeout = Duration.ofSeconds(180);

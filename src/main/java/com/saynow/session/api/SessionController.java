@@ -3,6 +3,8 @@ package com.saynow.session.api;
 
 import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.response.ApiResponse;
+import com.saynow.session.api.dto.GuideQuestionRequest;
+import com.saynow.session.api.dto.GuideQuestionResponse;
 import com.saynow.session.api.dto.SessionResultResponse;
 import com.saynow.session.api.dto.SessionStartResponse;
 import com.saynow.session.api.dto.UserUtteranceRequest;
@@ -47,6 +49,16 @@ public class SessionController {
             @RequestBody UserUtteranceRequest request
     ) {
         return ApiResponse.success(HttpStatus.OK, sessionService.submitUtterance(principal.userId(), sessionId, request));
+    }
+
+    @PostMapping("/sessions/{sessionId}/guide")
+    @Operation(summary = "세션 중 영어 학습 가이드 질문", description = "시나리오 대화 중 영어 표현, 문법, 단어, 뉘앙스에 대한 가이드 답변을 생성합니다.")
+    public ResponseEntity<ApiResponse<GuideQuestionResponse>> generateGuideAnswer(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId,
+            @RequestBody GuideQuestionRequest request
+    ) {
+        return ApiResponse.success(HttpStatus.OK, sessionService.generateGuideAnswer(principal.userId(), sessionId, request));
     }
 
     @GetMapping("/sessions/{sessionId}/result")

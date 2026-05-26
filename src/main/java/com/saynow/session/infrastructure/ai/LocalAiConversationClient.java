@@ -68,6 +68,11 @@ public class LocalAiConversationClient implements AiConversationClient, AiFeedba
     }
 
     @Override
+    public AiGuideResponse generateGuide(AiGuideRequest request) {
+        return new AiGuideResponse("영어 표현, 문법, 단어, 뉘앙스에 대한 질문으로 이해했어요. 궁금한 표현을 기준으로 자연스러운 쓰임을 짧게 설명드릴게요.");
+    }
+
+    @Override
     public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
         AiFeedbackResponse feedback = generateFeedback(request);
         return Flux.concat(
