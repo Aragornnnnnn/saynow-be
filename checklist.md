@@ -1,5 +1,19 @@
 # AI SSE 피드백 스트림 중계 체크리스트
 
+# 시나리오 슬롯 설명 필드 추가 체크리스트
+
+- [x] `description` 스키마와 AI 요청 계약 변경 범위를 기록한다.
+- [x] `scenario_slots.description` 컬럼과 확정 description seed 값을 검증하는 RED 테스트를 추가한다.
+- [x] `next-question` AI 요청의 `slots[].description` 포함 RED 테스트를 추가한다.
+- [x] Flyway migration으로 `scenario_slots.description` 컬럼과 기존 슬롯별 값을 추가한다.
+- [x] `ScenarioSlot` 엔티티에 `description`을 매핑한다.
+- [x] `AiSlotStatus`와 `SessionService` 매핑에 `description`을 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [ ] develop으로 push한다.
+
+---
+
 # 시나리오 AI 역할 필드 추가 체크리스트
 
 - [x] `aiRole` 스키마와 AI 요청 계약 변경 범위를 기록한다.

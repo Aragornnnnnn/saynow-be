@@ -52,6 +52,8 @@ class RemoteAiConversationClientTest {
                 .isEqualTo("카페 직원");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
                 .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("description").asText())
+                .isEqualTo("사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부");
     }
 
     @Test
@@ -172,6 +174,9 @@ class RemoteAiConversationClientTest {
                 "카페 직원",
                 "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
                 "원하는 음료를 자연스럽게 주문할 수 있다.",
-                List.of(new AiSlotStatus("drink", false)));
+                List.of(new AiSlotStatus(
+                        "drink",
+                        "사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부",
+                        false)));
     }
 }

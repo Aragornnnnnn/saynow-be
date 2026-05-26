@@ -96,6 +96,11 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastNextQuestionScenarioSituation())
                 .isEqualTo("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.");
+        assertThat(aiConversationClient.lastNextQuestionSlotDescriptions())
+                .containsExactly(
+                        "사용자가 미국 방문 목적을 여행, 출장, 유학 등으로 설명했는지 여부",
+                        "사용자가 미국에 머무를 기간이나 출국 예정 시점을 설명했는지 여부",
+                        "사용자가 머무를 숙소, 호텔, 주소, 지인 집 등 체류 장소를 설명했는지 여부");
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -463,6 +468,12 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         String lastNextQuestionAiRole() {
             return nextQuestionRequests.getLast().aiRole();
+        }
+
+        List<String> lastNextQuestionSlotDescriptions() {
+            return nextQuestionRequests.getLast().slots().stream()
+                    .map(AiSlotStatus::description)
+                    .toList();
         }
 
         @Override

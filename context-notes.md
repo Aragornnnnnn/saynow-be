@@ -1,5 +1,22 @@
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
+# 시나리오 슬롯 설명 필드 추가 컨텍스트 노트
+
+## 2026-05-26
+
+- 사용자는 확정한 슬롯 description 표를 기준으로 DB에 삽입하고 `develop`으로 push하라고 요청했다.
+- 기존 V1/V3 migration은 이미 배포됐을 수 있으므로 새 Flyway migration으로 `scenario_slots.description`을 추가한다.
+- description은 프론트 시나리오 목록 응답에는 추가하지 않고, AI `next-question` 요청의 `slots[].description`으로만 전달한다.
+- `SessionSlotStatus`에는 슬롯 충족 상태만 남기고, description은 원본 `ScenarioSlot`에서 읽어 `AiSlotStatus`에 매핑한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, `AiSlotStatus.description()`과 새 생성자 인자가 없어 컴파일 실패했다.
+- `V5__add_scenario_slot_description.sql`로 `scenario_slots.description`을 추가하고 사용자가 확정한 15개 슬롯 설명을 모두 업데이트한 뒤 NOT NULL로 전환했다.
+- `ScenarioSlot.description`, `AiSlotStatus.description`을 추가하고, `SessionService`가 원본 `ScenarioSlot`에서 description을 읽어 `next-question` 요청의 `slots[].description`으로 전달하게 했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 시나리오 AI 역할 필드 추가 컨텍스트 노트
 
 ## 2026-05-26

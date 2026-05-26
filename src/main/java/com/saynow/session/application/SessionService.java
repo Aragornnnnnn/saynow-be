@@ -24,6 +24,7 @@ import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.session.infrastructure.ai.TurnClassification;
 import com.saynow.scenario.application.ScenarioService;
 import com.saynow.scenario.domain.Scenario;
+import com.saynow.scenario.domain.ScenarioSlot;
 import com.saynow.scenario.domain.UserScenarioProgress;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
@@ -89,6 +90,8 @@ public class SessionService {
         currentTurn.submitUserUtterance(request.userUtterance().trim());
 
         List<SessionSlotStatus> slotStatuses = slotStatusRepository.findBySessionOrderByIdAsc(session);
+        Map<String, String> slotDescriptionByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
+                .collect(Collectors.toMap(ScenarioSlot::getName, ScenarioSlot::getDescription));
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(new AiNextQuestionRequest(
                 currentTurn.getAiQuestion(),
                 currentTurn.getUserUtterance(),
@@ -97,7 +100,10 @@ public class SessionService {
                 session.getScenario().getSituation(),
                 session.getScenario().getGoal(),
                 slotStatuses.stream()
-                        .map(slot -> new AiSlotStatus(slot.getSlotName(), slot.isFulfilled()))
+                        .map(slot -> new AiSlotStatus(
+                                slot.getSlotName(),
+                                slotDescriptionByName.get(slot.getSlotName()),
+                                slot.isFulfilled()))
                         .toList()));
         validateNextQuestionResponse(aiResponse);
 

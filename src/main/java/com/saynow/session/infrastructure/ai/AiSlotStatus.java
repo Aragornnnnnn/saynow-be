@@ -3,6 +3,7 @@ package com.saynow.session.infrastructure.ai;
 
 public record AiSlotStatus(
         String slotName,
+        String description,
         boolean filled
 ) {
 }
