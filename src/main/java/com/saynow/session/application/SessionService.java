@@ -179,7 +179,9 @@ public class SessionService {
         validateNextQuestionResponse(aiResponse);
 
         boolean heartDeducted = shouldDeductHeart(session, aiResponse);
-        applyFilledSlots(slotStatuses, aiResponse.filledSlots());
+        if (aiResponse.turnClassification() == TurnClassification.ANSWER) {
+            applyFilledSlots(slotStatuses, aiResponse.filledSlots());
+        }
         if (heartDeducted) {
             session.decreaseHeart();
         }

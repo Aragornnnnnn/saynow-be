@@ -1,3 +1,24 @@
+# turnClassification 기반 하트/슬롯 정책 컨텍스트 노트
+
+## 2026-05-30
+
+- 사용자는 AI 서버의 `turnClassification`을 BE 정책 판단의 단일 기준으로 두라고 요청했다.
+- 현재 코드 확인 결과 `SessionService.shouldDeductHeart(...)`는 이미 `INVALID_RESPONSE`일 때만 하트를 차감한다.
+- 현재 코드 확인 결과 `SessionService.submitUtterance(...)`는 `applyFilledSlots(...)`를 classification과 무관하게 호출한다. 따라서 `INVALID_RESPONSE` 또는 `ASSISTANCE_REQUEST`에 `filledSlots`가 들어오면 슬롯이 잘못 충족될 수 있다.
+- 이번 구현은 하트 정책을 새로 확장하지 않고, 슬롯 적용 조건을 `ANSWER`로 제한하는 데 집중한다.
+- 세션 실패 정책은 기존처럼 남은 하트가 0 이하가 된 경우 `FAILURE`로 완료한다. 하트는 `INVALID_RESPONSE`에서만 줄기 때문에 실패 누적 기준도 invalid 응답 누적에만 연결된다.
+- 테스트는 공항 시나리오 5, 6을 사용한다. 사용자 계획의 세션 159, 160 사례는 실제 DB seed의 고정 세션 ID가 아니라 AI 검증 사례로 보고, BE 통합 테스트에서는 동일 발화와 슬롯명 정책을 시나리오별 세션으로 재현한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`를 실행했고, `INVALID_RESPONSE`가 반환한 `boarding_possibility`, `contact_info` 슬롯이 잘못 충족되어 실패했다.
+- `SessionService.submitUtterance(...)`에서 `turnClassification == ANSWER`일 때만 `applyFilledSlots(...)`를 호출하도록 변경했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`를 실행했고 통과했다.
+- OpenAPI 검증은 사용자 발화 응답 예시에 `remainingHearts`, `heartDeducted`, `turnClassification`이 모두 포함되는지 확인하도록 보강했다.
+- 계약 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- Obsidian 문서 `동문서답 턴 분류 개선 기록.md`의 백엔드 후속 작업을 실제 BE 반영 사항, 테스트 결과, 남은 후속 작업으로 교체했다.
+- 최종 점검으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # AI SSE 피드백 스트림 중계 컨텍스트 노트
 
 # AI 피드백 슬롯 데이터 요청 추가 컨텍스트 노트

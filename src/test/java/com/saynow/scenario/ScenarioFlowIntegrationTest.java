@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -45,6 +46,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private TestAiConversationClient aiConversationClient;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -216,6 +220,163 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 "어떤 음료를 주문하고 싶으신가요?",
                 2,
                 true);
+    }
+
+    @Test
+    void airportTransferInvalidTurnsDeductHeartButIgnoreFilledSlots() throws Exception {
+        String accessToken = login("mvp2-sub-18|turn159@example.com|Turn 159 User");
+        unlockAirportScenario6(accessToken);
+        aiConversationClient.reset();
+        long sessionId = startSession(
+                accessToken,
+                6,
+                "Oh, you look worried. What's going on?",
+                "괜찮으세요? 무슨 일 있으신가요?");
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Can you ask if boarding is still possible?",
+                "아직 탑승할 수 있는지 물어볼 수 있나요?",
+                List.of(new AiFilledSlot("gate_location")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Could you tell me where the gate is"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(3))
+                .andExpect(jsonPath("$.data.heartDeducted").value(false))
+                .andExpect(jsonPath("$.data.turnClassification").value("ANSWER"));
+        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
+        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
+        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Please answer whether you can still board.",
+                "아직 탑승할 수 있는지 답해주세요.",
+                List.of(new AiFilledSlot("boarding_possibility")),
+                TurnClassification.INVALID_RESPONSE));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"What are you crazy I don't know I am customer"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(2))
+                .andExpect(jsonPath("$.data.heartDeducted").value(true))
+                .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
+        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
+        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
+        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Please explain that your flight leaves soon.",
+                "비행기가 곧 출발한다는 점을 설명해주세요.",
+                List.of(new AiFilledSlot("time_pressure")),
+                TurnClassification.INVALID_RESPONSE));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Yes I already told you"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(1))
+                .andExpect(jsonPath("$.data.heartDeducted").value(true))
+                .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
+        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
+        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
+        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+    }
+
+    @Test
+    void baggageScenarioAssistanceDoesNotDeductHeartAndNonAnswerTurnsIgnoreFilledSlots() throws Exception {
+        String accessToken = login("mvp2-sub-19|turn160@example.com|Turn 160 User");
+        unlockAirportScenario5(accessToken);
+        aiConversationClient.reset();
+        long sessionId = startSession(
+                accessToken,
+                5,
+                "Oh, how can I help you today?",
+                "네, 무엇을 도와드릴까요?");
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Please describe the baggage issue.",
+                "수하물 문제를 설명해주세요.",
+                List.of(new AiFilledSlot("contact_info")),
+                TurnClassification.INVALID_RESPONSE));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I like strawberry"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(2))
+                .andExpect(jsonPath("$.data.heartDeducted").value(true))
+                .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
+        assertThat(slotFulfilled(sessionId, "contact_info")).isFalse();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Please tell me what happened to your baggage.",
+                "수하물에 어떤 문제가 생겼는지 말해주세요.",
+                List.of(new AiFilledSlot("contact_info")),
+                TurnClassification.INVALID_RESPONSE));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Galaxy laptop"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(1))
+                .andExpect(jsonPath("$.data.heartDeducted").value(true))
+                .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
+        assertThat(slotFulfilled(sessionId, "contact_info")).isFalse();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "We need contact information so the airline can follow up with you. What is the best contact number?",
+                "항공사가 후속 안내를 드릴 수 있도록 연락처가 필요합니다. 연락 가능한 번호가 어떻게 되나요?",
+                List.of(new AiFilledSlot("contact_info")),
+                TurnClassification.ASSISTANCE_REQUEST));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Why do I need to provide that"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(1))
+                .andExpect(jsonPath("$.data.heartDeducted").value(false))
+                .andExpect(jsonPath("$.data.turnClassification").value("ASSISTANCE_REQUEST"))
+                .andExpect(jsonPath("$.data.originalQuestion").value("We need contact information so the airline can follow up with you. What is the best contact number?"));
+        assertThat(slotFulfilled(sessionId, "contact_info")).isFalse();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "What happened to your baggage?",
+                "수하물에 어떤 문제가 생겼나요?",
+                List.of(new AiFilledSlot("contact_info")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"OK my phone number is 123-4567"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.remainingHearts").value(1))
+                .andExpect(jsonPath("$.data.heartDeducted").value(false))
+                .andExpect(jsonPath("$.data.turnClassification").value("ANSWER"));
+        assertThat(slotFulfilled(sessionId, "contact_info")).isTrue();
     }
 
     @Test
@@ -432,12 +593,25 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     private long startSession(String accessToken, long scenarioId) throws Exception {
+        return startSession(
+                accessToken,
+                scenarioId,
+                "Hi, what's the purpose of your visit?",
+                "안녕하세요. 방문 목적이 어떻게 되시나요?");
+    }
+
+    private long startSession(
+            String accessToken,
+            long scenarioId,
+            String expectedOriginalQuestion,
+            String expectedTranslatedQuestion
+    ) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/scenarios/{scenarioId}/sessions", scenarioId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.sessionId").isNumber())
-                .andExpect(jsonPath("$.data.originalQuestion").value("Hi, what's the purpose of your visit?"))
-                .andExpect(jsonPath("$.data.translatedQuestion").value("안녕하세요. 방문 목적이 어떻게 되시나요?"))
+                .andExpect(jsonPath("$.data.originalQuestion").value(expectedOriginalQuestion))
+                .andExpect(jsonPath("$.data.translatedQuestion").value(expectedTranslatedQuestion))
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
                 .andReturn();
@@ -477,6 +651,63 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnClassification").value(turnClassification.name()))
                 .andExpect(jsonPath("$.data.originalQuestion").value(nextQuestion))
                 .andExpect(jsonPath("$.data.translatedQuestion").value(translatedQuestion));
+    }
+
+    private void unlockAirportScenario5(String accessToken) throws Exception {
+        completeScenario(
+                accessToken,
+                4,
+                "Hi, what's the purpose of your visit?",
+                "안녕하세요. 방문 목적이 어떻게 되시나요?",
+                List.of(
+                        "I'm here for sightseeing.",
+                        "I'll stay for five days.",
+                        "I'll stay at the Midtown Hotel."));
+    }
+
+    private void unlockAirportScenario6(String accessToken) throws Exception {
+        unlockAirportScenario5(accessToken);
+        completeScenario(
+                accessToken,
+                5,
+                "Oh, how can I help you today?",
+                "네, 무엇을 도와드릴까요?",
+                List.of(
+                        "My suitcase is broken.",
+                        "Can you help me repair it?",
+                        "My phone number is 123-4567."));
+    }
+
+    private void completeScenario(
+            String accessToken,
+            long scenarioId,
+            String expectedOriginalQuestion,
+            String expectedTranslatedQuestion,
+            List<String> utterances
+    ) throws Exception {
+        long sessionId = startSession(accessToken, scenarioId, expectedOriginalQuestion, expectedTranslatedQuestion);
+        for (int index = 0; index < utterances.size(); index++) {
+            mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                            .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"userUtterance":"%s"}
+                                    """.formatted(utterances.get(index))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.feedbackAvailable").value(index == utterances.size() - 1));
+        }
+    }
+
+    private boolean slotFulfilled(long sessionId, String slotName) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                """
+                        SELECT is_fulfilled
+                        FROM session_slot_statuses
+                        WHERE session_id = ? AND slot_name = ?
+                        """,
+                Boolean.class,
+                sessionId,
+                slotName));
     }
 
     private void completeSession(String accessToken, long sessionId) throws Exception {

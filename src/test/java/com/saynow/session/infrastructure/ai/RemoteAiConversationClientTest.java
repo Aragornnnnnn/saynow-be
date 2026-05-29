@@ -73,6 +73,23 @@ class RemoteAiConversationClientTest {
     }
 
     @Test
+    void rejectsNextQuestionResponseWithUnknownTurnClassification() throws Exception {
+        RemoteAiConversationClient client = clientWithNextQuestionResponse("""
+                {
+                  "nextQuestion":"What drink would you like to order?",
+                  "translatedQuestion":"어떤 음료를 주문하고 싶으신가요?",
+                  "filledSlots":[],
+                  "turnClassification":"OFF_TOPIC"
+                }
+                """);
+
+        assertThatThrownBy(() -> client.generateNextQuestion(nextQuestionRequest()))
+                .isInstanceOf(ApiException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
+    }
+
+    @Test
     void feedbackRequestIncludesSessionResultScenarioSituationAndSlots() throws Exception {
         AtomicReference<String> requestBody = new AtomicReference<>();
         RemoteAiConversationClient client = clientWithFeedbackResponse(requestBody, """

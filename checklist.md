@@ -1,3 +1,18 @@
+# turnClassification 기반 하트/슬롯 정책 체크리스트
+
+- [x] 현재 `SessionService`, AI 응답 DTO, OpenAPI 테스트 구조를 확인한다.
+- [x] 구현 전 정책과 기존 코드 차이를 `context-notes.md`에 기록한다.
+- [x] `INVALID_RESPONSE`가 `filledSlots`를 반환해도 슬롯을 적용하지 않는 RED 테스트를 추가한다.
+- [x] `ASSISTANCE_REQUEST`가 `filledSlots`를 반환해도 슬롯을 적용하지 않고 하트를 차감하지 않는 RED 테스트를 추가한다.
+- [x] `ANSWER`일 때만 `filledSlots`를 세션 슬롯 상태에 반영한다.
+- [x] AI `turnClassification` 누락/알 수 없는 값 계약 테스트를 확인한다.
+- [x] OpenAPI 응답 예시에 `turnClassification`, `heartDeducted`, `remainingHearts`가 포함됨을 확인한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] Obsidian AI 작업 기록에 BE 변경 사항을 함께 정리한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+
+---
+
 # AI SSE 피드백 스트림 중계 체크리스트
 
 # AI 피드백 슬롯 데이터 요청 추가 체크리스트
