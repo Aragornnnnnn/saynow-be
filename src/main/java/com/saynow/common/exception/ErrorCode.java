@@ -30,6 +30,7 @@ public enum ErrorCode {
     SESSION_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 세션입니다."),
     SESSION_IN_PROGRESS(HttpStatus.BAD_REQUEST, "아직 진행 중인 세션입니다."),
     SESSION_NOT_COMPLETABLE(HttpStatus.CONFLICT, "세션을 완료할 수 없습니다."),
+    NPS_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 평가가 제출된 세션입니다."),
 
     AUDIO_REQUIRED(HttpStatus.BAD_REQUEST, "음성 파일이 필요합니다."),
     AUDIO_READ_FAILED(HttpStatus.BAD_REQUEST, "음성 파일을 읽을 수 없습니다."),

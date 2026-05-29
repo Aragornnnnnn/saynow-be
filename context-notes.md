@@ -659,3 +659,24 @@
 - 오른쪽 빈 공간에 사용 맥락 기준 재분류 정리본을 추가했다.
 - 분류 축은 생활 정착/거주, 주문/결제/서비스, 일상 문화/콘텐츠 공유, 관계/약속/학교, 운동/헬스장, 갈등/항의/돌발로 두었다.
 - 사용자 피드백에 따라 평문 정리본을 삭제하고, Excalidraw의 `Mermaid to Excalidraw` 기능으로 같은 분류를 다이어그램 형태로 다시 추가했다.
+
+---
+
+# 세션 NPS 평가 수집 API 컨텍스트 노트
+
+## 2026-05-30
+
+- 사용자는 특정 유저가 특정 세션에 대해 제출하는 평가를 수집한다고 확정했다.
+- API는 기존 세션 하위 리소스 패턴에 맞춰 `POST /api/v1/sessions/{sessionId}/nps`로 둔다.
+- `userId`는 인증 토큰에서 얻고, `sessionId`는 path variable로 받아 저장한다. 요청 body에 `sessionId`를 중복으로 받지 않는다.
+- 성공 응답은 프론트가 별도 식별자를 사용할 필요가 없으므로 `201 Created`와 `data: null`로 반환한다.
+- NPS는 AI 최종 피드백 결과가 아니라 사용자가 제출한 만족도 평가이므로 `session_feedbacks`에 컬럼을 붙이지 않고 `session_nps_responses` 별도 테이블로 저장한다.
+- `score`는 1~5 정수만 허용한다.
+- `lowScoreReason`은 1~2점에서만 의미 있는 선택 입력이다. 3~5점에서 공백이 아닌 사유가 오면 데이터 의미가 섞이지 않도록 `INVALID_REQUEST`로 거부한다.
+- 같은 사용자가 같은 세션에 한 번만 평가하도록 `(user_id, session_id)` unique 제약을 둔다.
+- 진행 중인 세션은 평가할 수 없으며 `SESSION_IN_PROGRESS`로 응답한다. 완료, 실패, 중도 종료 세션은 소유자라면 평가 대상이 될 수 있다.
+- RED 검증으로 `./gradlew test --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.nps.SessionNpsSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, NPS 경로와 테이블이 없어 9개 테스트가 실패했다.
+- 구현은 `nps` 패키지에 컨트롤러, 요청 DTO, 서비스, 엔티티, 저장소를 추가하고 `V6__create_session_nps_responses.sql`로 별도 저장 테이블을 생성했다.
+- GREEN 검증으로 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.

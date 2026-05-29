@@ -4,6 +4,7 @@ package com.saynow.common.openapi;
 import com.saynow.auth.api.AuthController;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.FeedbackController;
+import com.saynow.nps.api.NpsController;
 import com.saynow.session.api.SessionController;
 import com.saynow.scenario.api.ScenarioController;
 import io.swagger.v3.oas.models.examples.Example;
@@ -135,7 +136,10 @@ public class OpenApiResponseCustomizer {
                                     "nativeLanguageInterpretation", "조금 짧고 문법적으로 어색하게 들립니다.",
                                     "betterExpression", "I'd like an iced Americano, please."))
                     )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED)))
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),
+            endpoint(NpsController.class, "submitNps",
+                    success(HttpStatus.CREATED, "세션 NPS 평가 제출 성공", null),
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_IN_PROGRESS), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.NPS_ALREADY_SUBMITTED)))
     );
 
     @Bean

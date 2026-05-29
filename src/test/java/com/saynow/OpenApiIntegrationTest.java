@@ -38,6 +38,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/guide")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/result")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/feedback")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/nps")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}")))
                 .andExpect(jsonPath("$.paths['/api/v1/categories']").doesNotExist())
                 .andExpect(jsonPath("$.paths['/api/v1/sessions']").doesNotExist())
@@ -82,6 +83,8 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result'].get.responses.409.content['application/json'].examples.SESSION_NOT_COMPLETABLE.value.error.code").value("SESSION_NOT_COMPLETABLE"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnFeedbacks[0].userUtterance").value("I want iced americano."))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.503.content['application/json'].examples.FEEDBACK_GENERATION_FAILED.value.error.code").value("FEEDBACK_GENERATION_FAILED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/nps'].post.responses.201.content['application/json'].examples.SUCCESS.value.data").value(nullValue()))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/nps'].post.responses.409.content['application/json'].examples.NPS_ALREADY_SUBMITTED.value.error.code").value("NPS_ALREADY_SUBMITTED"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].delete.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()));
     }
 }
