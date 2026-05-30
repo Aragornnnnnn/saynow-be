@@ -85,6 +85,13 @@ public class FeedbackService {
                 .map(turn -> saveTurnFeedback(sessionFeedback, turn, aiFeedbackByTurnId.get(turn.getId())))
                 .toList();
 
+        log.info(
+                "세션 피드백 생성을 완료했습니다. userId={} sessionId={} cleared={} comprehensionScore={} turnCount={}",
+                userId,
+                sessionId,
+                sessionFeedback.isCleared(),
+                sessionFeedback.getComprehensionScore(),
+                savedTurnFeedbacks.size());
         return toResponse(context.session(), sessionFeedback, savedTurnFeedbacks);
     }
 
@@ -99,6 +106,12 @@ public class FeedbackService {
                             .toList(),
                     toAiFeedbackRequest(feedbackContext.session(), feedbackContext.turns()));
         }));
+        log.info(
+                "세션 피드백 스트림 생성을 시작했습니다. userId={} sessionId={} cleared={} turnCount={}",
+                userId,
+                sessionId,
+                context.cleared(),
+                context.turnIds().size());
         return outputStream -> relayFeedbackStream(context, outputStream);
     }
 
@@ -132,6 +145,12 @@ public class FeedbackService {
             try {
                 return aiConversationClient.generateFeedback(request);
             } catch (ApiException exception) {
+                log.warn(
+                        "AI 피드백 생성 시도가 실패했습니다. sessionId={} attempt={} maxAttempt={}",
+                        session.getId(),
+                        attempt + 1,
+                        MAX_FEEDBACK_RETRY,
+                        exception);
                 lastException = exception;
             }
         }
@@ -267,6 +286,12 @@ public class FeedbackService {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
         persistStreamFeedback(context, summary, turnFeedbacks);
+        log.info(
+                "세션 피드백 스트림 생성을 완료했습니다. sessionId={} cleared={} comprehensionScore={} turnCount={}",
+                context.sessionId(),
+                context.cleared(),
+                summary.comprehensionScore(),
+                turnFeedbacks.size());
         writeSseEvent(outputStream, event.event(), event.data());
     }
 

@@ -37,6 +37,7 @@ import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
 import com.saynow.scenario.infrastructure.UserScenarioProgressRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SessionService {
 
     private static final String OPEN_CATEGORY_NAME = "Airport";
@@ -144,6 +146,7 @@ public class SessionService {
         scenarioSlotRepository.findByScenarioOrderByIdAsc(scenario)
                 .forEach(slot -> slotStatusRepository.save(new SessionSlotStatus(session, slot.getName())));
 
+        log.info("세션을 시작했습니다. userId={} scenarioId={} sessionId={}", userId, scenarioId, session.getId());
         return new SessionStartResponse(
                 session.getId(),
                 scenario.getOriginalQuestion(),
@@ -198,10 +201,12 @@ public class SessionService {
         if (allFulfilled(slotStatuses)) {
             session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
             markScenarioCleared(session);
+            logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
             return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
         if (session.getRemainingHearts() <= 0) {
             session.complete(SessionStatus.FAILURE, LocalDateTime.now());
+            logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
             return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
         if (aiResponse.nextQuestion() == null || aiResponse.nextQuestion().isBlank()
@@ -218,6 +223,7 @@ public class SessionService {
                 aiResponse.nextQuestion(),
                 aiResponse.translatedQuestion(),
                 nextQuestionTargetSlotName));
+        logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
         return new UserUtteranceResponse(
                 session.getId(),
                 aiResponse.nextQuestion(),
@@ -234,6 +240,7 @@ public class SessionService {
         assertInProgress(session);
         String question = validateGuideQuestion(request);
         if (shouldBlockGuideQuestion(question)) {
+            log.info("가이드 질문을 차단했습니다. userId={} sessionId={} reason=out_of_scope", userId, sessionId);
             return new GuideQuestionResponse(GUIDE_BLOCKED_ANSWER);
         }
 
@@ -246,6 +253,7 @@ public class SessionService {
         if (aiResponse == null || aiResponse.answer() == null || aiResponse.answer().isBlank()) {
             throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
         }
+        log.info("가이드 답변을 생성했습니다. userId={} sessionId={}", userId, sessionId);
         return new GuideQuestionResponse(aiResponse.answer().trim());
     }
 
@@ -265,6 +273,7 @@ public class SessionService {
             throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
         }
         sessionRepository.delete(session);
+        log.info("세션을 삭제했습니다. userId={} sessionId={}", userId, sessionId);
     }
 
     private User findUser(Long userId) {
@@ -346,6 +355,25 @@ public class SessionService {
         if (response == null || response.filledSlots() == null || response.turnClassification() == null) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
+    }
+
+    private void logUtteranceProcessed(
+            Long userId,
+            Session session,
+            SessionTurn currentTurn,
+            AiNextQuestionResponse aiResponse,
+            boolean heartDeducted
+    ) {
+        log.info(
+                "세션 발화를 처리했습니다. userId={} sessionId={} turnId={} turnClassification={} filledSlotCount={} heartDeducted={} remainingHearts={} sessionStatus={}",
+                userId,
+                session.getId(),
+                currentTurn.getId(),
+                aiResponse.turnClassification(),
+                aiResponse.filledSlots().size(),
+                heartDeducted,
+                session.getRemainingHearts(),
+                session.getStatus());
     }
 
     private boolean shouldDeductHeart(Session session, AiNextQuestionResponse response) {

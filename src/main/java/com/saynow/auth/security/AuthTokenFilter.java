@@ -5,11 +5,13 @@ import com.saynow.auth.application.SaynowTokenService;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.common.web.RequestLoggingFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -53,6 +55,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             return;
         }
 
+        request.setAttribute(RequestLoggingFilter.USER_ID_ATTRIBUTE, userId);
+        MDC.put("userId", String.valueOf(userId));
         AuthUserPrincipal principal = new AuthUserPrincipal(userId);
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
@@ -61,6 +65,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             SecurityContextHolder.clearContext();
+            MDC.remove("userId");
         }
     }
 }
