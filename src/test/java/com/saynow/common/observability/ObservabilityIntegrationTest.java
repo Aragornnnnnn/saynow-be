@@ -64,6 +64,26 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void requestIdIsGeneratedByBackendEvenWhenClientHeaderExists() throws Exception {
+        ListAppender<ILoggingEvent> requestLogs = attachListAppender("com.saynow.common.web.RequestLoggingFilter");
+        String accessToken = login("observability-client-request-sub|observability-client-request@example.com|Observability Client Request");
+        String clientRequestId = "client-provided-request-id";
+
+        MvcResult result = mockMvc.perform(get("/api/v1/scenarios")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .header("X-Request-Id", clientRequestId))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String backendRequestId = result.getResponse().getHeader("X-Request-Id");
+        assertThat(backendRequestId).isNotBlank();
+        assertThat(backendRequestId).isNotEqualTo(clientRequestId);
+        assertThat(requestLogs.list)
+                .anySatisfy(event -> assertThat(event.getMDCPropertyMap())
+                        .containsEntry("requestId", backendRequestId));
+    }
+
+    @Test
     void sessionLogsIncludeBusinessStateWithoutUserUtteranceBody() throws Exception {
         ListAppender<ILoggingEvent> sessionLogs = attachListAppender(SessionService.class);
         String accessToken = login("observability-session-sub|observability-session@example.com|Observability Session");

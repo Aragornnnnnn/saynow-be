@@ -30,7 +30,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String requestId = requestId(request);
+        String requestId = UUID.randomUUID().toString();
         MDC.put(REQUEST_ID_MDC_KEY, requestId);
         response.setHeader(REQUEST_ID_HEADER, requestId);
 
@@ -48,14 +48,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                     userId(request));
             MDC.remove(REQUEST_ID_MDC_KEY);
         }
-    }
-
-    private String requestId(HttpServletRequest request) {
-        String requestId = request.getHeader(REQUEST_ID_HEADER);
-        if (requestId == null || requestId.isBlank()) {
-            return UUID.randomUUID().toString();
-        }
-        return requestId.trim();
     }
 
     private String userId(HttpServletRequest request) {
