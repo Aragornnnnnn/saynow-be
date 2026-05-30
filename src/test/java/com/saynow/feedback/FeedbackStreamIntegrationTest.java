@@ -20,6 +20,7 @@ import com.saynow.session.infrastructure.ai.AiGuideRequest;
 import com.saynow.session.infrastructure.ai.AiGuideResponse;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
+import com.saynow.session.infrastructure.ai.AiNextQuestionSlotStatus;
 import com.saynow.session.infrastructure.ai.AiSlotStatus;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
 import com.saynow.session.infrastructure.ai.TurnClassification;
@@ -304,9 +305,9 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
 
         @Override
         public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
-            List<AiSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
+            List<AiNextQuestionSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
             List<AiFilledSlot> newlyFilled = new ArrayList<>();
-            for (AiSlotStatus slot : slots) {
+            for (AiNextQuestionSlotStatus slot : slots) {
                 if (!slot.filled()) {
                     newlyFilled.add(new AiFilledSlot(slot.slotName()));
                     break;
@@ -321,7 +322,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
             }
             String nextSlot = slots.stream()
                     .filter(slot -> !slot.filled())
-                    .map(AiSlotStatus::slotName)
+                    .map(AiNextQuestionSlotStatus::slotName)
                     .filter(slotName -> newlyFilled.stream().noneMatch(filled -> filled.slotName().equals(slotName)))
                     .findFirst()
                     .orElse("detail");

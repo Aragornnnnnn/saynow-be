@@ -10,6 +10,6 @@ public record AiNextQuestionRequest(
         String aiRole,
         String scenarioSituation,
         String scenarioGoal,
-        List<AiSlotStatus> slots
+        List<AiNextQuestionSlotStatus> slots
 ) {
 }

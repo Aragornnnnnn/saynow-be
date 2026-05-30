@@ -54,6 +54,12 @@ class RemoteAiConversationClientTest {
                 .isEqualTo("카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("description").asText())
                 .isEqualTo("사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("evidencePolicy").isObject())
+                .isTrue();
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("evidencePolicy").get("mode").asText())
+                .isEqualTo("semantic_evidence");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("evidencePolicy").get("requiresEvidenceText").asBoolean())
+                .isTrue();
     }
 
     @Test
@@ -133,6 +139,8 @@ class RemoteAiConversationClientTest {
                 .isEqualTo("사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).get("filled").asBoolean())
                 .isTrue();
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("slots").get(0).has("evidencePolicy"))
+                .isFalse();
     }
 
     @Test
@@ -276,9 +284,14 @@ class RemoteAiConversationClientTest {
                 "카페 직원",
                 "카페에서 직원에게 메뉴를 확인하고 음료를 주문하는 상황입니다.",
                 "원하는 음료를 자연스럽게 주문할 수 있다.",
-                List.of(new AiSlotStatus(
+                List.of(new AiNextQuestionSlotStatus(
                         "drink",
                         "사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부",
-                        false)));
+                        false,
+                        new AiSlotEvidencePolicy(
+                                "semantic_evidence",
+                                List.of("iced americano", "latte"),
+                                true,
+                                "latest_user_utterance"))));
     }
 }

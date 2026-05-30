@@ -22,9 +22,9 @@ public class LocalAiConversationClient implements AiConversationClient, AiFeedba
 
     @Override
     public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
-        List<AiSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
+        List<AiNextQuestionSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
         List<AiFilledSlot> newlyFilled = new ArrayList<>();
-        for (AiSlotStatus slot : slots) {
+        for (AiNextQuestionSlotStatus slot : slots) {
             if (!slot.filled()) {
                 newlyFilled.add(new AiFilledSlot(slot.slotName()));
                 break;
@@ -40,7 +40,7 @@ public class LocalAiConversationClient implements AiConversationClient, AiFeedba
 
         String nextSlot = slots.stream()
                 .filter(slot -> !slot.filled())
-                .map(AiSlotStatus::slotName)
+                .map(AiNextQuestionSlotStatus::slotName)
                 .filter(slotName -> newlyFilled.stream().noneMatch(filled -> filled.slotName().equals(slotName)))
                 .findFirst()
                 .orElse("detail");

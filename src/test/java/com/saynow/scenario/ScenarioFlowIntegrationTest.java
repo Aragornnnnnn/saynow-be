@@ -12,7 +12,8 @@ import com.saynow.session.infrastructure.ai.AiGuideRequest;
 import com.saynow.session.infrastructure.ai.AiGuideResponse;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
-import com.saynow.session.infrastructure.ai.AiSlotStatus;
+import com.saynow.session.infrastructure.ai.AiNextQuestionSlotStatus;
+import com.saynow.session.infrastructure.ai.AiSlotEvidencePolicy;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackResponse;
 import com.saynow.session.infrastructure.ai.TurnClassification;
 import org.junit.jupiter.api.BeforeEach;
@@ -234,29 +235,29 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 "괜찮으세요? 무슨 일 있으신가요?");
 
         aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
-                "Can you ask if boarding is still possible?",
-                "아직 탑승할 수 있는지 물어볼 수 있나요?",
-                List.of(new AiFilledSlot("gate_location")),
+                "Can you explain why you were delayed?",
+                "왜 늦었는지 설명해 주실 수 있나요?",
+                List.of(new AiFilledSlot("missed_connection")),
                 TurnClassification.ANSWER));
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"Could you tell me where the gate is"}
+                                {"userUtterance":"I missed my connecting flight."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.remainingHearts").value(3))
                 .andExpect(jsonPath("$.data.heartDeducted").value(false))
                 .andExpect(jsonPath("$.data.turnClassification").value("ANSWER"));
-        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
-        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
-        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+        assertThat(slotFulfilled(sessionId, "missed_connection")).isTrue();
+        assertThat(slotFulfilled(sessionId, "baggage_delay_reason")).isFalse();
+        assertThat(slotFulfilled(sessionId, "next_options_request")).isFalse();
 
         aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
-                "Please answer whether you can still board.",
-                "아직 탑승할 수 있는지 답해주세요.",
-                List.of(new AiFilledSlot("boarding_possibility")),
+                "Please explain why you missed it.",
+                "왜 놓쳤는지 설명해 주세요.",
+                List.of(new AiFilledSlot("baggage_delay_reason")),
                 TurnClassification.INVALID_RESPONSE));
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
@@ -269,14 +270,14 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.remainingHearts").value(2))
                 .andExpect(jsonPath("$.data.heartDeducted").value(true))
                 .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
-        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
-        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
-        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+        assertThat(slotFulfilled(sessionId, "missed_connection")).isTrue();
+        assertThat(slotFulfilled(sessionId, "baggage_delay_reason")).isFalse();
+        assertThat(slotFulfilled(sessionId, "next_options_request")).isFalse();
 
         aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
-                "Please explain that your flight leaves soon.",
-                "비행기가 곧 출발한다는 점을 설명해주세요.",
-                List.of(new AiFilledSlot("time_pressure")),
+                "Please ask what you should do next.",
+                "다음에 무엇을 해야 하는지 물어봐 주세요.",
+                List.of(new AiFilledSlot("next_options_request")),
                 TurnClassification.INVALID_RESPONSE));
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
@@ -289,9 +290,43 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.remainingHearts").value(1))
                 .andExpect(jsonPath("$.data.heartDeducted").value(true))
                 .andExpect(jsonPath("$.data.turnClassification").value("INVALID_RESPONSE"));
-        assertThat(slotFulfilled(sessionId, "gate_location")).isTrue();
-        assertThat(slotFulfilled(sessionId, "boarding_possibility")).isFalse();
-        assertThat(slotFulfilled(sessionId, "time_pressure")).isFalse();
+        assertThat(slotFulfilled(sessionId, "missed_connection")).isTrue();
+        assertThat(slotFulfilled(sessionId, "baggage_delay_reason")).isFalse();
+        assertThat(slotFulfilled(sessionId, "next_options_request")).isFalse();
+    }
+
+    @Test
+    void transferNextQuestionRequestIncludesEvidencePolicies() throws Exception {
+        String accessToken = login("mvp2-sub-22|evidence-policy@example.com|Evidence User");
+        unlockAirportScenario6(accessToken);
+        aiConversationClient.reset();
+        long sessionId = startSession(
+                accessToken,
+                6,
+                "Oh, you look worried. What's going on?",
+                "괜찮으세요? 무슨 일 있으신가요?");
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Can you explain why you were delayed?",
+                "왜 늦었는지 설명해 주실 수 있나요?",
+                List.of(new AiFilledSlot("missed_connection")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Yes, I missed it."}
+                                """))
+                .andExpect(status().isOk());
+
+        assertThat(aiConversationClient.lastNextQuestionEvidencePolicyModes())
+                .containsExactly("semantic_evidence", "semantic_evidence", "semantic_evidence");
+        assertThat(aiConversationClient.lastNextQuestionEvidencePolicyHints())
+                .containsExactly(
+                        List.of("missed connecting flight", "missed my flight", "flight already left", "could not catch my connection"),
+                        List.of("baggage", "luggage", "suitcase", "bag", "checked bag", "baggage claim"),
+                        List.of("next flight", "another flight", "rebook", "what can I do", "help me"));
     }
 
     @Test
@@ -807,7 +842,21 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         List<String> lastNextQuestionSlotDescriptions() {
             return nextQuestionRequests.getLast().slots().stream()
-                    .map(AiSlotStatus::description)
+                    .map(AiNextQuestionSlotStatus::description)
+                    .toList();
+        }
+
+        List<String> lastNextQuestionEvidencePolicyModes() {
+            return nextQuestionRequests.getLast().slots().stream()
+                    .map(AiNextQuestionSlotStatus::evidencePolicy)
+                    .map(AiSlotEvidencePolicy::mode)
+                    .toList();
+        }
+
+        List<List<String>> lastNextQuestionEvidencePolicyHints() {
+            return nextQuestionRequests.getLast().slots().stream()
+                    .map(AiNextQuestionSlotStatus::evidencePolicy)
+                    .map(AiSlotEvidencePolicy::hints)
                     .toList();
         }
 
@@ -819,9 +868,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 return queuedResponse;
             }
 
-            List<AiSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
+            List<AiNextQuestionSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
             List<AiFilledSlot> newlyFilled = new ArrayList<>();
-            for (AiSlotStatus slot : slots) {
+            for (AiNextQuestionSlotStatus slot : slots) {
                 if (!slot.filled()) {
                     newlyFilled.add(new AiFilledSlot(slot.slotName()));
                     break;
@@ -837,7 +886,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
             String nextSlot = slots.stream()
                     .filter(slot -> !slot.filled())
-                    .map(AiSlotStatus::slotName)
+                    .map(AiNextQuestionSlotStatus::slotName)
                     .filter(slotName -> newlyFilled.stream().noneMatch(filled -> filled.slotName().equals(slotName)))
                     .findFirst()
                     .orElse("detail");

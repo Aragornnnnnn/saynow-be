@@ -1,6 +1,8 @@
 // 2차 MVP 시나리오 세션 시작, 발화 제출, 중도 종료를 처리하는 서비스
 package com.saynow.session.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.auth.domain.User;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
@@ -24,7 +26,8 @@ import com.saynow.session.infrastructure.ai.AiGuideRequest;
 import com.saynow.session.infrastructure.ai.AiGuideResponse;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
-import com.saynow.session.infrastructure.ai.AiSlotStatus;
+import com.saynow.session.infrastructure.ai.AiNextQuestionSlotStatus;
+import com.saynow.session.infrastructure.ai.AiSlotEvidencePolicy;
 import com.saynow.session.infrastructure.ai.TurnClassification;
 import com.saynow.scenario.application.ScenarioService;
 import com.saynow.scenario.domain.Scenario;
@@ -125,6 +128,7 @@ public class SessionService {
     private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final UserRepository userRepository;
     private final AiConversationClient aiConversationClient;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public SessionStartResponse startSession(Long userId, Long scenarioId) {
@@ -161,8 +165,8 @@ public class SessionService {
         currentTurn.submitUserUtterance(request.userUtterance().trim());
 
         List<SessionSlotStatus> slotStatuses = slotStatusRepository.findBySessionOrderByIdAsc(session);
-        Map<String, String> slotDescriptionByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
-                .collect(Collectors.toMap(ScenarioSlot::getName, ScenarioSlot::getDescription));
+        Map<String, ScenarioSlot> scenarioSlotByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
+                .collect(Collectors.toMap(ScenarioSlot::getName, slot -> slot));
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(new AiNextQuestionRequest(
                 currentTurn.getAiQuestion(),
                 currentTurn.getUserUtterance(),
@@ -171,10 +175,14 @@ public class SessionService {
                 session.getScenario().getSituation(),
                 session.getScenario().getGoal(),
                 slotStatuses.stream()
-                        .map(slot -> new AiSlotStatus(
+                        .map(slot -> {
+                            ScenarioSlot scenarioSlot = scenarioSlotByName.get(slot.getSlotName());
+                            return new AiNextQuestionSlotStatus(
                                 slot.getSlotName(),
-                                slotDescriptionByName.get(slot.getSlotName()),
-                                slot.isFulfilled()))
+                                scenarioSlot == null ? null : scenarioSlot.getDescription(),
+                                slot.isFulfilled(),
+                                scenarioSlot == null ? null : parseEvidencePolicy(scenarioSlot.getEvidencePolicy()));
+                        })
                         .toList()));
         validateNextQuestionResponse(aiResponse);
 
@@ -356,6 +364,17 @@ public class SessionService {
 
     private boolean allFulfilled(List<SessionSlotStatus> slotStatuses) {
         return slotStatuses.stream().allMatch(SessionSlotStatus::isFulfilled);
+    }
+
+    private AiSlotEvidencePolicy parseEvidencePolicy(String evidencePolicy) {
+        if (evidencePolicy == null || evidencePolicy.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(evidencePolicy, AiSlotEvidencePolicy.class);
+        } catch (JsonProcessingException exception) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private UserUtteranceResponse completedResponse(
