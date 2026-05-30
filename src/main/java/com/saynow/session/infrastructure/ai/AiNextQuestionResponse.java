@@ -6,7 +6,17 @@ import java.util.List;
 public record AiNextQuestionResponse(
         String nextQuestion,
         String translatedQuestion,
+        String nextQuestionTargetSlotName,
         List<AiFilledSlot> filledSlots,
         TurnClassification turnClassification
 ) {
+
+    public AiNextQuestionResponse(
+            String nextQuestion,
+            String translatedQuestion,
+            List<AiFilledSlot> filledSlots,
+            TurnClassification turnClassification
+    ) {
+        this(nextQuestion, translatedQuestion, null, filledSlots, turnClassification);
+    }
 }

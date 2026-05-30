@@ -46,6 +46,11 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void sessionTurnsHaveNextQuestionTargetSlotNameColumn() {
+        assertThat(columnExists("session_turns", "next_question_target_slot_name")).isTrue();
+    }
+
+    @Test
     void airportScenariosAreSeededWithSituationsAndSlots() {
         List<String> scenarioTitles = jdbcTemplate.queryForList("""
                 SELECT s.title

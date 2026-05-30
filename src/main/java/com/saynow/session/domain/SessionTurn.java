@@ -45,16 +45,31 @@ public class SessionTurn extends BaseTimeEntity {
     @Getter
     private String userUtterance;
 
+    @Column(name = "next_question_target_slot_name", length = 80)
+    @Getter
+    private String nextQuestionTargetSlotName;
+
     public SessionTurn(
             Session session,
             int sequence,
             String aiQuestion,
             String translatedQuestion
     ) {
+        this(session, sequence, aiQuestion, translatedQuestion, null);
+    }
+
+    public SessionTurn(
+            Session session,
+            int sequence,
+            String aiQuestion,
+            String translatedQuestion,
+            String nextQuestionTargetSlotName
+    ) {
         this.session = session;
         this.sequence = sequence;
         this.aiQuestion = aiQuestion;
         this.translatedQuestion = translatedQuestion;
+        this.nextQuestionTargetSlotName = nextQuestionTargetSlotName;
     }
 
     public boolean isAnswered() {

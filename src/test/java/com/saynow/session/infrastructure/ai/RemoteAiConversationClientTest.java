@@ -38,6 +38,7 @@ class RemoteAiConversationClientTest {
                 {
                   "nextQuestion":"The menu includes iced Americano, latte, cappuccino, and tea. What would you like to order?",
                   "translatedQuestion":"메뉴에는 아이스 아메리카노, 라떼, 카푸치노, 차가 있어요. 무엇을 주문하시겠어요?",
+                  "nextQuestionTargetSlotName":"drink",
                   "filledSlots":[],
                   "turnClassification":"ASSISTANCE_REQUEST"
                 }
@@ -46,8 +47,11 @@ class RemoteAiConversationClientTest {
         AiNextQuestionResponse response = client.generateNextQuestion(nextQuestionRequest());
 
         assertThat(response.nextQuestion()).contains("The menu includes iced Americano");
+        assertThat(response.nextQuestionTargetSlotName()).isEqualTo("drink");
         assertThat(response.filledSlots()).isEmpty();
         assertThat(response.turnClassification()).isEqualTo(TurnClassification.ASSISTANCE_REQUEST);
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("originalQuestionTargetSlotName").asText())
+                .isEqualTo("drink");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("aiRole").asText())
                 .isEqualTo("카페 직원");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
@@ -279,6 +283,7 @@ class RemoteAiConversationClientTest {
     private AiNextQuestionRequest nextQuestionRequest() {
         return new AiNextQuestionRequest(
                 "What would you like to order?",
+                "drink",
                 "Can I see the menu?",
                 "카페에서 주문하기",
                 "카페 직원",

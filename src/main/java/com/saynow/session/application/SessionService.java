@@ -169,6 +169,7 @@ public class SessionService {
                 .collect(Collectors.toMap(ScenarioSlot::getName, slot -> slot));
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(new AiNextQuestionRequest(
                 currentTurn.getAiQuestion(),
+                currentTurn.getNextQuestionTargetSlotName(),
                 currentTurn.getUserUtterance(),
                 session.getScenario().getTitle(),
                 session.getScenario().getAiRole(),
@@ -207,12 +208,16 @@ public class SessionService {
                 || aiResponse.translatedQuestion() == null || aiResponse.translatedQuestion().isBlank()) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
+        String nextQuestionTargetSlotName = validNextQuestionTargetSlotName(
+                aiResponse.nextQuestionTargetSlotName(),
+                slotStatuses);
 
         turnRepository.save(new SessionTurn(
                 session,
                 currentTurn.getSequence() + 1,
                 aiResponse.nextQuestion(),
-                aiResponse.translatedQuestion()));
+                aiResponse.translatedQuestion(),
+                nextQuestionTargetSlotName));
         return new UserUtteranceResponse(
                 session.getId(),
                 aiResponse.nextQuestion(),
@@ -364,6 +369,22 @@ public class SessionService {
 
     private boolean allFulfilled(List<SessionSlotStatus> slotStatuses) {
         return slotStatuses.stream().allMatch(SessionSlotStatus::isFulfilled);
+    }
+
+    private String validNextQuestionTargetSlotName(
+            String nextQuestionTargetSlotName,
+            List<SessionSlotStatus> slotStatuses
+    ) {
+        if (nextQuestionTargetSlotName == null || nextQuestionTargetSlotName.isBlank()) {
+            return null;
+        }
+        String normalized = nextQuestionTargetSlotName.trim();
+        return slotStatuses.stream()
+                .filter(slot -> slot.getSlotName().equals(normalized))
+                .filter(slot -> !slot.isFulfilled())
+                .map(SessionSlotStatus::getSlotName)
+                .findFirst()
+                .orElse(null);
     }
 
     private AiSlotEvidencePolicy parseEvidencePolicy(String evidencePolicy) {

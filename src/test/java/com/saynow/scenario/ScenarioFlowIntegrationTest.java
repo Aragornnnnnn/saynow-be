@@ -330,6 +330,98 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void nextQuestionTargetSlotNameIsSentAsOriginalTargetOnNextTurn() throws Exception {
+        String accessToken = login("mvp2-sub-23|target-slot@example.com|Target User");
+        unlockAirportScenario6(accessToken);
+        aiConversationClient.reset();
+        long sessionId = startSession(
+                accessToken,
+                6,
+                "Oh, you look worried. What's going on?",
+                "괜찮으세요? 무슨 일 있으신가요?");
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Can you explain why you were delayed?",
+                "왜 늦었는지 설명해 주실 수 있나요?",
+                "baggage_delay_reason",
+                List.of(new AiFilledSlot("missed_connection")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I missed my connecting flight."}
+                                """))
+                .andExpect(status().isOk());
+
+        assertThat(aiConversationClient.nextQuestionOriginalTargetSlotName(0)).isNull();
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Would you like me to check the next available flight?",
+                "다음 이용 가능한 항공편을 확인해 드릴까요?",
+                "next_options_request",
+                List.of(new AiFilledSlot("baggage_delay_reason")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"My baggage came out too late."}
+                                """))
+                .andExpect(status().isOk());
+
+        assertThat(aiConversationClient.nextQuestionOriginalTargetSlotName(1))
+                .isEqualTo("baggage_delay_reason");
+    }
+
+    @Test
+    void invalidNextQuestionTargetSlotNameIsStoredAsNullAndDoesNotBlockSession() throws Exception {
+        String accessToken = login("mvp2-sub-24|invalid-target-slot@example.com|Invalid Target User");
+        unlockAirportScenario6(accessToken);
+        aiConversationClient.reset();
+        long sessionId = startSession(
+                accessToken,
+                6,
+                "Oh, you look worried. What's going on?",
+                "괜찮으세요? 무슨 일 있으신가요?");
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Can you explain why you were delayed?",
+                "왜 늦었는지 설명해 주실 수 있나요?",
+                "missed_connection",
+                List.of(new AiFilledSlot("missed_connection")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I missed my connecting flight."}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.originalQuestion").value("Can you explain why you were delayed?"));
+
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Would you like me to check the next available flight?",
+                "다음 이용 가능한 항공편을 확인해 드릴까요?",
+                "next_options_request",
+                List.of(new AiFilledSlot("baggage_delay_reason")),
+                TurnClassification.ANSWER));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"My baggage came out too late."}
+                                """))
+                .andExpect(status().isOk());
+
+        assertThat(aiConversationClient.nextQuestionOriginalTargetSlotName(1)).isNull();
+    }
+
+    @Test
     void baggageScenarioAssistanceDoesNotDeductHeartAndNonAnswerTurnsIgnoreFilledSlots() throws Exception {
         String accessToken = login("mvp2-sub-19|turn160@example.com|Turn 160 User");
         unlockAirportScenario5(accessToken);
@@ -858,6 +950,10 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     .map(AiNextQuestionSlotStatus::evidencePolicy)
                     .map(AiSlotEvidencePolicy::hints)
                     .toList();
+        }
+
+        String nextQuestionOriginalTargetSlotName(int index) {
+            return nextQuestionRequests.get(index).originalQuestionTargetSlotName();
         }
 
         @Override

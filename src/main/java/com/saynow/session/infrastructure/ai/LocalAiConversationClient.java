@@ -47,6 +47,7 @@ public class LocalAiConversationClient implements AiConversationClient, AiFeedba
         return new AiNextQuestionResponse(
                 "Could you tell me your " + nextSlot + "?",
                 nextSlot + "에 대해 말해주시겠어요?",
+                nextSlot,
                 newlyFilled,
                 TurnClassification.ANSWER);
     }

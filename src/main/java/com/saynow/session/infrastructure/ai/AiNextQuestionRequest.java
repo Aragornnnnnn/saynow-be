@@ -5,6 +5,7 @@ import java.util.List;
 
 public record AiNextQuestionRequest(
         String originalQuestion,
+        String originalQuestionTargetSlotName,
         String userUtterance,
         String scenarioTitle,
         String aiRole,

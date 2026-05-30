@@ -133,6 +133,7 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
     private record RemoteNextQuestionResponse(
             String nextQuestion,
             String translatedQuestion,
+            String nextQuestionTargetSlotName,
             List<RemoteFilledSlot> filledSlots,
             TurnClassification turnClassification
     ) {
@@ -144,6 +145,7 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
             return new AiNextQuestionResponse(
                     nextQuestion,
                     translatedQuestion,
+                    nextQuestionTargetSlotName,
                     filledSlots.stream()
                             .map(RemoteFilledSlot::toResponse)
                             .toList(),
