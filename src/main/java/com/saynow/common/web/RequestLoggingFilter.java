@@ -1,12 +1,12 @@
 // HTTP 요청 단위 추적 로그와 MDC requestId를 관리하는 필터
 package com.saynow.common.web;
 
+import com.saynow.common.observability.RequestTraceContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -21,8 +21,6 @@ import java.util.UUID;
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
     public static final String USER_ID_ATTRIBUTE = RequestLoggingFilter.class.getName() + ".userId";
-    private static final String REQUEST_ID_HEADER = "X-Request-Id";
-    private static final String REQUEST_ID_MDC_KEY = "requestId";
 
     @Override
     protected void doFilterInternal(
@@ -30,24 +28,48 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put(REQUEST_ID_MDC_KEY, requestId);
-        response.setHeader(REQUEST_ID_HEADER, requestId);
+        String requestId = requestId(request);
+        RequestTraceContext.start(requestId);
+        response.setHeader(RequestTraceContext.REQUEST_ID_HEADER, requestId);
 
         long startedAt = System.nanoTime();
         try {
             filterChain.doFilter(request, response);
         } finally {
-            long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
+            long totalMs = (System.nanoTime() - startedAt) / 1_000_000;
+            long aiCallMs = RequestTraceContext.aiCallMs();
             log.info(
-                    "HTTP 요청 처리를 완료했습니다. method={} path={} status={} durationMs={} userId={}",
+                    "event=api_latency requestId={} method={} path={} sessionId={} status={} totalMs={} aiCallMs={} userId={}",
+                    requestId,
                     request.getMethod(),
                     request.getRequestURI(),
+                    sessionId(request),
                     response.getStatus(),
-                    durationMs,
+                    totalMs,
+                    aiCallMs,
                     userId(request));
-            MDC.remove(REQUEST_ID_MDC_KEY);
+            RequestTraceContext.clear();
         }
+    }
+
+    private String requestId(HttpServletRequest request) {
+        String requestId = request.getHeader(RequestTraceContext.REQUEST_ID_HEADER);
+        if (requestId == null || requestId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        return requestId.trim();
+    }
+
+    private String sessionId(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String sessionPrefix = "/api/v1/sessions/";
+        if (!path.startsWith(sessionPrefix)) {
+            return "none";
+        }
+        String tail = path.substring(sessionPrefix.length());
+        int slashIndex = tail.indexOf('/');
+        String sessionId = slashIndex < 0 ? tail : tail.substring(0, slashIndex);
+        return sessionId.isBlank() ? "none" : sessionId;
     }
 
     private String userId(HttpServletRequest request) {

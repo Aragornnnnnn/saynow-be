@@ -45,26 +45,31 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
         ListAppender<ILoggingEvent> requestLogs = attachListAppender("com.saynow.common.web.RequestLoggingFilter");
         String accessToken = login("observability-request-sub|observability-request@example.com|Observability Request");
 
-        mockMvc.perform(get("/api/v1/scenarios")
+        MvcResult result = mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        String requestId = result.getResponse().getHeader("X-Request-Id");
 
         assertThat(requestLogs.list)
                 .anySatisfy(event -> {
                     String message = event.getFormattedMessage();
                     assertThat(message)
-                            .contains("HTTP 요청 처리를 완료했습니다.")
+                            .contains("event=api_latency")
+                            .contains("requestId=" + requestId)
                             .contains("method=GET")
                             .contains("path=/api/v1/scenarios")
+                            .contains("sessionId=none")
                             .contains("status=200")
-                            .containsPattern("durationMs=\\d+")
+                            .containsPattern("totalMs=\\d+")
+                            .contains("aiCallMs=0")
                             .containsPattern("userId=\\d+");
-                    assertThat(event.getMDCPropertyMap()).containsKey("requestId");
+                    assertThat(event.getMDCPropertyMap()).containsEntry("requestId", requestId);
                 });
     }
 
     @Test
-    void requestIdIsGeneratedByBackendEvenWhenClientHeaderExists() throws Exception {
+    void requestIdReusesClientHeaderWhenProvided() throws Exception {
         ListAppender<ILoggingEvent> requestLogs = attachListAppender("com.saynow.common.web.RequestLoggingFilter");
         String accessToken = login("observability-client-request-sub|observability-client-request@example.com|Observability Client Request");
         String clientRequestId = "client-provided-request-id";
@@ -76,11 +81,10 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                 .andReturn();
 
         String backendRequestId = result.getResponse().getHeader("X-Request-Id");
-        assertThat(backendRequestId).isNotBlank();
-        assertThat(backendRequestId).isNotEqualTo(clientRequestId);
+        assertThat(backendRequestId).isEqualTo(clientRequestId);
         assertThat(requestLogs.list)
                 .anySatisfy(event -> assertThat(event.getMDCPropertyMap())
-                        .containsEntry("requestId", backendRequestId));
+                        .containsEntry("requestId", clientRequestId));
     }
 
     @Test

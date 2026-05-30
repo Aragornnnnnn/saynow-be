@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.common.observability.RequestTraceContext;
 import com.saynow.feedback.api.dto.FeedbackResponse;
 import com.saynow.feedback.api.dto.TurnFeedbackResponse;
 import com.saynow.feedback.domain.SessionFeedback;
@@ -104,6 +105,7 @@ public class FeedbackService {
                     feedbackContext.turns().stream()
                             .map(SessionTurn::getId)
                             .toList(),
+                    RequestTraceContext.currentRequestId().orElse(null),
                     toAiFeedbackRequest(feedbackContext.session(), feedbackContext.turns()));
         }));
         log.info(
@@ -184,42 +186,53 @@ public class FeedbackService {
     }
 
     private void relayFeedbackStream(FeedbackStreamContext context, OutputStream outputStream) throws IOException {
-        AiFeedbackSummaryData summary = null;
-        Map<Long, AiTurnFeedbackResponse> turnFeedbacks = new LinkedHashMap<>();
-
-        try (Stream<AiFeedbackStreamEvent> events = aiFeedbackStreamClient.streamFeedback(context.request()).toStream()) {
-            Iterator<AiFeedbackStreamEvent> iterator = events.iterator();
-            while (iterator.hasNext()) {
-                AiFeedbackStreamEvent event = iterator.next();
-                if ("summary".equals(event.event())) {
-                    summary = handleSummaryEvent(event, outputStream, turnFeedbacks);
-                    continue;
-                }
-                if ("turnFeedback".equals(event.event())) {
-                    handleTurnFeedbackEvent(context, event, outputStream, summary, turnFeedbacks);
-                    continue;
-                }
-                if ("done".equals(event.event())) {
-                    handleDoneEvent(context, event, outputStream, summary, turnFeedbacks);
-                    return;
-                }
-                if ("error".equals(event.event())) {
-                    writeSseEvent(outputStream, event.event(), event.data());
-                    return;
-                }
-                writeSseEvent(outputStream, event.event(), event.data());
-            }
-        } catch (AiFeedbackStreamException exception) {
-            log.warn("AI 피드백 스트림 호출이 실패했습니다. sessionId={}", context.sessionId(), exception);
-            writeBackendErrorEvent(outputStream, context.sessionId());
-            return;
-        } catch (RuntimeException exception) {
-            log.warn("AI 피드백 스트림 처리 중 오류가 발생했습니다. sessionId={}", context.sessionId(), exception);
-            writeBackendErrorEvent(outputStream, context.sessionId());
-            return;
+        boolean traceStarted = context.requestId() != null;
+        if (traceStarted) {
+            RequestTraceContext.start(context.requestId());
         }
 
-        writeBackendErrorEvent(outputStream, context.sessionId());
+        try {
+            AiFeedbackSummaryData summary = null;
+            Map<Long, AiTurnFeedbackResponse> turnFeedbacks = new LinkedHashMap<>();
+
+            try (Stream<AiFeedbackStreamEvent> events = aiFeedbackStreamClient.streamFeedback(context.request()).toStream()) {
+                Iterator<AiFeedbackStreamEvent> iterator = events.iterator();
+                while (iterator.hasNext()) {
+                    AiFeedbackStreamEvent event = iterator.next();
+                    if ("summary".equals(event.event())) {
+                        summary = handleSummaryEvent(event, outputStream, turnFeedbacks);
+                        continue;
+                    }
+                    if ("turnFeedback".equals(event.event())) {
+                        handleTurnFeedbackEvent(context, event, outputStream, summary, turnFeedbacks);
+                        continue;
+                    }
+                    if ("done".equals(event.event())) {
+                        handleDoneEvent(context, event, outputStream, summary, turnFeedbacks);
+                        return;
+                    }
+                    if ("error".equals(event.event())) {
+                        writeSseEvent(outputStream, event.event(), event.data());
+                        return;
+                    }
+                    writeSseEvent(outputStream, event.event(), event.data());
+                }
+            } catch (AiFeedbackStreamException exception) {
+                log.warn("AI 피드백 스트림 호출이 실패했습니다. sessionId={}", context.sessionId(), exception);
+                writeBackendErrorEvent(outputStream, context.sessionId());
+                return;
+            } catch (RuntimeException exception) {
+                log.warn("AI 피드백 스트림 처리 중 오류가 발생했습니다. sessionId={}", context.sessionId(), exception);
+                writeBackendErrorEvent(outputStream, context.sessionId());
+                return;
+            }
+
+            writeBackendErrorEvent(outputStream, context.sessionId());
+        } finally {
+            if (traceStarted) {
+                RequestTraceContext.clear();
+            }
+        }
     }
 
     private AiFeedbackSummaryData handleSummaryEvent(
@@ -425,6 +438,7 @@ public class FeedbackService {
             Long sessionId,
             boolean cleared,
             List<Long> turnIds,
+            String requestId,
             AiFeedbackRequest request
     ) {
     }

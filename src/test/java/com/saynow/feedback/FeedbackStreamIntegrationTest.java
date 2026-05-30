@@ -7,6 +7,7 @@ import com.saynow.IntegrationTestSupport;
 import com.saynow.feedback.domain.SessionFeedback;
 import com.saynow.feedback.infrastructure.SessionFeedbackRepository;
 import com.saynow.feedback.infrastructure.TurnFeedbackRepository;
+import com.saynow.common.observability.RequestTraceContext;
 import com.saynow.session.domain.Session;
 import com.saynow.session.infrastructure.SessionRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
@@ -34,6 +35,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import reactor.core.publisher.Flux;
 
 import java.nio.charset.StandardCharsets;
@@ -80,8 +82,9 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
     void streamsSummaryTurnFeedbackAndDoneInOrderThenPersistsFeedback() throws Exception {
         String accessToken = login("stream-normal-sub|stream-normal@example.com|Stream User");
         long sessionId = completeSession(accessToken);
+        String requestId = "stream-trace-123";
 
-        String body = performFeedbackStream(accessToken, sessionId);
+        String body = performFeedbackStream(accessToken, sessionId, requestId);
 
         assertThat(body).containsSubsequence(
                 "event: summary",
@@ -93,6 +96,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         aiConversationClient.lastStreamRequest.turns()
                 .forEach(turn -> assertThat(body).contains("\"turnId\":" + turn.turnId()));
         assertThat(aiConversationClient.lastStreamSessionResult()).isEqualTo("SUCCESS");
+        assertThat(aiConversationClient.lastStreamRequestId()).isEqualTo(requestId);
         assertThat(aiConversationClient.lastStreamAiRole())
                 .isEqualTo("미국 공항 입국심사관");
         assertThat(aiConversationClient.lastStreamScenarioSituation())
@@ -168,9 +172,17 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
     }
 
     private String performFeedbackStream(String accessToken, long sessionId) throws Exception {
-        MvcResult started = mockMvc.perform(post("/api/v1/sessions/{sessionId}/feedback/stream", sessionId)
-                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
-                        .accept(MediaType.TEXT_EVENT_STREAM))
+        return performFeedbackStream(accessToken, sessionId, null);
+    }
+
+    private String performFeedbackStream(String accessToken, long sessionId, String requestId) throws Exception {
+        MockHttpServletRequestBuilder requestBuilder = post("/api/v1/sessions/{sessionId}/feedback/stream", sessionId)
+                .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                .accept(MediaType.TEXT_EVENT_STREAM);
+        if (requestId != null) {
+            requestBuilder.header(RequestTraceContext.REQUEST_ID_HEADER, requestId);
+        }
+        MvcResult started = mockMvc.perform(requestBuilder)
                 .andExpect(request().asyncStarted())
                 .andReturn();
 
@@ -264,11 +276,13 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         private StreamMode streamMode = StreamMode.NORMAL;
         private AiFeedbackRequest lastGenerateFeedbackRequest;
         private AiFeedbackRequest lastStreamRequest;
+        private String lastStreamRequestId;
 
         void reset() {
             streamMode = StreamMode.NORMAL;
             lastGenerateFeedbackRequest = null;
             lastStreamRequest = null;
+            lastStreamRequestId = null;
         }
 
         String lastGenerateFeedbackSessionResult() {
@@ -289,6 +303,10 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
 
         String lastStreamSessionResult() {
             return lastStreamRequest.sessionResult();
+        }
+
+        String lastStreamRequestId() {
+            return lastStreamRequestId;
         }
 
         String lastStreamScenarioSituation() {
@@ -358,6 +376,7 @@ class FeedbackStreamIntegrationTest extends IntegrationTestSupport {
         @Override
         public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
             lastStreamRequest = request;
+            lastStreamRequestId = RequestTraceContext.currentRequestId().orElse(null);
             if (streamMode == StreamMode.CONNECTION_FAILURE) {
                 return Flux.error(new AiFeedbackStreamException("AI SSE 연결에 실패했습니다."));
             }
