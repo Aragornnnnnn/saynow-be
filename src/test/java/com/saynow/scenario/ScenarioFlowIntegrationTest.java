@@ -325,8 +325,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         assertThat(aiConversationClient.lastNextQuestionEvidencePolicyHints())
                 .containsExactly(
                         List.of("missed connecting flight", "missed my flight", "flight already left", "could not catch my connection"),
-                        List.of("baggage", "luggage", "suitcase", "bag", "checked bag", "baggage claim"),
-                        List.of("next flight", "another flight", "rebook", "what can I do", "help me"));
+                        List.of("baggage", "luggage", "suitcase", "checked bag", "baggage claim", "items came out late", "baggage took too long", "delayed at baggage claim"),
+                        List.of("next flight", "another flight", "rebook", "what should I do", "what can I do", "help me rebook", "find another flight"));
     }
 
     @Test

@@ -138,10 +138,16 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(policies.get(1))
                 .contains("baggage_delay_reason")
                 .contains("baggage")
+                .contains("items came out late")
+                .contains("baggage took too long")
+                .contains("delayed at baggage claim")
+                .doesNotContain("\"bag\"")
                 .contains("\"requiresEvidenceText\":true");
         assertThat(policies.get(2))
                 .contains("next_options_request")
                 .contains("rebook")
+                .contains("what should I do")
+                .contains("find another flight")
                 .contains("\"mode\":\"semantic_evidence\"");
     }
 
