@@ -34,4 +34,7 @@ public class ScenarioSlot extends BaseTimeEntity {
     @Column(nullable = false, length = 255)
     private String description;
 
+    @Column(name = "evidence_policy", columnDefinition = "text")
+    private String evidencePolicy;
+
 }

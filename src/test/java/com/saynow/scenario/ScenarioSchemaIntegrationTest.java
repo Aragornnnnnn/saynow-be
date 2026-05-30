@@ -41,6 +41,11 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void scenarioSlotsHaveEvidencePolicyColumn() {
+        assertThat(columnExists("scenario_slots", "evidence_policy")).isTrue();
+    }
+
+    @Test
     void airportScenariosAreSeededWithSituationsAndSlots() {
         List<String> scenarioTitles = jdbcTemplate.queryForList("""
                 SELECT s.title
@@ -53,7 +58,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(scenarioTitles).containsExactly(
                 "공항에서 입국심사 받기",
                 "공항에서 수하물 문제 해결하기",
-                "공항에서 환승편 놓칠 위기 설명하기");
+                "환승편을 놓친 뒤 도움 요청하기");
 
         String transferQuestion = jdbcTemplate.queryForObject("""
                 SELECT s.translated_question
@@ -74,7 +79,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(aiRoles).containsExactly(
                 "미국 공항 입국심사관",
                 "항공사 수하물 서비스 직원",
-                "공항 환승 안내 직원");
+                "항공사 환승 데스크 직원");
 
         List<String> transferSlots = jdbcTemplate.queryForList("""
                 SELECT ss.name
@@ -85,7 +90,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                   AND s.display_order = 3
                 ORDER BY ss.name
                 """, String.class);
-        assertThat(transferSlots).containsExactly("boarding_possibility", "gate_location", "time_pressure");
+        assertThat(transferSlots).containsExactly("baggage_delay_reason", "missed_connection", "next_options_request");
     }
 
     @Test
@@ -111,9 +116,33 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 "Airport|공항에서 수하물 문제 해결하기|baggage_issue|사용자가 수하물 파손, 분실, 지연 등 짐에 생긴 문제를 설명했는지 여부",
                 "Airport|공항에서 수하물 문제 해결하기|requested_help|사용자가 보상, 교환, 수리, 분실 신고 등 직원에게 원하는 도움을 요청했는지 여부",
                 "Airport|공항에서 수하물 문제 해결하기|contact_info|사용자가 후속 안내를 받을 수 있는 연락처나 이메일을 제공했는지 여부",
-                "Airport|공항에서 환승편 놓칠 위기 설명하기|gate_location|사용자가 Gate B 또는 환승편 탑승 게이트의 위치를 물어보거나 찾고 있음을 설명했는지 여부",
-                "Airport|공항에서 환승편 놓칠 위기 설명하기|boarding_possibility|사용자가 환승편에 아직 탑승할 수 있는지 직원에게 확인 요청을 했는지 여부",
-                "Airport|공항에서 환승편 놓칠 위기 설명하기|time_pressure|사용자가 비행기 출발 시간이 임박했거나 시간이 부족한 긴급 상황임을 설명했는지 여부");
+                "Airport|환승편을 놓친 뒤 도움 요청하기|missed_connection|사용자가 환승편을 이미 놓쳤거나 비행기가 이미 출발했다고 설명했는지 여부",
+                "Airport|환승편을 놓친 뒤 도움 요청하기|baggage_delay_reason|사용자가 수하물 지연이나 수하물 문제 때문에 환승편을 놓쳤다고 설명했는지 여부",
+                "Airport|환승편을 놓친 뒤 도움 요청하기|next_options_request|사용자가 다음에 무엇을 해야 하는지, 대체 항공편이나 재예약 가능 여부를 물었는지 여부");
+    }
+
+    @Test
+    void transferScenarioSlotsAreSeededWithEvidencePolicies() {
+        List<String> policies = jdbcTemplate.queryForList("""
+                SELECT ss.name || '|' || ss.evidence_policy
+                FROM scenario_slots ss
+                WHERE ss.scenario_id = 6
+                ORDER BY ss.id
+                """, String.class);
+
+        assertThat(policies).hasSize(3);
+        assertThat(policies.get(0))
+                .contains("missed_connection")
+                .contains("\"mode\":\"semantic_evidence\"")
+                .contains("\"mustBeGroundedIn\":\"latest_user_utterance\"");
+        assertThat(policies.get(1))
+                .contains("baggage_delay_reason")
+                .contains("baggage")
+                .contains("\"requiresEvidenceText\":true");
+        assertThat(policies.get(2))
+                .contains("next_options_request")
+                .contains("rebook")
+                .contains("\"mode\":\"semantic_evidence\"");
     }
 
     @Test
