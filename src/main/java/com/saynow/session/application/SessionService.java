@@ -7,6 +7,7 @@ import com.saynow.auth.domain.User;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import com.saynow.common.observability.RequestTraceContext;
 import com.saynow.session.api.dto.GuideQuestionRequest;
 import com.saynow.session.api.dto.GuideQuestionResponse;
 import com.saynow.session.api.dto.SessionResultResponse;
@@ -46,6 +47,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,17 +69,36 @@ public class SessionService {
 
     @Transactional
     public SessionStartResponse startSession(Long userId, Long scenarioId) {
+        long stageStartedAt = System.nanoTime();
         User user = findUser(userId);
+        logStageLatency("session_start", "load_user", userId, null, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         Scenario scenario = scenarioRepository.findById(scenarioId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCENARIO_NOT_FOUND));
+        logStageLatency("session_start", "load_scenario", userId, null, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         assertPlayable(user, scenario);
+        logStageLatency("session_start", "assert_playable", userId, null, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         userScenarioProgressRepository.findByUserAndScenario(user, scenario)
                 .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(user, scenario)));
+        logStageLatency("session_start", "ensure_progress", userId, null, stageStartedAt);
 
+        stageStartedAt = System.nanoTime();
         Session session = sessionRepository.save(new Session(user, scenario));
+        logStageLatency("session_start", "save_session", userId, session.getId(), stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         turnRepository.save(new SessionTurn(session, 1, scenario.getOriginalQuestion(), scenario.getTranslatedQuestion()));
+        logStageLatency("session_start", "save_initial_turn", userId, session.getId(), stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         scenarioSlotRepository.findByScenarioOrderByIdAsc(scenario)
                 .forEach(slot -> slotStatusRepository.save(new SessionSlotStatus(session, slot.getName())));
+        logStageLatency("session_start", "save_slot_statuses", userId, session.getId(), stageStartedAt);
 
         log.info("세션을 시작했습니다. userId={} scenarioId={} sessionId={}", userId, scenarioId, session.getId());
         return new SessionStartResponse(
@@ -90,20 +111,34 @@ public class SessionService {
 
     @Transactional
     public UserUtteranceResponse submitUtterance(Long userId, Long sessionId, UserUtteranceRequest request) {
+        long stageStartedAt = System.nanoTime();
         Session session = findOwnedSession(userId, sessionId);
+        logStageLatency("submit_utterance", "load_session", userId, sessionId, stageStartedAt);
         assertInProgress(session);
         validateUserUtterance(request);
 
+        stageStartedAt = System.nanoTime();
         SessionTurn currentTurn = turnRepository.findBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE));
-        currentTurn.submitUserUtterance(request.userUtterance().trim());
+        logStageLatency("submit_utterance", "load_current_turn", userId, sessionId, stageStartedAt);
 
+        stageStartedAt = System.nanoTime();
+        currentTurn.submitUserUtterance(request.userUtterance().trim());
+        logStageLatency("submit_utterance", "record_user_utterance", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         List<SessionSlotStatus> slotStatuses = slotStatusRepository.findBySessionOrderByIdAsc(session);
+        logStageLatency("submit_utterance", "load_slot_statuses", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         Map<String, ScenarioSlot> scenarioSlotByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
                 .collect(Collectors.toMap(ScenarioSlot::getName, slot -> slot));
-        AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(new AiNextQuestionRequest(
+        logStageLatency("submit_utterance", "load_scenario_slots", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
+        AiNextQuestionRequest aiRequest = new AiNextQuestionRequest(
                 currentTurn.getAiQuestion(),
                 currentTurn.getNextQuestionTargetSlotName(),
                 currentTurn.getUserUtterance(),
@@ -115,12 +150,17 @@ public class SessionService {
                         .map(slot -> {
                             ScenarioSlot scenarioSlot = scenarioSlotByName.get(slot.getSlotName());
                             return new AiNextQuestionSlotStatus(
-                                slot.getSlotName(),
-                                scenarioSlot == null ? null : scenarioSlot.getDescription(),
-                                slot.isFulfilled(),
-                                scenarioSlot == null ? null : parseEvidencePolicy(scenarioSlot.getEvidencePolicy()));
+                                    slot.getSlotName(),
+                                    scenarioSlot == null ? null : scenarioSlot.getDescription(),
+                                    slot.isFulfilled(),
+                                    scenarioSlot == null ? null : parseEvidencePolicy(scenarioSlot.getEvidencePolicy()));
                         })
-                        .toList()));
+                        .toList());
+        logStageLatency("submit_utterance", "prepare_ai_request", userId, sessionId, stageStartedAt);
+
+        AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(aiRequest);
+
+        stageStartedAt = System.nanoTime();
         validateNextQuestionResponse(aiResponse);
 
         boolean heartDeducted = shouldDeductHeart(session, aiResponse);
@@ -130,15 +170,20 @@ public class SessionService {
         if (heartDeducted) {
             session.decreaseHeart();
         }
+        logStageLatency("submit_utterance", "apply_ai_response", userId, sessionId, stageStartedAt);
 
         if (allFulfilled(slotStatuses)) {
+            stageStartedAt = System.nanoTime();
             session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
             markScenarioCleared(session);
+            logStageLatency("submit_utterance", "complete_success", userId, sessionId, stageStartedAt);
             logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
             return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
         if (session.getRemainingHearts() <= 0) {
+            stageStartedAt = System.nanoTime();
             session.complete(SessionStatus.FAILURE, LocalDateTime.now());
+            logStageLatency("submit_utterance", "complete_failure", userId, sessionId, stageStartedAt);
             logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
             return completedResponse(session, heartDeducted, aiResponse.turnClassification());
         }
@@ -150,12 +195,14 @@ public class SessionService {
                 aiResponse.nextQuestionTargetSlotName(),
                 slotStatuses);
 
+        stageStartedAt = System.nanoTime();
         turnRepository.save(new SessionTurn(
                 session,
                 currentTurn.getSequence() + 1,
                 aiResponse.nextQuestion(),
                 aiResponse.translatedQuestion(),
                 nextQuestionTargetSlotName));
+        logStageLatency("submit_utterance", "save_next_turn", userId, sessionId, stageStartedAt);
         logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
         return new UserUtteranceResponse(
                 session.getId(),
@@ -236,6 +283,18 @@ public class SessionService {
             throw new ApiException(ErrorCode.INVALID_REQUEST);
         }
         return request.question().trim();
+    }
+
+    private void logStageLatency(String workflow, String stage, Long userId, Long sessionId, long startedAtNanos) {
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
+        log.info(
+                "event=be_stage_latency requestId={} workflow={} stage={} elapsedMs={} sessionId={} userId={}",
+                RequestTraceContext.currentRequestId().orElse("none"),
+                workflow,
+                stage,
+                elapsedMs,
+                sessionId == null ? "none" : sessionId,
+                userId);
     }
 
     private void markScenarioCleared(Session session) {

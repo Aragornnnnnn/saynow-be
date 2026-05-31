@@ -45,9 +45,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -70,21 +71,35 @@ public class FeedbackService {
 
     @Transactional
     public FeedbackResponse createFeedback(Long userId, Long sessionId) {
+        long stageStartedAt = System.nanoTime();
         FeedbackContext context = loadFeedbackContext(userId, sessionId);
+        logStageLatency("feedback", "load_context", userId, sessionId, stageStartedAt);
 
-        AiFeedbackResponse aiFeedback = generateFeedbackWithRetry(context.session(), context.turns());
+        stageStartedAt = System.nanoTime();
+        AiFeedbackRequest request = toAiFeedbackRequest(context.session(), context.turns());
+        logStageLatency("feedback", "prepare_ai_request", userId, sessionId, stageStartedAt);
+
+        AiFeedbackResponse aiFeedback = generateFeedbackWithRetry(context.session(), request);
+
+        stageStartedAt = System.nanoTime();
         validateAiFeedback(aiFeedback, context.turns());
+        logStageLatency("feedback", "validate_ai_response", userId, sessionId, stageStartedAt);
 
+        stageStartedAt = System.nanoTime();
         SessionFeedback sessionFeedback = sessionFeedbackRepository.save(new SessionFeedback(
                 context.session(),
                 context.session().getStatus() == SessionStatus.SUCCESS,
                 aiFeedback.comprehensionScore(),
                 aiFeedback.feedbackSummary()));
+        logStageLatency("feedback", "save_session_feedback", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         Map<Long, AiTurnFeedbackResponse> aiFeedbackByTurnId = aiFeedback.turnFeedbacks().stream()
                 .collect(Collectors.toMap(AiTurnFeedbackResponse::turnId, Function.identity()));
         List<TurnFeedback> savedTurnFeedbacks = context.turns().stream()
                 .map(turn -> saveTurnFeedback(sessionFeedback, turn, aiFeedbackByTurnId.get(turn.getId())))
                 .toList();
+        logStageLatency("feedback", "save_turn_feedbacks", userId, sessionId, stageStartedAt);
 
         log.info(
                 "세션 피드백 생성을 완료했습니다. userId={} sessionId={} cleared={} comprehensionScore={} turnCount={}",
@@ -93,7 +108,11 @@ public class FeedbackService {
                 sessionFeedback.isCleared(),
                 sessionFeedback.getComprehensionScore(),
                 savedTurnFeedbacks.size());
-        return toResponse(context.session(), sessionFeedback, savedTurnFeedbacks);
+
+        stageStartedAt = System.nanoTime();
+        FeedbackResponse response = toResponse(context.session(), sessionFeedback, savedTurnFeedbacks);
+        logStageLatency("feedback", "build_response", userId, sessionId, stageStartedAt);
+        return response;
     }
 
     public StreamingResponseBody streamFeedback(Long userId, Long sessionId) {
@@ -139,9 +158,7 @@ public class FeedbackService {
         return new FeedbackContext(session, turns);
     }
 
-    private AiFeedbackResponse generateFeedbackWithRetry(Session session, List<SessionTurn> turns) {
-        AiFeedbackRequest request = toAiFeedbackRequest(session, turns);
-
+    private AiFeedbackResponse generateFeedbackWithRetry(Session session, AiFeedbackRequest request) {
         ApiException lastException = null;
         for (int attempt = 0; attempt < MAX_FEEDBACK_RETRY; attempt++) {
             try {
@@ -183,6 +200,18 @@ public class FeedbackService {
                         slotDescriptionByName.get(slot.getSlotName()),
                         slot.isFulfilled()))
                 .toList();
+    }
+
+    private void logStageLatency(String workflow, String stage, Long userId, Long sessionId, long startedAtNanos) {
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
+        log.info(
+                "event=be_stage_latency requestId={} workflow={} stage={} elapsedMs={} sessionId={} userId={}",
+                RequestTraceContext.currentRequestId().orElse("none"),
+                workflow,
+                stage,
+                elapsedMs,
+                sessionId == null ? "none" : sessionId,
+                userId);
     }
 
     private void relayFeedbackStream(FeedbackStreamContext context, OutputStream outputStream) throws IOException {

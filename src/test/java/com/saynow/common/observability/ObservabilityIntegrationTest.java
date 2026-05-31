@@ -138,6 +138,90 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         .contains("turnCount=3"));
     }
 
+    @Test
+    void sessionStageLogsSplitStartAndUtteranceProcessing() throws Exception {
+        ListAppender<ILoggingEvent> sessionLogs = attachListAppender(SessionService.class);
+        String accessToken = login("observability-stage-session-sub|observability-stage-session@example.com|Observability Stage Session");
+        String startRequestId = "stage-session-start-123";
+        String utteranceRequestId = "stage-utterance-123";
+
+        MvcResult startResult = mockMvc.perform(post("/api/v1/scenarios/{scenarioId}/sessions", 4)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .header("X-Request-Id", startRequestId))
+                .andExpect(status().isCreated())
+                .andReturn();
+        long sessionId = objectMapper.readTree(startResult.getResponse().getContentAsByteArray())
+                .get("data")
+                .get("sessionId")
+                .asLong();
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .header("X-Request-Id", utteranceRequestId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"I'm here for sightseeing."}
+                                """))
+                .andExpect(status().isOk());
+
+        assertThat(sessionLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        startRequestId,
+                        "session_start",
+                        "save_slot_statuses",
+                        String.valueOf(sessionId)));
+        assertThat(sessionLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        utteranceRequestId,
+                        "submit_utterance",
+                        "load_slot_statuses",
+                        String.valueOf(sessionId)));
+        assertThat(sessionLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        utteranceRequestId,
+                        "submit_utterance",
+                        "save_next_turn",
+                        String.valueOf(sessionId)));
+    }
+
+    @Test
+    void feedbackStageLogsSplitContextLoadAndPersistence() throws Exception {
+        ListAppender<ILoggingEvent> feedbackLogs = attachListAppender(FeedbackService.class);
+        String accessToken = login("observability-stage-feedback-sub|observability-stage-feedback@example.com|Observability Stage Feedback");
+        long sessionId = completeSession(accessToken);
+        String requestId = "stage-feedback-123";
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/feedback", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .header("X-Request-Id", requestId))
+                .andExpect(status().isOk());
+
+        assertThat(feedbackLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        requestId,
+                        "feedback",
+                        "load_context",
+                        String.valueOf(sessionId)));
+        assertThat(feedbackLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        requestId,
+                        "feedback",
+                        "prepare_ai_request",
+                        String.valueOf(sessionId)));
+        assertThat(feedbackLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        requestId,
+                        "feedback",
+                        "save_turn_feedbacks",
+                        String.valueOf(sessionId)));
+    }
+
     private ListAppender<ILoggingEvent> attachListAppender(Class<?> loggerType) {
         return attachListAppender(loggerType.getName());
     }
@@ -149,6 +233,24 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
         logger.addAppender(appender);
         attachedAppenders.add(new AttachedAppender(logger, appender));
         return appender;
+    }
+
+    private void assertStageLog(
+            ILoggingEvent event,
+            String requestId,
+            String workflow,
+            String stage,
+            String sessionId
+    ) {
+        assertThat(event.getFormattedMessage())
+                .contains("event=be_stage_latency")
+                .contains("requestId=" + requestId)
+                .contains("workflow=" + workflow)
+                .contains("stage=" + stage)
+                .containsPattern("elapsedMs=\\d+")
+                .contains("sessionId=" + sessionId)
+                .containsPattern("userId=\\d+");
+        assertThat(event.getMDCPropertyMap()).containsEntry("requestId", requestId);
     }
 
     private long completeSession(String accessToken) throws Exception {
