@@ -5,6 +5,8 @@ import com.saynow.auth.domain.User;
 import com.saynow.scenario.domain.Scenario;
 import com.saynow.scenario.domain.UserScenarioProgress;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,4 +17,13 @@ public interface UserScenarioProgressRepository extends JpaRepository<UserScenar
     List<UserScenarioProgress> findByUserIdAndScenarioIdIn(Long userId, Collection<Long> scenarioIds);
 
     Optional<UserScenarioProgress> findByUserAndScenario(User user, Scenario scenario);
+
+    @Modifying
+    @Query("""
+            update UserScenarioProgress progress
+            set progress.cleared = true
+            where progress.user.id = :userId
+              and progress.scenario.id = :scenarioId
+            """)
+    void markClearedByUserIdAndScenarioId(Long userId, Long scenarioId);
 }

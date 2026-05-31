@@ -19,6 +19,7 @@ import com.saynow.session.domain.SessionTurn;
 import com.saynow.session.domain.SessionSlotStatus;
 import com.saynow.session.domain.SessionStatus;
 import com.saynow.session.infrastructure.SessionRepository;
+import com.saynow.session.infrastructure.SessionRepository.SubmitUtteranceContextRow;
 import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.SessionSlotStatusRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
@@ -32,7 +33,6 @@ import com.saynow.session.infrastructure.ai.AiSlotEvidencePolicy;
 import com.saynow.session.infrastructure.ai.TurnClassification;
 import com.saynow.scenario.application.ScenarioService;
 import com.saynow.scenario.domain.Scenario;
-import com.saynow.scenario.domain.ScenarioSlot;
 import com.saynow.scenario.domain.UserScenarioProgress;
 import com.saynow.scenario.infrastructure.ScenarioRepository;
 import com.saynow.scenario.infrastructure.ScenarioSlotRepository;
@@ -112,50 +112,21 @@ public class SessionService {
     @Transactional
     public UserUtteranceResponse submitUtterance(Long userId, Long sessionId, UserUtteranceRequest request) {
         long stageStartedAt = System.nanoTime();
-        Session session = findOwnedSession(userId, sessionId);
-        logStageLatency("submit_utterance", "load_session", userId, sessionId, stageStartedAt);
-        assertInProgress(session);
+        SubmitUtteranceContext context = loadSubmitUtteranceContext(userId, sessionId);
+        logStageLatency("submit_utterance", "load_context", userId, sessionId, stageStartedAt);
+        assertInProgress(context.sessionStatus());
+        if (context.currentTurnId() == null) {
+            throw new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE);
+        }
         validateUserUtterance(request);
+        String userUtterance = request.userUtterance().trim();
 
         stageStartedAt = System.nanoTime();
-        SessionTurn currentTurn = turnRepository.findBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE));
-        logStageLatency("submit_utterance", "load_current_turn", userId, sessionId, stageStartedAt);
-
-        stageStartedAt = System.nanoTime();
-        currentTurn.submitUserUtterance(request.userUtterance().trim());
+        turnRepository.updateUserUtterance(context.currentTurnId(), userUtterance);
         logStageLatency("submit_utterance", "record_user_utterance", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
-        List<SessionSlotStatus> slotStatuses = slotStatusRepository.findBySessionOrderByIdAsc(session);
-        logStageLatency("submit_utterance", "load_slot_statuses", userId, sessionId, stageStartedAt);
-
-        stageStartedAt = System.nanoTime();
-        Map<String, ScenarioSlot> scenarioSlotByName = scenarioSlotRepository.findByScenarioOrderByIdAsc(session.getScenario()).stream()
-                .collect(Collectors.toMap(ScenarioSlot::getName, slot -> slot));
-        logStageLatency("submit_utterance", "load_scenario_slots", userId, sessionId, stageStartedAt);
-
-        stageStartedAt = System.nanoTime();
-        AiNextQuestionRequest aiRequest = new AiNextQuestionRequest(
-                currentTurn.getAiQuestion(),
-                currentTurn.getNextQuestionTargetSlotName(),
-                currentTurn.getUserUtterance(),
-                session.getScenario().getTitle(),
-                session.getScenario().getAiRole(),
-                session.getScenario().getSituation(),
-                session.getScenario().getGoal(),
-                slotStatuses.stream()
-                        .map(slot -> {
-                            ScenarioSlot scenarioSlot = scenarioSlotByName.get(slot.getSlotName());
-                            return new AiNextQuestionSlotStatus(
-                                    slot.getSlotName(),
-                                    scenarioSlot == null ? null : scenarioSlot.getDescription(),
-                                    slot.isFulfilled(),
-                                    scenarioSlot == null ? null : parseEvidencePolicy(scenarioSlot.getEvidencePolicy()));
-                        })
-                        .toList());
+        AiNextQuestionRequest aiRequest = toAiNextQuestionRequest(context, userUtterance);
         logStageLatency("submit_utterance", "prepare_ai_request", userId, sessionId, stageStartedAt);
 
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(aiRequest);
@@ -163,29 +134,34 @@ public class SessionService {
         stageStartedAt = System.nanoTime();
         validateNextQuestionResponse(aiResponse);
 
-        boolean heartDeducted = shouldDeductHeart(session, aiResponse);
+        boolean heartDeducted = shouldDeductHeart(context.remainingHearts(), aiResponse);
+        int remainingHearts = heartDeducted ? context.remainingHearts() - 1 : context.remainingHearts();
+        Set<String> newlyFilledSlotNames = Set.of();
         if (aiResponse.turnClassification() == TurnClassification.ANSWER) {
-            applyFilledSlots(slotStatuses, aiResponse.filledSlots());
-        }
-        if (heartDeducted) {
-            session.decreaseHeart();
+            newlyFilledSlotNames = newlyFilledSlotNames(context.slotStatuses(), aiResponse.filledSlots());
+            if (!newlyFilledSlotNames.isEmpty()) {
+                slotStatusRepository.fulfillBySessionIdAndSlotNameIn(sessionId, newlyFilledSlotNames);
+            }
         }
         logStageLatency("submit_utterance", "apply_ai_response", userId, sessionId, stageStartedAt);
 
-        if (allFulfilled(slotStatuses)) {
+        if (allFulfilled(context.slotStatuses(), newlyFilledSlotNames)) {
             stageStartedAt = System.nanoTime();
-            session.complete(SessionStatus.SUCCESS, LocalDateTime.now());
-            markScenarioCleared(session);
+            sessionRepository.updateCompletion(sessionId, remainingHearts, SessionStatus.SUCCESS, LocalDateTime.now());
+            userScenarioProgressRepository.markClearedByUserIdAndScenarioId(userId, context.scenarioId());
             logStageLatency("submit_utterance", "complete_success", userId, sessionId, stageStartedAt);
-            logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
-            return completedResponse(session, heartDeducted, aiResponse.turnClassification());
+            logUtteranceProcessed(userId, context, aiResponse, heartDeducted, remainingHearts, SessionStatus.SUCCESS);
+            return completedResponse(context.sessionId(), remainingHearts, heartDeducted, aiResponse.turnClassification());
         }
-        if (session.getRemainingHearts() <= 0) {
+        if (remainingHearts <= 0) {
             stageStartedAt = System.nanoTime();
-            session.complete(SessionStatus.FAILURE, LocalDateTime.now());
+            sessionRepository.updateCompletion(sessionId, remainingHearts, SessionStatus.FAILURE, LocalDateTime.now());
             logStageLatency("submit_utterance", "complete_failure", userId, sessionId, stageStartedAt);
-            logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
-            return completedResponse(session, heartDeducted, aiResponse.turnClassification());
+            logUtteranceProcessed(userId, context, aiResponse, heartDeducted, remainingHearts, SessionStatus.FAILURE);
+            return completedResponse(context.sessionId(), remainingHearts, heartDeducted, aiResponse.turnClassification());
+        }
+        if (heartDeducted) {
+            sessionRepository.updateRemainingHearts(sessionId, remainingHearts);
         }
         if (aiResponse.nextQuestion() == null || aiResponse.nextQuestion().isBlank()
                 || aiResponse.translatedQuestion() == null || aiResponse.translatedQuestion().isBlank()) {
@@ -193,22 +169,23 @@ public class SessionService {
         }
         String nextQuestionTargetSlotName = validNextQuestionTargetSlotName(
                 aiResponse.nextQuestionTargetSlotName(),
-                slotStatuses);
+                context.slotStatuses(),
+                newlyFilledSlotNames);
 
         stageStartedAt = System.nanoTime();
         turnRepository.save(new SessionTurn(
-                session,
-                currentTurn.getSequence() + 1,
+                sessionRepository.getReferenceById(sessionId),
+                context.currentTurnSequence() + 1,
                 aiResponse.nextQuestion(),
                 aiResponse.translatedQuestion(),
                 nextQuestionTargetSlotName));
         logStageLatency("submit_utterance", "save_next_turn", userId, sessionId, stageStartedAt);
-        logUtteranceProcessed(userId, session, currentTurn, aiResponse, heartDeducted);
+        logUtteranceProcessed(userId, context, aiResponse, heartDeducted, remainingHearts, SessionStatus.IN_PROGRESS);
         return new UserUtteranceResponse(
-                session.getId(),
+                context.sessionId(),
                 aiResponse.nextQuestion(),
                 aiResponse.translatedQuestion(),
-                session.getRemainingHearts(),
+                remainingHearts,
                 false,
                 heartDeducted,
                 aiResponse.turnClassification());
@@ -272,6 +249,12 @@ public class SessionService {
         }
     }
 
+    private void assertInProgress(SessionStatus status) {
+        if (status != SessionStatus.IN_PROGRESS) {
+            throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
+        }
+    }
+
     private void validateUserUtterance(UserUtteranceRequest request) {
         if (request == null || request.userUtterance() == null || request.userUtterance().isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST);
@@ -295,12 +278,6 @@ public class SessionService {
                 elapsedMs,
                 sessionId == null ? "none" : sessionId,
                 userId);
-    }
-
-    private void markScenarioCleared(Session session) {
-        UserScenarioProgress progress = userScenarioProgressRepository.findByUserAndScenario(session.getUser(), session.getScenario())
-                .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(session.getUser(), session.getScenario())));
-        progress.markCleared();
     }
 
     private void assertPlayable(User user, Scenario scenario) {
@@ -335,58 +312,58 @@ public class SessionService {
 
     private void logUtteranceProcessed(
             Long userId,
-            Session session,
-            SessionTurn currentTurn,
+            SubmitUtteranceContext context,
             AiNextQuestionResponse aiResponse,
-            boolean heartDeducted
+            boolean heartDeducted,
+            int remainingHearts,
+            SessionStatus sessionStatus
     ) {
         log.info(
                 "세션 발화를 처리했습니다. userId={} sessionId={} turnId={} turnClassification={} filledSlotCount={} heartDeducted={} remainingHearts={} sessionStatus={}",
                 userId,
-                session.getId(),
-                currentTurn.getId(),
+                context.sessionId(),
+                context.currentTurnId(),
                 aiResponse.turnClassification(),
                 aiResponse.filledSlots().size(),
                 heartDeducted,
-                session.getRemainingHearts(),
-                session.getStatus());
+                remainingHearts,
+                sessionStatus);
     }
 
-    private boolean shouldDeductHeart(Session session, AiNextQuestionResponse response) {
+    private boolean shouldDeductHeart(int remainingHearts, AiNextQuestionResponse response) {
         return response.turnClassification() == TurnClassification.INVALID_RESPONSE
-                && session.getRemainingHearts() > 0;
+                && remainingHearts > 0;
     }
 
-    private void applyFilledSlots(List<SessionSlotStatus> slotStatuses, List<AiFilledSlot> filledSlots) {
+    private Set<String> newlyFilledSlotNames(List<SubmitSlotStatus> slotStatuses, List<AiFilledSlot> filledSlots) {
         Set<String> allowedSlotNames = slotStatuses.stream()
-                .map(SessionSlotStatus::getSlotName)
+                .map(SubmitSlotStatus::slotName)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        Set<String> filledSlotNames = filledSlots.stream()
+        return filledSlots.stream()
                 .map(AiFilledSlot::slotName)
                 .filter(allowedSlotNames::contains)
-                .collect(Collectors.toSet());
-
-        slotStatuses.stream()
-                .filter(slot -> filledSlotNames.contains(slot.getSlotName()))
-                .forEach(SessionSlotStatus::fulfill);
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private boolean allFulfilled(List<SessionSlotStatus> slotStatuses) {
-        return slotStatuses.stream().allMatch(SessionSlotStatus::isFulfilled);
+    private boolean allFulfilled(List<SubmitSlotStatus> slotStatuses, Set<String> newlyFilledSlotNames) {
+        return slotStatuses.stream()
+                .allMatch(slot -> slot.fulfilled() || newlyFilledSlotNames.contains(slot.slotName()));
     }
 
     private String validNextQuestionTargetSlotName(
             String nextQuestionTargetSlotName,
-            List<SessionSlotStatus> slotStatuses
+            List<SubmitSlotStatus> slotStatuses,
+            Set<String> newlyFilledSlotNames
     ) {
         if (nextQuestionTargetSlotName == null || nextQuestionTargetSlotName.isBlank()) {
             return null;
         }
         String normalized = nextQuestionTargetSlotName.trim();
         return slotStatuses.stream()
-                .filter(slot -> slot.getSlotName().equals(normalized))
-                .filter(slot -> !slot.isFulfilled())
-                .map(SessionSlotStatus::getSlotName)
+                .filter(slot -> slot.slotName().equals(normalized))
+                .filter(slot -> !slot.fulfilled())
+                .filter(slot -> !newlyFilledSlotNames.contains(slot.slotName()))
+                .map(SubmitSlotStatus::slotName)
                 .findFirst()
                 .orElse(null);
     }
@@ -403,17 +380,96 @@ public class SessionService {
     }
 
     private UserUtteranceResponse completedResponse(
-            Session session,
+            Long sessionId,
+            int remainingHearts,
             boolean heartDeducted,
             TurnClassification turnClassification
     ) {
         return new UserUtteranceResponse(
-                session.getId(),
+                sessionId,
                 null,
                 null,
-                session.getRemainingHearts(),
+                remainingHearts,
                 true,
                 heartDeducted,
                 turnClassification);
+    }
+
+    private SubmitUtteranceContext loadSubmitUtteranceContext(Long userId, Long sessionId) {
+        List<SubmitUtteranceContextRow> rows = sessionRepository.findSubmitUtteranceContextRows(userId, sessionId);
+        if (rows.isEmpty()) {
+            if (sessionRepository.existsById(sessionId)) {
+                throw new ApiException(ErrorCode.FORBIDDEN);
+            }
+            throw new ApiException(ErrorCode.SESSION_NOT_FOUND);
+        }
+
+        SubmitUtteranceContextRow first = rows.getFirst();
+        List<SubmitSlotStatus> slotStatuses = rows.stream()
+                .filter(row -> row.getSlotName() != null)
+                .map(row -> new SubmitSlotStatus(
+                        row.getSlotName(),
+                        Boolean.TRUE.equals(row.getSlotFulfilled()),
+                        row.getSlotDescription(),
+                        row.getSlotEvidencePolicy()))
+                .toList();
+
+        return new SubmitUtteranceContext(
+                first.getSessionId(),
+                first.getScenarioId(),
+                SessionStatus.valueOf(first.getSessionStatus()),
+                first.getRemainingHearts(),
+                first.getScenarioTitle(),
+                first.getScenarioAiRole(),
+                first.getScenarioSituation(),
+                first.getScenarioGoal(),
+                first.getCurrentTurnId(),
+                first.getCurrentTurnSequence(),
+                first.getCurrentTurnAiQuestion(),
+                first.getCurrentTurnTargetSlotName(),
+                slotStatuses);
+    }
+
+    private AiNextQuestionRequest toAiNextQuestionRequest(SubmitUtteranceContext context, String userUtterance) {
+        return new AiNextQuestionRequest(
+                context.currentTurnAiQuestion(),
+                context.currentTurnTargetSlotName(),
+                userUtterance,
+                context.scenarioTitle(),
+                context.scenarioAiRole(),
+                context.scenarioSituation(),
+                context.scenarioGoal(),
+                context.slotStatuses().stream()
+                        .map(slot -> new AiNextQuestionSlotStatus(
+                                slot.slotName(),
+                                slot.description(),
+                                slot.fulfilled(),
+                                parseEvidencePolicy(slot.evidencePolicy())))
+                        .toList());
+    }
+
+    private record SubmitUtteranceContext(
+            Long sessionId,
+            Long scenarioId,
+            SessionStatus sessionStatus,
+            int remainingHearts,
+            String scenarioTitle,
+            String scenarioAiRole,
+            String scenarioSituation,
+            String scenarioGoal,
+            Long currentTurnId,
+            Integer currentTurnSequence,
+            String currentTurnAiQuestion,
+            String currentTurnTargetSlotName,
+            List<SubmitSlotStatus> slotStatuses
+    ) {
+    }
+
+    private record SubmitSlotStatus(
+            String slotName,
+            boolean fulfilled,
+            String description,
+            String evidencePolicy
+    ) {
     }
 }

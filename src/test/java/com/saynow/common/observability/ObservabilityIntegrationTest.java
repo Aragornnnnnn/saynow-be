@@ -176,7 +176,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         event,
                         utteranceRequestId,
                         "submit_utterance",
-                        "load_slot_statuses",
+                        "load_context",
                         String.valueOf(sessionId)));
         assertThat(sessionLogs.list)
                 .anySatisfy(event -> assertStageLog(
