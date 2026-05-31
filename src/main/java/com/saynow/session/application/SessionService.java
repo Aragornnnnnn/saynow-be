@@ -44,7 +44,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,72 +54,6 @@ import java.util.stream.Collectors;
 public class SessionService {
 
     private static final String OPEN_CATEGORY_NAME = "Airport";
-    private static final String GUIDE_BLOCKED_ANSWER = "이 기능은 영어 표현, 문법, 단어, 뉘앙스에 관한 질문만 도와드릴 수 있어요.";
-    private static final List<String> GUIDE_BLOCKED_KEYWORDS = List.of(
-            "프롬프트",
-            "시스템 지시",
-            "시스템 메시지",
-            "시스템 프롬프트",
-            "지시를 무시",
-            "이전 지시",
-            "역할을 바꿔",
-            "너는 이제",
-            "ignore",
-            "ignore all",
-            "system prompt",
-            "developer message",
-            "forget all",
-            "forget previous",
-            "previous instruction",
-            "role change",
-            "코딩",
-            "코드",
-            "개발",
-            "coding",
-            "code",
-            "뉴스",
-            "news",
-            "금융",
-            "finance",
-            "주식",
-            "stock",
-            "정치",
-            "politics",
-            "비트코인",
-            "bitcoin",
-            "hack",
-            "해킹");
-    private static final List<String> GUIDE_ALLOWED_KEYWORDS = List.of(
-            "영어",
-            "표현",
-            "문법",
-            "단어",
-            "뜻",
-            "의미",
-            "뉘앙스",
-            "발음",
-            "대체",
-            "차이",
-            "해석",
-            "문장",
-            "어휘",
-            "숙어",
-            "관용",
-            "would",
-            "could",
-            "should",
-            "can ",
-            "may ",
-            "might",
-            "instead",
-            "grammar",
-            "expression",
-            "phrase",
-            "word",
-            "meaning",
-            "pronunciation",
-            "tone",
-            "nuance");
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioSlotRepository scenarioSlotRepository;
@@ -239,10 +172,6 @@ public class SessionService {
         Session session = findOwnedSession(userId, sessionId);
         assertInProgress(session);
         String question = validateGuideQuestion(request);
-        if (shouldBlockGuideQuestion(question)) {
-            log.info("가이드 질문을 차단했습니다. userId={} sessionId={} reason=out_of_scope", userId, sessionId);
-            return new GuideQuestionResponse(GUIDE_BLOCKED_ANSWER);
-        }
 
         AiGuideResponse aiResponse = aiConversationClient.generateGuide(new AiGuideRequest(
                 question,
@@ -307,18 +236,6 @@ public class SessionService {
             throw new ApiException(ErrorCode.INVALID_REQUEST);
         }
         return request.question().trim();
-    }
-
-    private boolean shouldBlockGuideQuestion(String question) {
-        String normalized = question.toLowerCase(Locale.ROOT);
-        if (containsAny(normalized, GUIDE_BLOCKED_KEYWORDS)) {
-            return true;
-        }
-        return !containsAny(normalized, GUIDE_ALLOWED_KEYWORDS);
-    }
-
-    private boolean containsAny(String value, List<String> keywords) {
-        return keywords.stream().anyMatch(value::contains);
     }
 
     private void markScenarioCleared(Session session) {
