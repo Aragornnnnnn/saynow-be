@@ -185,6 +185,33 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void repeatRequestDoesNotDeductHeartOrFulfillSlots() throws Exception {
+        String accessToken = login("mvp2-sub-repeat|repeat@example.com|Repeat User");
+        long sessionId = startSession(accessToken, 4);
+        aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
+                "Hi, what's the purpose of your visit?",
+                "안녕하세요. 방문 목적이 어떻게 되시나요?",
+                List.of(new AiFilledSlot("visit_purpose")),
+                TurnClassification.REPEAT_REQUEST));
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"userUtterance":"Pardon can you tell me again"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.remainingHearts").value(3))
+                .andExpect(jsonPath("$.data.feedbackAvailable").value(false))
+                .andExpect(jsonPath("$.data.heartDeducted").value(false))
+                .andExpect(jsonPath("$.data.turnClassification").value("REPEAT_REQUEST"))
+                .andExpect(jsonPath("$.data.originalQuestion").value("Hi, what's the purpose of your visit?"))
+                .andExpect(jsonPath("$.data.translatedQuestion").value("안녕하세요. 방문 목적이 어떻게 되시나요?"));
+        assertThat(slotFulfilled(sessionId, "visit_purpose")).isFalse();
+    }
+
+    @Test
     void answerWithoutFilledSlotsDoesNotDeductHeart() throws Exception {
         assertTurnPolicy(
                 "mvp2-sub-4|answer-empty@example.com|Answer Empty User",

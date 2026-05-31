@@ -88,6 +88,26 @@ class RemoteAiConversationClientTest {
     }
 
     @Test
+    void mapsRepeatRequestTurnClassification() throws Exception {
+        RemoteAiConversationClient client = clientWithNextQuestionResponse("""
+                {
+                  "nextQuestion":"What drink would you like to order?",
+                  "translatedQuestion":"어떤 음료를 주문하고 싶으신가요?",
+                  "nextQuestionTargetSlotName":"drink",
+                  "filledSlots":[],
+                  "turnClassification":"REPEAT_REQUEST"
+                }
+                """);
+
+        AiNextQuestionResponse response = client.generateNextQuestion(nextQuestionRequest());
+
+        assertThat(response.nextQuestion()).isEqualTo("What drink would you like to order?");
+        assertThat(response.nextQuestionTargetSlotName()).isEqualTo("drink");
+        assertThat(response.filledSlots()).isEmpty();
+        assertThat(response.turnClassification()).isEqualTo(TurnClassification.REPEAT_REQUEST);
+    }
+
+    @Test
     void rejectsNextQuestionResponseWithoutTurnClassification() throws Exception {
         RemoteAiConversationClient client = clientWithNextQuestionResponse("""
                 {

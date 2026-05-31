@@ -4,5 +4,6 @@ package com.saynow.session.infrastructure.ai;
 public enum TurnClassification {
     ANSWER,
     ASSISTANCE_REQUEST,
+    REPEAT_REQUEST,
     INVALID_RESPONSE
 }
