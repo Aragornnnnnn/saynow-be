@@ -22,8 +22,9 @@ public interface SessionTurnRepository extends JpaRepository<SessionTurn, Long> 
             update SessionTurn turn
             set turn.userUtterance = :userUtterance
             where turn.id = :turnId
+              and turn.userUtterance is null
             """)
-    void updateUserUtterance(Long turnId, String userUtterance);
+    int updateUserUtteranceIfPending(Long turnId, String userUtterance);
 
     void deleteBySession(Session session);
 }

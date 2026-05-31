@@ -41,11 +41,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -66,6 +68,7 @@ public class SessionService {
     private final UserRepository userRepository;
     private final AiConversationClient aiConversationClient;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     @Transactional
     public SessionStartResponse startSession(Long userId, Long scenarioId) {
@@ -109,31 +112,47 @@ public class SessionService {
                 false);
     }
 
-    @Transactional
     public UserUtteranceResponse submitUtterance(Long userId, Long sessionId, UserUtteranceRequest request) {
-        long stageStartedAt = System.nanoTime();
-        SubmitUtteranceContext context = loadSubmitUtteranceContext(userId, sessionId);
-        logStageLatency("submit_utterance", "load_context", userId, sessionId, stageStartedAt);
-        assertInProgress(context.sessionStatus());
-        if (context.currentTurnId() == null) {
-            throw new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE);
-        }
         validateUserUtterance(request);
         String userUtterance = request.userUtterance().trim();
 
-        stageStartedAt = System.nanoTime();
-        turnRepository.updateUserUtterance(context.currentTurnId(), userUtterance);
-        logStageLatency("submit_utterance", "record_user_utterance", userId, sessionId, stageStartedAt);
+        long stageStartedAt = System.nanoTime();
+        SubmitUtteranceContext context = Objects.requireNonNull(transactionTemplate.execute(status -> {
+            SubmitUtteranceContext loadedContext = loadSubmitUtteranceContext(userId, sessionId);
+            assertInProgress(loadedContext.sessionStatus());
+            if (loadedContext.currentTurnId() == null) {
+                throw new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE);
+            }
+            return loadedContext;
+        }));
+        logStageLatency("submit_utterance", "load_context", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
         AiNextQuestionRequest aiRequest = toAiNextQuestionRequest(context, userUtterance);
         logStageLatency("submit_utterance", "prepare_ai_request", userId, sessionId, stageStartedAt);
 
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(aiRequest);
-
-        stageStartedAt = System.nanoTime();
         validateNextQuestionResponse(aiResponse);
 
+        return Objects.requireNonNull(transactionTemplate.execute(status ->
+                persistUtteranceResult(userId, sessionId, userUtterance, context, aiResponse)));
+    }
+
+    private UserUtteranceResponse persistUtteranceResult(
+            Long userId,
+            Long sessionId,
+            String userUtterance,
+            SubmitUtteranceContext context,
+            AiNextQuestionResponse aiResponse
+    ) {
+        long stageStartedAt = System.nanoTime();
+        int updatedTurnCount = turnRepository.updateUserUtteranceIfPending(context.currentTurnId(), userUtterance);
+        if (updatedTurnCount == 0) {
+            throw new ApiException(ErrorCode.SESSION_NOT_COMPLETABLE);
+        }
+        logStageLatency("submit_utterance", "record_user_utterance", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         boolean heartDeducted = shouldDeductHeart(context.remainingHearts(), aiResponse);
         int remainingHearts = heartDeducted ? context.remainingHearts() - 1 : context.remainingHearts();
         Set<String> newlyFilledSlotNames = Set.of();
