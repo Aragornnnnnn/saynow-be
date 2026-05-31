@@ -445,6 +445,7 @@ public class SessionService {
                 first.getCurrentTurnId(),
                 first.getCurrentTurnSequence(),
                 first.getCurrentTurnAiQuestion(),
+                first.getCurrentTurnTranslatedQuestion(),
                 first.getCurrentTurnTargetSlotName(),
                 slotStatuses);
     }
@@ -452,6 +453,7 @@ public class SessionService {
     private AiNextQuestionRequest toAiNextQuestionRequest(SubmitUtteranceContext context, String userUtterance) {
         return new AiNextQuestionRequest(
                 context.currentTurnAiQuestion(),
+                context.currentTurnTranslatedQuestion(),
                 context.currentTurnTargetSlotName(),
                 userUtterance,
                 context.scenarioTitle(),
@@ -479,6 +481,7 @@ public class SessionService {
             Long currentTurnId,
             Integer currentTurnSequence,
             String currentTurnAiQuestion,
+            String currentTurnTranslatedQuestion,
             String currentTurnTargetSlotName,
             List<SubmitSlotStatus> slotStatuses
     ) {

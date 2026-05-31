@@ -73,6 +73,8 @@ class RemoteAiConversationClientTest {
         assertThat(response.turnClassification()).isEqualTo(TurnClassification.ASSISTANCE_REQUEST);
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("originalQuestionTargetSlotName").asText())
                 .isEqualTo("drink");
+        assertThat(new ObjectMapper().readTree(requestBody.get()).get("originalTranslatedQuestion").asText())
+                .isEqualTo("어떤 음료를 주문하고 싶으신가요?");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("aiRole").asText())
                 .isEqualTo("카페 직원");
         assertThat(new ObjectMapper().readTree(requestBody.get()).get("scenarioSituation").asText())
@@ -410,6 +412,7 @@ class RemoteAiConversationClientTest {
     private AiNextQuestionRequest nextQuestionRequest() {
         return new AiNextQuestionRequest(
                 "What would you like to order?",
+                "어떤 음료를 주문하고 싶으신가요?",
                 "drink",
                 "Can I see the menu?",
                 "카페에서 주문하기",

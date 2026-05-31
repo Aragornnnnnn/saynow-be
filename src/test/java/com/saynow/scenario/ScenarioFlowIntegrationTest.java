@@ -382,6 +382,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                                 """))
                 .andExpect(status().isOk());
 
+        assertThat(aiConversationClient.nextQuestionOriginalTranslatedQuestion(0))
+                .isEqualTo("괜찮으세요? 무슨 일 있으신가요?");
         assertThat(aiConversationClient.nextQuestionOriginalTargetSlotName(0)).isNull();
 
         aiConversationClient.enqueueNextQuestion(new AiNextQuestionResponse(
@@ -399,6 +401,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                                 """))
                 .andExpect(status().isOk());
 
+        assertThat(aiConversationClient.nextQuestionOriginalTranslatedQuestion(1))
+                .isEqualTo("왜 늦었는지 설명해 주실 수 있나요?");
         assertThat(aiConversationClient.nextQuestionOriginalTargetSlotName(1))
                 .isEqualTo("baggage_delay_reason");
     }
@@ -1006,6 +1010,10 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         String nextQuestionOriginalTargetSlotName(int index) {
             return nextQuestionRequests.get(index).originalQuestionTargetSlotName();
+        }
+
+        String nextQuestionOriginalTranslatedQuestion(int index) {
+            return nextQuestionRequests.get(index).originalTranslatedQuestion();
         }
 
         @Override

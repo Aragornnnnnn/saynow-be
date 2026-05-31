@@ -26,6 +26,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
                 t.id as currentTurnId,
                 t.sequence as currentTurnSequence,
                 t.ai_question as currentTurnAiQuestion,
+                t.translated_question as currentTurnTranslatedQuestion,
                 t.next_question_target_slot_name as currentTurnTargetSlotName,
                 sss.slot_name as slotName,
                 sss.is_fulfilled as slotFulfilled,
@@ -92,6 +93,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
         Integer getCurrentTurnSequence();
 
         String getCurrentTurnAiQuestion();
+
+        String getCurrentTurnTranslatedQuestion();
 
         String getCurrentTurnTargetSlotName();
 
