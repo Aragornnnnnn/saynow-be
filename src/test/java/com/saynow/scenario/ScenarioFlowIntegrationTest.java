@@ -151,6 +151,14 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].userUtterance").value("I'm here for sightseeing."));
 
+        Integer turnFeedbackCount = jdbcTemplate.queryForObject("""
+                select count(*)
+                from turn_feedbacks tf
+                join session_feedbacks sf on sf.id = tf.session_feedback_id
+                where sf.session_id = ?
+                """, Integer.class, sessionId);
+        assertThat(turnFeedbackCount).isEqualTo(3);
+
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())

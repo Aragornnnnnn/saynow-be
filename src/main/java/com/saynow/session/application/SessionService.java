@@ -134,8 +134,11 @@ public class SessionService {
         AiNextQuestionResponse aiResponse = aiConversationClient.generateNextQuestion(aiRequest);
         validateNextQuestionResponse(aiResponse);
 
-        return Objects.requireNonNull(transactionTemplate.execute(status ->
+        stageStartedAt = System.nanoTime();
+        UserUtteranceResponse response = Objects.requireNonNull(transactionTemplate.execute(status ->
                 persistUtteranceResult(userId, sessionId, userUtterance, context, aiResponse)));
+        logStageLatency("submit_utterance", "persist_result_transaction", userId, sessionId, stageStartedAt);
+        return response;
     }
 
     private UserUtteranceResponse persistUtteranceResult(

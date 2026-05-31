@@ -12,6 +12,7 @@ import com.saynow.auth.domain.RefreshToken;
 import com.saynow.auth.domain.SocialProvider;
 import com.saynow.auth.infrastructure.UserRepository;
 import com.saynow.auth.infrastructure.RefreshTokenRepository;
+import com.saynow.auth.security.UserActiveStatusCache;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AuthService {
     private final TokenProperties tokenProperties;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserActiveStatusCache userActiveStatusCache;
 
     @Transactional
     public AuthTokenResponse socialLogin(SocialLoginRequest request) {
@@ -89,6 +91,7 @@ public class AuthService {
 
         refreshTokenRepository.revokeAllActiveByUserId(userId, now);
         user.withdraw(now);
+        userActiveStatusCache.evict(userId);
     }
 
     private IssuedTokens issueTokens(User user) {

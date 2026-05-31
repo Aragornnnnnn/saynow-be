@@ -6,6 +6,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saynow.auth.security.AuthTokenFilter;
 import com.saynow.IntegrationTestSupport;
 import com.saynow.feedback.application.FeedbackService;
 import com.saynow.session.application.SessionService;
@@ -85,6 +86,26 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
         assertThat(requestLogs.list)
                 .anySatisfy(event -> assertThat(event.getMDCPropertyMap())
                         .containsEntry("requestId", clientRequestId));
+    }
+
+    @Test
+    void authStageLogIncludesRequestIdAndElapsedTime() throws Exception {
+        ListAppender<ILoggingEvent> authLogs = attachListAppender(AuthTokenFilter.class);
+        String accessToken = login("observability-auth-stage-sub|observability-auth-stage@example.com|Observability Auth Stage");
+        String requestId = "stage-auth-token-123";
+
+        mockMvc.perform(get("/api/v1/scenarios")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
+                        .header("X-Request-Id", requestId))
+                .andExpect(status().isOk());
+
+        assertThat(authLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        requestId,
+                        "http_request",
+                        "auth_token",
+                        "none"));
     }
 
     @Test
@@ -185,6 +206,13 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         "submit_utterance",
                         "save_next_turn",
                         String.valueOf(sessionId)));
+        assertThat(sessionLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        utteranceRequestId,
+                        "submit_utterance",
+                        "persist_result_transaction",
+                        String.valueOf(sessionId)));
     }
 
     @Test
@@ -219,6 +247,13 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         requestId,
                         "feedback",
                         "save_turn_feedbacks",
+                        String.valueOf(sessionId)));
+        assertThat(feedbackLogs.list)
+                .anySatisfy(event -> assertStageLog(
+                        event,
+                        requestId,
+                        "feedback",
+                        "persist_feedback_transaction",
                         String.valueOf(sessionId)));
     }
 
