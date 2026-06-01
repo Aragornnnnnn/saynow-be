@@ -1,3 +1,25 @@
+# develop Swagger 서버 URL 분리 컨텍스트 노트
+
+## 2026-06-02
+
+- 사용자는 develop Swagger가 운영 주소를 찌르고 있다고 보고했다.
+- 실제 확인으로 `curl -fsS https://dev-saynow.p-e.kr/v3/api-docs`를 실행했고, 응답의 `servers[0].url`이 `https://saynow.p-e.kr`인 것을 확인했다.
+- 현재 코드에는 `application-dev.yml`의 기본값 `https://dev-saynow.p-e.kr`와 `DevOpenApiIntegrationTest`가 있다.
+- dev 배포 workflow는 `/saynow/develop` SSM에서 `SAYNOW_OPENAPI_SERVER_URL`을 읽어 `.env`에 그대로 쓴다.
+- 따라서 develop SSM 값이 prod 주소로 오염되면 코드 기본값보다 환경변수가 우선 적용되어 Swagger가 운영 주소를 노출한다.
+- 이번 수정은 dev 프로필에서 prod URL 유입을 보정하는 방향으로 진행한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, prod URL 주입 시 `servers[0].url`이 `https://saynow.p-e.kr`로 나와 실패했다.
+- `OpenApiConfig`에서 active profile이 `dev`이고 설정된 OpenAPI server URL이 운영 주소이면 `https://dev-saynow.p-e.kr`로 보정한다.
+- README에서는 `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL`을 develop 선택 SSM 목록에서 제거하고, dev 프로필이 운영 URL 유입을 보정한다고 정리했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고 통과했다.
+- 운영 기본 URL 회귀 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- `AWS_PROFILE=prod-saynow AWS_REGION=ap-northeast-2 aws ssm get-parameter --name /saynow/develop/SAYNOW_OPENAPI_SERVER_URL --with-decryption --query Parameter.Value --output text`로 SSM 현재값을 확인했고 `https://dev-saynow.p-e.kr`였다.
+- 따라서 현재 live dev Swagger가 prod 주소를 반환하는 것은 최신 SSM 값 자체보다는 이전 배포 산출물이나 이전 `.env`가 남아 있는 상태로 본다.
+- workflow 파일 변경은 현재 GitHub OAuth 권한에 `workflow` scope가 없어 push가 거부되므로 이번 커밋에서 제외했다.
+
+---
+
 # SayNow 3차 MVP BE 구현 컨텍스트 노트
 
 ## 2026-06-02

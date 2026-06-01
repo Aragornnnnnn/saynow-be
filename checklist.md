@@ -1,3 +1,17 @@
+# develop Swagger 서버 URL 분리 체크리스트
+
+- [x] 실제 dev `/v3/api-docs`가 prod server URL을 반환하는지 확인한다.
+- [x] 현재 `application-dev.yml`, OpenAPI 설정, dev 배포 workflow의 환경변수 생성 경로를 확인한다.
+- [x] dev 프로필에 prod OpenAPI URL이 주입되어도 dev URL을 반환하는 RED 테스트를 추가한다.
+- [x] OpenAPI 서버 URL 결정 로직에서 dev 프로필의 prod URL 유입을 보정한다.
+- [x] dev 배포 workflow 권한 제약을 확인하고 코드 보정으로 prod URL 유입을 방어한다.
+- [x] README의 develop Swagger URL 관리 설명을 갱신한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+- [x] 의미 있는 단위로 커밋한다.
+
+---
+
 # SayNow 3차 MVP BE 구현 체크리스트
 
 - [x] 기준 문서 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/3차 MVP.md`를 다시 읽고 최우선 목표가 피드백 품질임을 확인한다.
