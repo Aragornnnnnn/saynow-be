@@ -1,3 +1,30 @@
+# SayNow 3차 MVP BE 구현 컨텍스트 노트
+
+## 2026-06-02
+
+- 기준 문서는 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/3차 MVP.md`다.
+- 이 작업의 최우선 목표는 응답 속도나 토큰 절감이 아니라 피드백 품질이다. BE는 이 기준을 해치지 않는 방향으로 AI 요청 계약과 저장 구조를 맞춘다.
+- 현재 BE는 2차 MVP 구조다. 핵심 충돌 지점은 슬롯 기반 완료, 하트 차감, `SUCCESS`/`FAILURE` 세션 상태, `scenario_slots`, `session_slot_statuses`, 단일 `original_question`, 기존 `feedbackRequired` 기반 피드백이다.
+- 3차 MVP에서는 시나리오가 주제형 프리톡이며, 각 시나리오는 `scenario_questions`에 저장된 고정 질문 4개를 가진다.
+- `firstQuestionPreview`는 목록 빠른 렌더링용이고, 실제 세션과 턴은 세션 시작 API에서 생성한다.
+- 사용자 발화 제출은 현재 턴의 발화를 저장하고, 다음 고정 질문이 있으면 AI가 맞장구와 다음 질문을 합친 `aiQuestion`을 만들게 한다.
+- 턴별 피드백은 발화 직후 AI `turn-feedback` API에 요청하고, AI 캐시에 저장된다는 계약만 BE가 추적한다. BE DB 저장은 최종 피드백 생성 시점에 한다.
+- 최종 피드백은 AI `session-feedback` API가 캐시된 턴별 피드백을 모아 반환하며, BE가 `session_feedbacks`와 `turn_feedbacks`에 저장한다.
+- 세션 완료 기준은 제품 문서의 열린 판단을 반영해, 4개 질문에 모두 답하면 피드백 생성 가능 상태가 되고, 최종 피드백 저장 후 `sessions.status=COMPLETED`와 `user_scenario_progress.completed=true`로 확정한다.
+- 문서 범위 밖인 guide, session result, feedback SSE, 슬롯/하트 정책은 3차 MVP 핵심 흐름에서 제거한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 새 AI DTO와 enum이 없어 `compileTestJava`에서 실패했다.
+- `V10__third_mvp_free_talk_schema.sql`로 Free Talk 카테고리와 3개 시나리오, 시나리오별 고정 질문 4개를 seed한다.
+- 3차 MVP 스키마에서는 `scenario_questions`, `sessions.started_at`, `sessions.abandoned_at`, `session_turns.scenario_question_id`, `session_turns.answered_at`, 새 피드백 컬럼을 추가한다.
+- 2차 MVP 전용 `scenario_slots`, `session_slot_statuses`, 하트, 성공/실패 결과, guide, session result, feedback SSE 코드는 제거했다.
+- AI 계약은 `next-question`, `turn-feedback`, `session-feedback` 세 경로로 나눴다. BE는 턴별 피드백 상태만 제출 응답에 반영하고, DB 저장은 최종 피드백 생성 시 한 번에 한다.
+- 관련 GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증 첫 실행에서 `ObservabilityIntegrationTest` 2개가 실패했다. 원인은 기존 테스트가 이전 시드의 `scenarioId=4`와 삭제된 `persist_feedback_transaction` 단계를 기대한 것이다.
+- 관측성 테스트는 Free Talk 첫 시나리오 `scenarioId=1`, `generate_session_feedback`, `save_session_feedback` 단계 기준으로 갱신했다.
+- 관측성 단일 검증으로 `./gradlew test --tests com.saynow.common.observability.ObservabilityIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # turnClassification 기반 하트/슬롯 정책 컨텍스트 노트
 
 ## 2026-05-30

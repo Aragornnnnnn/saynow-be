@@ -1,3 +1,26 @@
+# SayNow 3차 MVP BE 구현 체크리스트
+
+- [x] 기준 문서 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/3차 MVP.md`를 다시 읽고 최우선 목표가 피드백 품질임을 확인한다.
+- [x] 현재 BE 스키마, 도메인, 서비스, API, AI 계약을 읽고 3차 MVP 문서와 충돌하는 지점을 확인한다.
+- [x] 시나리오 목록 응답이 `briefing`, `conversationGoal`, `firstQuestionPreview`, `completed`를 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 세션 시작 응답이 `currentTurn`과 `progress`를 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 발화 제출 응답이 `submittedTurn`, `nextTurn`, `progress`, `turnFeedbackStatus`를 반환하고 4번째 답변 뒤 대화 완료 상태가 되는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 최종 피드백 API가 `nativeScore`, `nativeLevelLabel`, `summary`, 새 턴별 피드백 구조를 저장하고 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] AI `next-question`, `turn-feedback`, `session-feedback` 요청과 응답 계약 RED 테스트를 작성하고 실패를 확인한다.
+- [x] Flyway migration으로 3차 MVP 스키마를 추가한다.
+- [x] `ScenarioQuestion`, 3차 MVP 시나리오/세션/피드백 도메인 매핑을 추가한다.
+- [x] 슬롯, 하트, 성공/실패 기반 세션 진행 코드를 제거하거나 3차 MVP 흐름에서 분리한다.
+- [x] `GET /api/v1/scenarios`, `POST /api/v1/scenarios/{scenarioId}/sessions`, `POST /api/v1/sessions/{sessionId}/utterances`, `POST /api/v1/sessions/{sessionId}/feedback`, `PATCH /api/v1/sessions/{sessionId}/abandon`, `POST /api/v1/sessions/{sessionId}/nps`를 문서 기준으로 맞춘다.
+- [x] 문서 범위 밖인 guide, result, feedback SSE 경로를 제거한다.
+- [x] OpenAPI 예시와 통합 테스트를 3차 MVP 계약으로 갱신한다.
+- [x] 관련 테스트를 통과시킨다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] 변경 사항, 결정 이유, 검증 결과를 Obsidian 3차 MVP 문서에 남긴다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+- [x] 의미 있는 단위로 커밋한다.
+
+---
+
 # turnClassification 기반 하트/슬롯 정책 체크리스트
 
 - [x] 현재 `SessionService`, AI 응답 DTO, OpenAPI 테스트 구조를 확인한다.
