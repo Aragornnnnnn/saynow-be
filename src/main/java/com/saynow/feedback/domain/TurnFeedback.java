@@ -1,7 +1,7 @@
 package com.saynow.feedback.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
-import com.saynow.practice.domain.PracticeTurn;
+import com.saynow.session.domain.SessionTurn;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -32,50 +32,38 @@ public class TurnFeedback extends BaseTimeEntity {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "turn_id", nullable = false)
     @Getter
-    private PracticeTurn turn;
+    private SessionTurn turn;
 
-    @Column(name = "understood_score", nullable = false)
+    @Column(name = "feedback_required", nullable = false)
     @Getter
-    private int understoodScore;
+    private boolean feedbackRequired;
 
-    @Column(name = "heard_as", nullable = false, columnDefinition = "text")
+    @Column(name = "native_understanding", columnDefinition = "text")
     @Getter
-    private String heardAs;
+    private String nativeUnderstanding;
+
+    @Column(name = "native_language_interpretation", columnDefinition = "text")
+    @Getter
+    private String nativeLanguageInterpretation;
 
     @Column(name = "better_expression", length = 500)
     @Getter
     private String betterExpression;
 
-    @Column(name = "score_delta", nullable = false)
-    @Getter
-    private int scoreDelta;
-
-    @Column(name = "improved_understood_score", nullable = false)
-    @Getter
-    private int improvedUnderstoodScore;
-
-    @Column(nullable = false, columnDefinition = "text")
-    @Getter
-    private String reason;
-
     public TurnFeedback(
             SessionFeedback sessionFeedback,
-            PracticeTurn turn,
-            int understoodScore,
-            String heardAs,
-            String betterExpression,
-            int scoreDelta,
-            int improvedUnderstoodScore,
-            String reason
+            SessionTurn turn,
+            boolean feedbackRequired,
+            String nativeUnderstanding,
+            String nativeLanguageInterpretation,
+            String betterExpression
     ) {
         this.sessionFeedback = sessionFeedback;
         this.turn = turn;
-        this.understoodScore = understoodScore;
-        this.heardAs = heardAs;
+        this.feedbackRequired = feedbackRequired;
+        this.nativeUnderstanding = nativeUnderstanding;
+        this.nativeLanguageInterpretation = nativeLanguageInterpretation;
         this.betterExpression = betterExpression;
-        this.scoreDelta = scoreDelta;
-        this.improvedUnderstoodScore = improvedUnderstoodScore;
-        this.reason = reason;
     }
 
 }

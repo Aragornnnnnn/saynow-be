@@ -3,6 +3,7 @@ package com.saynow.auth.security;
 
 import com.saynow.common.web.CorsProperties;
 import com.saynow.common.exception.ErrorCode;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,8 +45,10 @@ public class AuthSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/scenarios", "/api/v1/scenarios/**").permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/actuator/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/scenarios").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/scenarios/*/sessions").authenticated()
                         .requestMatchers("/api/v1/sessions", "/api/v1/sessions/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
@@ -70,6 +73,6 @@ public class AuthSecurityConfig {
     }
 
     private AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, accessDeniedException) -> failureResponseWriter.write(response, ErrorCode.SESSION_ACCESS_DENIED);
+        return (request, response, accessDeniedException) -> failureResponseWriter.write(response, ErrorCode.FORBIDDEN);
     }
 }

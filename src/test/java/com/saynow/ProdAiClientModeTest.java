@@ -1,8 +1,8 @@
 // 운영 프로파일에서 원격 AI 클라이언트가 선택되는지 검증하는 테스트
 package com.saynow;
 
-import com.saynow.practice.infrastructure.ai.AiPracticeClient;
-import com.saynow.practice.infrastructure.ai.RemoteAiPracticeClient;
+import com.saynow.session.infrastructure.ai.AiConversationClient;
+import com.saynow.session.infrastructure.ai.RemoteAiConversationClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,11 +29,11 @@ class ProdAiClientModeTest {
     private Environment environment;
 
     @Autowired
-    private AiPracticeClient aiPracticeClient;
+    private AiConversationClient aiConversationClient;
 
     @Test
     void prodProfileUsesRemoteAiClientByDefault() {
         assertThat(environment.getProperty("saynow.ai.client-mode")).isEqualTo("remote");
-        assertThat(aiPracticeClient).isInstanceOf(RemoteAiPracticeClient.class);
+        assertThat(aiConversationClient).isInstanceOf(RemoteAiConversationClient.class);
     }
 }

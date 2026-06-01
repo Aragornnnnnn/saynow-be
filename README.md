@@ -33,7 +33,7 @@ DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<database-password>
 SAYNOW_AUTH_TOKEN_SECRET=<long-random-hmac-secret>
 SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=<google-web-client-id>
-SAYNOW_CORS_ALLOWED_ORIGINS=https://saynow-fe-web.vercel.app,http://localhost:3000,http://172.30.1.89:3000,http://10.0.2.2:3000
+SAYNOW_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://10.0.2.2:3000,http://172.16.103.142:3000,http://192.168.219.107:3000,https://saynow-fe-web-git-mvp2-with-ai.vercel.app
 SAYNOW_OPENAPI_SERVER_URL=https://saynow.p-e.kr
 SENTRY_ENABLED=true
 SENTRY_DSN=https://<public-key>@<org>.ingest.sentry.io/<project-id>
@@ -52,7 +52,7 @@ SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES=1062331189445-ov26of8u6pb8iauq0c4n68ni1flipm1q
 
 Kakao OIDC를 활성화하면 `SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`에 Kakao 앱 키를 설정합니다.
 
-브라우저 CORS 허용 origin은 `SAYNOW_CORS_ALLOWED_ORIGINS`에 comma-separated 형식으로 입력합니다. 기본 허용 origin은 `https://saynow-fe-web.vercel.app`, `http://localhost:3000`, `http://172.30.1.89:3000`, `http://10.0.2.2:3000`입니다.
+브라우저 CORS 허용 origin은 `SAYNOW_CORS_ALLOWED_ORIGINS`에 comma-separated 형식으로 입력합니다. 기본 허용 origin은 `http://localhost:3000`, `http://10.0.2.2:3000`, `http://172.16.103.142:3000`, `http://192.168.219.107:3000`, `https://saynow-fe-web-git-mvp2-with-ai.vercel.app`입니다.
 
 Swagger/OpenAPI 문서에 표시할 백엔드 서버 URL은 `SAYNOW_OPENAPI_SERVER_URL`로 설정합니다. 기본값은 `https://saynow.p-e.kr`입니다.
 
@@ -99,6 +99,7 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 선택 SSM 파라미터:
 
 - `/saynow/prod/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`
+- `/saynow/prod/SAYNOW_AUTH_OIDC_NONCE_REQUIRED`
 - `/saynow/prod/SAYNOW_CORS_ALLOWED_ORIGINS`
 - `/saynow/prod/SAYNOW_OPENAPI_SERVER_URL`
 
@@ -109,3 +110,45 @@ GitHub `prod` Environment에는 아래 값을 설정합니다.
 - `/saynow/prod/SENTRY_ENVIRONMENT`
 - `/saynow/prod/SENTRY_LOGS_ENABLED`
 - `/saynow/prod/SENTRY_RELEASE`
+
+## 개발 배포
+
+GitHub Actions의 `Deploy Dev EC2` workflow를 수동 실행해 선택한 브랜치를 개발 EC2에 배포합니다. 운영 배포와 동일하게 JAR를 빌드해 EC2로 업로드하고, SSM Parameter Store 값을 `/opt/saynow/.env`로 생성한 뒤 systemd 서비스를 재시작합니다.
+
+GitHub `develop` Environment에는 운영과 같은 이름의 값을 개발 서버 기준으로 설정합니다.
+
+- Secret: `EC2_SSH_KEY`
+- Variable: `AWS_ROLE_ARN`
+- Variable: `EC2_HOST`
+- Variable: `EC2_USER`
+- Variable: `EC2_SECURITY_GROUP_ID`
+
+애플리케이션 런타임 환경변수는 EC2 IAM Role로 AWS SSM Parameter Store의 `/saynow/develop` 경로에서 읽어 `/opt/saynow/.env`로 생성합니다.
+
+필수 SSM 파라미터입니다.
+
+- `/saynow/develop/DB_URL`
+- `/saynow/develop/DB_USERNAME`
+- `/saynow/develop/DB_PASSWORD`
+- `/saynow/develop/SAYNOW_AUTH_TOKEN_SECRET`
+- `/saynow/develop/SAYNOW_AUTH_OIDC_GOOGLE_AUDIENCES`
+- `/saynow/develop/SAYNOW_AUTH_OIDC_KAKAO_AUDIENCES`
+
+선택 SSM 파라미터입니다.
+
+- `/saynow/develop/SAYNOW_AI_BASE_URL`
+- `/saynow/develop/SAYNOW_AI_CLIENT_MODE`
+- `/saynow/develop/SAYNOW_AUTH_OIDC_NONCE_REQUIRED`
+- `/saynow/develop/SAYNOW_CORS_ALLOWED_ORIGINS`
+- `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL`
+
+개발 서버 Swagger/OpenAPI 기본 server URL은 `https://dev-saynow.p-e.kr`입니다.
+개발 서버 OIDC nonce 검증 기본값은 `false`입니다. 프론트에서 nonce 처리가 준비되면 `/saynow/develop/SAYNOW_AUTH_OIDC_NONCE_REQUIRED=true`로 override할 수 있습니다.
+
+선택 Sentry SSM 파라미터입니다.
+
+- `/saynow/develop/SENTRY_ENABLED`
+- `/saynow/develop/SENTRY_DSN`
+- `/saynow/develop/SENTRY_ENVIRONMENT`
+- `/saynow/develop/SENTRY_LOGS_ENABLED`
+- `/saynow/develop/SENTRY_RELEASE`

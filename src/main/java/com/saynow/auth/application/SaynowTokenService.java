@@ -31,12 +31,12 @@ public class SaynowTokenService {
     private final TokenProperties tokenProperties;
     private final ObjectMapper objectMapper;
 
-    public String createAccessToken(Long memberId) {
+    public String createAccessToken(Long userId) {
         try {
             Map<String, Object> header = Map.of("alg", "HS256", "typ", "JWT");
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("typ", ACCESS_TOKEN_TYPE);
-            payload.put("sub", memberId.toString());
+            payload.put("sub", userId.toString());
             payload.put("exp", Instant.now().plusSeconds(tokenProperties.getAccessExpiresInSeconds()).getEpochSecond());
 
             String headerPart = base64Url(objectMapper.writeValueAsBytes(header));

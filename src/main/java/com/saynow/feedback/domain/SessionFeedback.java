@@ -1,12 +1,9 @@
 package com.saynow.feedback.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
-import com.saynow.practice.domain.PracticeSession;
-import com.saynow.practice.domain.SessionStatus;
+import com.saynow.session.domain.Session;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,31 +27,27 @@ public class SessionFeedback extends BaseTimeEntity {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
-    private PracticeSession session;
+    private Session session;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "scenario_result", nullable = false, length = 20)
-    private SessionStatus scenarioResult;
+    @Column(nullable = false)
+    private boolean cleared;
 
-    @Column(name = "total_understood_score", nullable = false)
-    private int totalUnderstoodScore;
+    @Column(name = "comprehension_score", nullable = false)
+    private int comprehensionScore;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String summary;
+    @Column(name = "feedback_summary", nullable = false, columnDefinition = "text")
+    private String feedbackSummary;
 
     public SessionFeedback(
-            PracticeSession session,
-            SessionStatus scenarioResult,
-            int totalUnderstoodScore,
-            String summary
+            Session session,
+            boolean cleared,
+            int comprehensionScore,
+            String feedbackSummary
     ) {
-        if (scenarioResult != SessionStatus.SUCCESS && scenarioResult != SessionStatus.FAILURE) {
-            throw new IllegalArgumentException("scenarioResult must be SUCCESS or FAILURE");
-        }
         this.session = session;
-        this.scenarioResult = scenarioResult;
-        this.totalUnderstoodScore = totalUnderstoodScore;
-        this.summary = summary;
+        this.cleared = cleared;
+        this.comprehensionScore = comprehensionScore;
+        this.feedbackSummary = feedbackSummary;
     }
 
 }

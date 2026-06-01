@@ -4,16 +4,20 @@ package com.saynow.auth.application;
 import com.saynow.auth.domain.SocialProvider;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(name = "saynow.auth.oidc.fake-enabled", havingValue = "true")
 public class FakeOidcTokenVerifier implements OidcTokenVerifier {
 
+    private final OidcProperties oidcProperties;
+
     @Override
     public OidcUserInfo verify(SocialProvider provider, String idToken, String nonce) {
-        if (nonce == null || nonce.isBlank()) {
+        if (oidcProperties.isNonceRequired() && (nonce == null || nonce.isBlank())) {
             throw new ApiException(ErrorCode.OIDC_NONCE_MISMATCH);
         }
         if (idToken == null || idToken.isBlank()) {

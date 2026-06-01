@@ -1,0 +1,82 @@
+// 2차 MVP 시나리오 세션 진행 API를 제공하는 컨트롤러
+package com.saynow.session.api;
+
+import com.saynow.auth.security.AuthUserPrincipal;
+import com.saynow.common.response.ApiResponse;
+import com.saynow.session.api.dto.GuideQuestionRequest;
+import com.saynow.session.api.dto.GuideQuestionResponse;
+import com.saynow.session.api.dto.SessionResultResponse;
+import com.saynow.session.api.dto.SessionStartResponse;
+import com.saynow.session.api.dto.UserUtteranceRequest;
+import com.saynow.session.api.dto.UserUtteranceResponse;
+import com.saynow.session.application.SessionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+@Tag(name = "Session", description = "2차 MVP 시나리오 세션 진행 API")
+public class SessionController {
+
+    private final SessionService sessionService;
+
+    @PostMapping("/scenarios/{scenarioId}/sessions")
+    @Operation(summary = "시나리오 세션 시작", description = "사용자가 시나리오를 선택해 새 대화 세션을 시작합니다.")
+    public ResponseEntity<ApiResponse<SessionStartResponse>> startSession(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long scenarioId
+    ) {
+        return ApiResponse.success(HttpStatus.CREATED, sessionService.startSession(principal.userId(), scenarioId));
+    }
+
+    @PostMapping("/sessions/{sessionId}/utterances")
+    @Operation(summary = "세션 사용자 발화 제출", description = "사용자가 AI 질문에 대한 발화를 제출합니다.")
+    public ResponseEntity<ApiResponse<UserUtteranceResponse>> submitUtterance(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId,
+            @RequestBody UserUtteranceRequest request
+    ) {
+        return ApiResponse.success(HttpStatus.OK, sessionService.submitUtterance(principal.userId(), sessionId, request));
+    }
+
+    @PostMapping("/sessions/{sessionId}/guide")
+    @Operation(summary = "세션 중 영어 학습 가이드 질문", description = "시나리오 대화 중 영어 표현, 문법, 단어, 뉘앙스에 대한 가이드 답변을 생성합니다.")
+    public ResponseEntity<ApiResponse<GuideQuestionResponse>> generateGuideAnswer(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId,
+            @RequestBody GuideQuestionRequest request
+    ) {
+        return ApiResponse.success(HttpStatus.OK, sessionService.generateGuideAnswer(principal.userId(), sessionId, request));
+    }
+
+    @GetMapping("/sessions/{sessionId}/result")
+    @Operation(summary = "세션 시나리오 결과 조회", description = "완료된 세션의 시나리오 성공 또는 실패 결과를 반환합니다.")
+    public ResponseEntity<ApiResponse<SessionResultResponse>> getSessionResult(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId
+    ) {
+        return ApiResponse.success(HttpStatus.OK, sessionService.getSessionResult(principal.userId(), sessionId));
+    }
+
+    @DeleteMapping("/sessions/{sessionId}")
+    @Operation(summary = "세션 중도 종료", description = "사용자가 진행 중인 세션을 중도 종료하고 해당 세션 데이터를 삭제합니다.")
+    public ResponseEntity<ApiResponse<Void>> deleteSession(
+            @AuthenticationPrincipal AuthUserPrincipal principal,
+            @PathVariable Long sessionId
+    ) {
+        sessionService.deleteSession(principal.userId(), sessionId);
+        return ApiResponse.success(HttpStatus.OK, null);
+    }
+}

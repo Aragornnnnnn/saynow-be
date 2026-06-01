@@ -2,7 +2,7 @@
 package com.saynow.auth;
 
 import com.saynow.IntegrationTestSupport;
-import com.saynow.auth.security.AuthMemberPrincipal;
+import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.common.observability.SentryEventReporter;
@@ -49,7 +49,7 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
                 .containsKey("authTokenFilter");
         assertThat(applicationContext.getBeansOfType(HandlerInterceptor.class))
                 .doesNotContainKey("authInterceptor");
-        assertThat(UserDetails.class).isAssignableFrom(AuthMemberPrincipal.class);
+        assertThat(UserDetails.class).isAssignableFrom(AuthUserPrincipal.class);
     }
 
     @Test
@@ -64,13 +64,13 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void allowsProductionFrontendOriginForCorsPreflight() throws Exception {
+    void allowsMvp2FrontendOriginForCorsPreflight() throws Exception {
         mockMvc.perform(options("/api/v1/sessions")
-                        .header(HttpHeaders.ORIGIN, "https://saynow-fe-web.vercel.app")
+                        .header(HttpHeaders.ORIGIN, "https://saynow-fe-web-git-mvp2-with-ai.vercel.app")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://saynow-fe-web.vercel.app"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://saynow-fe-web-git-mvp2-with-ai.vercel.app"))
                 .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 
@@ -88,11 +88,22 @@ class SecurityAuthenticationIntegrationTest extends IntegrationTestSupport {
     @Test
     void allowsLocalNetworkFrontendOriginForCorsPreflight() throws Exception {
         mockMvc.perform(options("/api/v1/sessions")
-                        .header(HttpHeaders.ORIGIN, "http://172.30.1.89:3000")
+                        .header(HttpHeaders.ORIGIN, "http://172.16.103.142:3000")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://172.30.1.89:3000"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://172.16.103.142:3000"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+    }
+
+    @Test
+    void allowsSecondLocalNetworkFrontendOriginForCorsPreflight() throws Exception {
+        mockMvc.perform(options("/api/v1/sessions")
+                        .header(HttpHeaders.ORIGIN, "http://192.168.219.107:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://192.168.219.107:3000"))
                 .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
     }
 

@@ -7,6 +7,6 @@ public record AuthTokenResponse(
         long accessTokenExpiresIn,
         String refreshToken,
         long refreshTokenExpiresIn,
-        AuthMemberResponse member
+        AuthUserResponse user
 ) {
 }

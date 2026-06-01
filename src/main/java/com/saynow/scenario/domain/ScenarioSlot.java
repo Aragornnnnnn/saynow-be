@@ -28,10 +28,13 @@ public class ScenarioSlot extends BaseTimeEntity {
     @JoinColumn(name = "scenario_id", nullable = false)
     private Scenario scenario;
 
-    @Column(name = "slot_key", nullable = false, length = 80)
-    private String slotKey;
+    @Column(nullable = false, length = 80)
+    private String name;
 
     @Column(nullable = false, length = 255)
     private String description;
+
+    @Column(name = "evidence_policy", columnDefinition = "text")
+    private String evidencePolicy;
 
 }

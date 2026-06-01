@@ -1,3 +1,120 @@
+# turnClassification 기반 하트/슬롯 정책 체크리스트
+
+- [x] 현재 `SessionService`, AI 응답 DTO, OpenAPI 테스트 구조를 확인한다.
+- [x] 구현 전 정책과 기존 코드 차이를 `context-notes.md`에 기록한다.
+- [x] `INVALID_RESPONSE`가 `filledSlots`를 반환해도 슬롯을 적용하지 않는 RED 테스트를 추가한다.
+- [x] `ASSISTANCE_REQUEST`가 `filledSlots`를 반환해도 슬롯을 적용하지 않고 하트를 차감하지 않는 RED 테스트를 추가한다.
+- [x] `ANSWER`일 때만 `filledSlots`를 세션 슬롯 상태에 반영한다.
+- [x] AI `turnClassification` 누락/알 수 없는 값 계약 테스트를 확인한다.
+- [x] OpenAPI 응답 예시에 `turnClassification`, `heartDeducted`, `remainingHearts`가 포함됨을 확인한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] Obsidian AI 작업 기록에 BE 변경 사항을 함께 정리한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+
+---
+
+# AI SSE 피드백 스트림 중계 체크리스트
+
+# AI 피드백 슬롯 데이터 요청 추가 체크리스트
+
+- [x] AI 요청 계약 변경 범위를 확인한다.
+- [x] 피드백 원격 요청 JSON에 `slots`가 포함되는 RED 테스트를 추가한다.
+- [x] 동기 피드백 API가 `slots`를 AI 요청에 포함하는 RED 테스트를 추가한다.
+- [x] SSE 피드백 API가 `slots`를 AI 요청에 포함하는 RED 테스트를 추가한다.
+- [x] `AiFeedbackRequest`에 `slots`를 추가한다.
+- [x] `FeedbackService` 공통 요청 생성 경로에서 세션 슬롯 상태와 슬롯 설명을 매핑한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] develop으로 push한다.
+
+---
+
+# 시나리오 슬롯 설명 필드 추가 체크리스트
+
+- [x] `description` 스키마와 AI 요청 계약 변경 범위를 기록한다.
+- [x] `scenario_slots.description` 컬럼과 확정 description seed 값을 검증하는 RED 테스트를 추가한다.
+- [x] `next-question` AI 요청의 `slots[].description` 포함 RED 테스트를 추가한다.
+- [x] Flyway migration으로 `scenario_slots.description` 컬럼과 기존 슬롯별 값을 추가한다.
+- [x] `ScenarioSlot` 엔티티에 `description`을 매핑한다.
+- [x] `AiSlotStatus`와 `SessionService` 매핑에 `description`을 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] develop으로 push한다.
+
+---
+
+# 시나리오 AI 역할 필드 추가 체크리스트
+
+- [x] `aiRole` 스키마와 AI 요청 계약 변경 범위를 기록한다.
+- [x] `scenarios.ai_role` 컬럼과 seed 값을 검증하는 RED 테스트를 추가한다.
+- [x] `next-question`, `feedback`, `feedback/stream` AI 요청에 `aiRole`이 포함되는 RED 테스트를 추가한다.
+- [x] Flyway migration으로 `scenarios.ai_role` 컬럼과 기존 시나리오별 값을 추가한다.
+- [x] `Scenario` 엔티티에 `aiRole`을 매핑한다.
+- [x] AI 요청 DTO와 서비스 매핑에 `aiRole`을 추가한다.
+- [x] 프론트 시나리오 목록 응답에는 `aiRole`이 노출되지 않는지 확인한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+
+---
+
+# 공항 시나리오 dev 실환경 진행 체크리스트
+
+- [x] develop 배포 workflow 완료 상태를 확인한다.
+- [x] dev 환경에 임시 사용자를 만들고 Bearer token을 준비한다.
+- [x] `GET /api/v1/scenarios`로 Airport 시나리오 1~3 노출과 잠금 상태를 확인한다.
+- [x] AI 요청에 `scenarioSituation`이 누락되어 dev 진행이 막히는 현상을 RED 테스트로 고정한다.
+- [x] `next-question`, `feedback`, `feedback/stream` AI 요청에 `scenarioSituation`을 포함한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] develop에 재배포한다.
+- [x] 공항 시나리오 1단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [x] 공항 시나리오 2단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [x] 공항 시나리오 3단계를 실제 세션으로 진행하고 성공 여부를 기록한다.
+- [x] 세션별 request/response JSON과 품질 판단 포인트를 정리한다.
+
+---
+
+- [x] AI 피드백 요청에 `sessionResult`를 포함하는 계약 변경 범위를 기록한다.
+- [x] 기본 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] SSE 피드백 API가 AI 요청에 `sessionResult`를 보내는 테스트를 먼저 작성하고 실패 확인.
+- [x] 원격 AI 피드백 요청 JSON에 `sessionResult`가 직렬화되는 테스트를 먼저 작성하고 실패 확인.
+- [x] `AiFeedbackRequest`에 `sessionResult` 필드 추가.
+- [x] 기본 API와 SSE API 공통 요청 생성 경로에서 세션 상태를 `sessionResult`로 매핑한다.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
+- [x] 세션 성공/실패 결과 조회 API 구현 범위를 기록한다.
+- [x] 성공 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 실패 세션 결과 조회 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 진행 중 세션 결과 조회 거부 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 세션 결과 응답 DTO와 서비스 메서드 추가.
+- [x] `GET /api/v1/sessions/{sessionId}/result` 컨트롤러 추가.
+- [x] OpenAPI 응답 예시와 경로 검증 갱신.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
+- [x] 현재 피드백 생성 API와 AI 클라이언트 구조 확인.
+- [x] SSE relay 구현 계획 작성.
+- [x] SSE 정상 스트림 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI error 이벤트 relay 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] AI SSE 연결 실패 통합 테스트를 먼저 작성하고 실패 확인.
+- [x] 기존 동기 피드백 API 회귀 테스트를 먼저 작성하고 실패 확인.
+- [x] AI feedback stream 클라이언트 계약 추가.
+- [x] 원격 AI SSE endpoint 호출과 timeout 설정 추가.
+- [x] 백엔드 SSE relay endpoint 추가.
+- [x] done 수신 시 피드백 저장 확정 처리 추가.
+- [x] error 또는 연결 실패 시 SSE error 이벤트 반환 처리 추가.
+- [x] 관련 테스트 통과.
+- [x] 전체 `./gradlew test` 통과.
+- [x] diff 최종 점검 후 커밋.
+
+---
+
 # 로컬 네트워크 CORS origin 추가 체크리스트
 
 - [x] main worktree를 최신 `origin/main`으로 fast-forward.
@@ -78,6 +195,23 @@
 - [x] 전체 `./gradlew test` 통과.
 - [x] diff 최종 점검 후 커밋.
 - [x] Google Web Client ID audience를 환경 변수로 연결.
+
+---
+
+# 2차 MVP API 재설계 체크리스트
+
+- [x] 확정 기준과 애매한 결정 사항을 `context-notes.md`에 기록한다.
+- [x] 기존 Flyway migration을 2차 MVP 기준 단일 초기 스키마로 정리한다.
+- [x] 사용자, 시나리오, 세션, 턴, 슬롯 상태, 피드백 도메인을 ERD 기준으로 재구성한다.
+- [x] `GET /api/v1/scenarios` 카테고리별 시나리오 목록 API를 구현한다.
+- [x] `POST /api/v1/scenarios/{scenarioId}/sessions` 세션 시작 API를 구현한다.
+- [x] `POST /api/v1/sessions/{sessionId}/utterances` 사용자 발화 제출 API를 구현한다.
+- [x] `POST /api/v1/sessions/{sessionId}/feedback` 세션 완료 및 피드백 생성 API를 구현한다.
+- [x] `DELETE /api/v1/sessions/{sessionId}` 세션 중도 종료 API를 구현한다.
+- [x] AI 꼬리 질문 생성 계약을 새 명세로 교체한다.
+- [x] AI 대화 피드백 생성 계약을 새 명세로 교체한다.
+- [x] 관련 통합 테스트와 OpenAPI 검증을 2차 MVP 기준으로 갱신한다.
+- [x] `./gradlew test`로 전체 검증한다.
 - [x] 운영 배포 SSM 파라미터 문서화와 workflow 반영.
 - [x] 검증 후 PR 브랜치 갱신.
 - [x] 인증 구조를 Spring Security `OncePerRequestFilter` 기반으로 전환하는 테스트 추가.
@@ -91,6 +225,47 @@
 - [x] AWS Parameter Store Google/Kakao audience 값 보강.
 - [x] 배포 워크플로 인증 환경변수 주입 목록 추가.
 - [x] 인증 관련 테스트와 워크플로 문법 검증.
+- [x] `ApiResponse`에서 성공 응답 HTTP status를 지정할 수 있는 테스트를 추가한다.
+- [x] 공통 응답 헬퍼와 컨트롤러 반환 타입을 상태 코드 지정 방식으로 정리한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] AI next-question 응답의 `turnClassification` 계약을 develop 기준으로 반영한다.
+- [x] 하트 차감 기준을 `INVALID_RESPONSE`로만 변경하는 통합 테스트를 먼저 추가한다.
+- [x] `ASSISTANCE_REQUEST`와 `ANSWER`는 `filledSlots=[]`여도 하트가 차감되지 않게 한다.
+- [x] 프론트 발화 응답에 `heartDeducted`, `turnClassification`, `remainingHearts` 정책 결과를 포함한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] 변경 범위를 점검하고 커밋한다.
+- [x] 사용자별 시나리오 진행 테이블 이름 변경 스키마 테스트를 추가한다.
+- [x] `user_scenario_clears.is_cleared`를 `user_scenario_progress.cleared`로 변경한다.
+- [x] `UserScenarioClear` 도메인과 저장소명을 `UserScenarioProgress` 기준으로 변경한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] dev EC2 배포 workflow 기대 동작을 테스트로 추가한다.
+- [x] dev profile이 배포 환경에서 원격 AI 클라이언트를 기본 사용하는지 테스트를 추가한다.
+- [x] prod와 동일한 방식의 `Deploy Dev EC2` workflow를 추가한다.
+- [x] `application-dev.yml`과 README dev 배포 안내를 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] dev 배포 SSM path를 `/saynow/develop` 기준으로 수정한다.
+- [x] 관련 workflow 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] GitHub Actions 배포 environment를 `develop` 기준으로 수정한다.
+- [x] dev 프로필 Swagger server URL을 `https://dev-api.p-e.kr`로 설정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] dev 프로필 Swagger server URL을 `https://dev-saynow.p-e.kr`로 변경한다.
+- [x] SSM override 여부를 확인하고 필요하면 배포 결과를 검증한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] Swagger UI Bearer token 입력을 위한 OpenAPI security scheme 테스트를 추가한다.
+- [x] OpenAPI `bearerAuth` security scheme을 등록한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
+- [x] dev 환경에서 nonce 검증을 끄는 설정 테스트를 추가한다.
+- [x] 기본 환경에서는 nonce 검증이 유지되는 테스트를 추가한다.
+- [x] nonce 필드를 선택값으로 바꾸고 설정 기반 검증으로 변경한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위를 점검하고 커밋한다.
 
 ---
 
@@ -273,3 +448,138 @@
 - [x] Wiki의 Sentry 수집 기준을 4xx 포함으로 수정한다.
 - [x] 관련 테스트와 전체 테스트를 실행한다.
 - [x] 변경 범위 점검 후 커밋하고 PR 브랜치를 갱신한다.
+
+---
+
+# 2차 MVP 도메인 명칭 정리 체크리스트
+
+- [x] `Member`, `Practice`, `ScenarioCategory` 계열 잔여 명칭을 `src/main`, `src/test`에서 검색한다.
+- [x] 실제 테이블 개념에 맞춰 `User`, `Session`, `Category` 계열 클래스와 패키지명으로 정리한다.
+- [x] 인증 응답 필드도 `newMember`에서 `newUser`로 정리한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# 발화 하트 차감 정책 체크리스트
+
+- [x] 슬롯이 채워진 발화에서는 하트가 유지되는 기대 테스트를 추가한다.
+- [x] AI 응답의 `filledSlots`가 빈 배열이면 하트가 1 감소하는 기대 테스트를 추가한다.
+- [x] 기존 구현에서 슬롯이 채워진 발화도 하트가 감소해 테스트가 실패하는 것을 확인한다.
+- [x] `filledSlots`가 비었을 때만 하트를 차감하도록 세션 발화 처리 로직을 수정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# 사용자 발화 제출 API 명세 반영 체크리스트
+
+- [x] 명세와 현재 구현의 요청, 응답, 오류 코드를 대조한다.
+- [x] 빈 `userUtterance`, 완료 세션 재요청, 다른 사용자 세션 접근 오류 기대 테스트를 추가한다.
+- [x] OpenAPI 문서 예시의 발화 제출 오류 코드를 새 명세 기준으로 수정하는 테스트를 추가한다.
+- [x] 기존 구현에서 `VALIDATION_FAILED`, `SESSION_ALREADY_ENDED`, `SESSION_ACCESS_DENIED`가 반환되어 테스트가 실패하는 것을 확인한다.
+- [x] 발화 제출 API가 `INVALID_REQUEST`, `SESSION_ALREADY_COMPLETED`, `FORBIDDEN`을 반환하도록 수정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# 발화 성공 시 시나리오 클리어 저장 체크리스트
+
+- [x] 발화 제출 성공 직후 피드백 생성 전에도 시나리오가 클리어되고 다음 시나리오가 해금되는 기대 테스트를 추가한다.
+- [x] 기존 구현에서 피드백 생성 전 홈 목록의 `cleared`가 false라 테스트가 실패하는 것을 확인한다.
+- [x] 세션 성공 처리 시점에 `UserScenarioProgress.markCleared()`를 호출하도록 수정한다.
+- [x] 피드백 생성 서비스의 중복 클리어 저장 로직을 제거한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋한다.
+
+---
+
+# MVP2 프론트 CORS origin 교체 체크리스트
+
+- [x] 현재 CORS 기본값과 develop 런타임 SSM override 여부를 확인한다.
+- [x] `application.yml`, `.env.example`, README의 CORS origin 목록을 요청 목록으로 교체한다.
+- [x] CORS preflight 통합 테스트의 허용 origin 기대값을 요청 목록으로 수정한다.
+- [x] develop SSM `SAYNOW_CORS_ALLOWED_ORIGINS`를 요청 목록으로 설정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 커밋하고 push한다.
+- [x] dev 배포 후 실제 preflight 응답을 확인한다.
+
+---
+
+# 시나리오 상황 필드 응답 추가 체크리스트
+
+- [x] `origin/develop` 기준으로 `feat/15` 브랜치를 생성한다.
+- [x] 현재 시나리오 목록 API, DTO, DB 스키마, OpenAPI 예시를 확인한다.
+- [x] `GET /api/v1/scenarios` 응답의 `scenarioSituation` 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] `scenarios` 테이블, `Scenario` 엔티티, 목록 응답 DTO와 서비스 매핑에 상황 필드를 추가한다.
+- [x] OpenAPI 성공 예시에 `scenarioSituation`을 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 공항 시나리오 seed 추가 체크리스트
+
+- [x] 현재 Airport 카테고리와 시나리오 seed 구조를 확인한다.
+- [x] 공항 시나리오 3개와 슬롯 seed 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] 새 Flyway migration으로 Airport 시나리오 3개를 추가한다.
+- [x] 각 공항 시나리오의 슬롯 seed를 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 기본 카테고리 Airport 전환 체크리스트
+
+- [x] 현재 Cafe 전용 잠금 정책과 기존 카테고리 seed를 확인한다.
+- [x] Airport가 열린 카테고리라는 기대 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] 시나리오 목록 잠금 정책의 열린 카테고리를 Airport로 변경한다.
+- [x] 세션 시작 허용 정책의 열린 카테고리를 Airport로 변경한다.
+- [x] OpenAPI 목록 예시를 Airport 기본 카테고리 기준으로 수정한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 카테고리 seed 복구 체크리스트
+
+- [x] 카테고리가 초기화된 DB에서도 V3 migration이 동작해야 하는 조건을 확인한다.
+- [x] V3 migration이 카테고리를 시나리오보다 먼저 복구한다는 테스트를 추가하고 실패를 확인한다.
+- [x] V3 migration에 기본 카테고리 4개 복구 SQL을 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 세션 중 영어 학습 가이드 모드 체크리스트
+
+- [x] `origin/develop` 기준으로 `feat/16` 브랜치를 생성한다.
+- [x] 기존 세션, AI 클라이언트, 피드백 생성 흐름을 확인한다.
+- [x] 구현 계획 문서를 작성한다.
+- [x] 가이드 API 통합 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] 원격 AI 가이드 요청/응답 계약 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] OpenAPI 문서 테스트를 먼저 추가하고 실패를 확인한다.
+- [x] 세션 소유권과 진행 상태를 검증하는 가이드 API를 추가한다.
+- [x] 백엔드에서 명백한 남용 요청을 AI 서버 호출 전에 차단한다.
+- [x] 가이드 질문과 답변이 저장되지 않고 최종 피드백에 포함되지 않도록 유지한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [x] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 세션 NPS 평가 수집 API 체크리스트
+
+- [x] 최신 `origin/develop` 위로 로컬 develop을 재배치하고 기존 작업 기록을 보존한다.
+- [x] 현재 세션, 피드백, OpenAPI, Flyway 구조를 확인한다.
+- [x] 구현 계획과 저장 정책을 기록한다.
+- [x] NPS API 통합 테스트를 먼저 작성하고 실패를 확인한다.
+- [x] NPS 테이블 스키마 테스트를 먼저 작성하고 실패를 확인한다.
+- [x] OpenAPI 문서 테스트를 먼저 작성하고 실패를 확인한다.
+- [x] `session_nps_responses` Flyway migration을 추가한다.
+- [x] NPS 엔티티, 저장소, 서비스, 컨트롤러를 추가한다.
+- [x] 오류 코드와 OpenAPI 예시를 추가한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] 변경 범위 점검 후 커밋한다.
+- [ ] develop으로 push한다.
+- [ ] dev 배포 workflow를 실행하고 health를 확인한다.

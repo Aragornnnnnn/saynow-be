@@ -1,34 +1,31 @@
+// 홈 화면의 카테고리별 시나리오 목록 API를 제공하는 컨트롤러
 package com.saynow.scenario.api;
 
+import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.response.ApiResponse;
 import com.saynow.scenario.api.dto.CategoryListResponse;
-import com.saynow.scenario.api.dto.ScenarioSummaryListResponse;
 import com.saynow.scenario.application.ScenarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Scenario", description = "MVP 시나리오 탐색 API")
+@Tag(name = "Scenario", description = "2차 MVP 시나리오 탐색 API")
 public class ScenarioController {
 
     private final ScenarioService scenarioService;
 
-    @GetMapping("/categories")
-    @Operation(summary = "카테고리 목록 조회", description = "시나리오 카테고리 목록을 조회합니다.")
-    public ApiResponse<CategoryListResponse> getCategories() {
-        return ApiResponse.success(scenarioService.getCategories());
-    }
-
     @GetMapping("/scenarios")
-    @Operation(summary = "시나리오 목록 조회", description = "categoryId가 있으면 해당 카테고리의 시나리오를, 없으면 전체 시나리오를 조회합니다.")
-    public ApiResponse<ScenarioSummaryListResponse> getScenarios(@RequestParam(required = false) String categoryId) {
-        return ApiResponse.success(scenarioService.getScenarios(categoryId));
+    @Operation(summary = "시나리오 전체 조회", description = "카테고리별 시나리오 목록, 사용자별 클리어 여부, 잠금 여부를 조회합니다.")
+    public ResponseEntity<ApiResponse<CategoryListResponse>> getScenarios(@AuthenticationPrincipal AuthUserPrincipal principal) {
+        return ApiResponse.success(HttpStatus.OK, scenarioService.getScenarios(principal.userId()));
     }
 }

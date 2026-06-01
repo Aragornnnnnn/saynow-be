@@ -14,6 +14,7 @@ import java.util.List;
 public class OidcProperties {
 
     private boolean fakeEnabled = false;
+    private boolean nonceRequired = true;
     private List<String> googleAudiences = new ArrayList<>();
     private List<String> kakaoAudiences = new ArrayList<>();
 }
