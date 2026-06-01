@@ -1,4 +1,4 @@
-// 2차 MVP 시나리오 진행 스키마의 테이블과 컬럼 이름을 검증한다.
+// 3차 MVP 프리톡 시나리오 스키마와 seed 데이터를 검증한다.
 package com.saynow.scenario;
 
 import com.saynow.IntegrationTestSupport;
@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,150 +16,93 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void userScenarioProgressUsesProgressTableAndClearedColumn() {
-        assertThat(tableExists("user_scenario_progress")).isTrue();
-        assertThat(columnExists("user_scenario_progress", "cleared")).isTrue();
-        assertThat(tableExists("user_scenario_clears")).isFalse();
-        assertThat(columnExists("user_scenario_progress", "is_cleared")).isFalse();
+    void thirdMvpTablesAndColumnsReplaceSlotAndHeartSchema() {
+        assertThat(columnExists("categories", "display_order")).isTrue();
+        assertThat(columnExists("categories", "locked")).isTrue();
+        assertThat(columnExists("categories", "lock_reason")).isTrue();
+
+        assertThat(columnExists("scenarios", "briefing")).isTrue();
+        assertThat(columnExists("scenarios", "conversation_goal")).isTrue();
+        assertThat(columnExists("scenarios", "total_question_count")).isTrue();
+        assertThat(columnExists("scenarios", "locked")).isTrue();
+        assertThat(columnExists("scenarios", "lock_reason")).isTrue();
+        assertThat(columnExists("scenarios", "original_question")).isFalse();
+        assertThat(columnExists("scenarios", "heart")).isFalse();
+
+        assertThat(tableExists("scenario_questions")).isTrue();
+        assertThat(columnExists("session_turns", "scenario_question_id")).isTrue();
+        assertThat(columnExists("session_turns", "answered_at")).isTrue();
+        assertThat(columnExists("session_turns", "next_question_target_slot_name")).isFalse();
+        assertThat(columnExists("sessions", "remaining_hearts")).isFalse();
+
+        assertThat(columnExists("user_scenario_progress", "completed")).isTrue();
+        assertThat(columnExists("user_scenario_progress", "completed_at")).isTrue();
+        assertThat(columnExists("user_scenario_progress", "cleared")).isFalse();
+
+        assertThat(tableExists("scenario_slots")).isFalse();
+        assertThat(tableExists("session_slot_statuses")).isFalse();
     }
 
     @Test
-    void scenariosHaveSituationColumn() {
-        assertThat(columnExists("scenarios", "situation")).isTrue();
+    void feedbackSchemaUsesNativeScoreAndQualityFeedbackFields() {
+        assertThat(columnExists("session_feedbacks", "status")).isTrue();
+        assertThat(columnExists("session_feedbacks", "native_score")).isTrue();
+        assertThat(columnExists("session_feedbacks", "native_level_label")).isTrue();
+        assertThat(columnExists("session_feedbacks", "summary")).isTrue();
+        assertThat(columnExists("session_feedbacks", "generated_at")).isTrue();
+        assertThat(columnExists("session_feedbacks", "comprehension_score")).isFalse();
+        assertThat(columnExists("session_feedbacks", "feedback_summary")).isFalse();
+
+        assertThat(columnExists("turn_feedbacks", "status")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "feedback_type")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "korean_analogy")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "correction_point")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "correction_reason")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "plus_one_expression")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "praise_summary")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "praise_reason")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "feedback_required")).isFalse();
+        assertThat(columnExists("turn_feedbacks", "better_expression")).isFalse();
     }
 
     @Test
-    void scenariosHaveAiRoleColumn() {
-        assertThat(columnExists("scenarios", "ai_role")).isTrue();
-    }
+    void freeTalkScenariosAreSeededWithFourFixedQuestionsEach() {
+        List<String> categories = jdbcTemplate.queryForList("""
+                SELECT name || '|' || locked || '|' || COALESCE(lock_reason, '')
+                FROM categories
+                ORDER BY display_order
+                """, String.class);
 
-    @Test
-    void scenarioSlotsHaveDescriptionColumn() {
-        assertThat(columnExists("scenario_slots", "description")).isTrue();
-    }
+        assertThat(categories).containsExactly(
+                "Free Talk|FALSE|",
+                "Airport|TRUE|COMING_SOON",
+                "Hotel|TRUE|COMING_SOON",
+                "Restaurant|TRUE|COMING_SOON");
 
-    @Test
-    void scenarioSlotsHaveEvidencePolicyColumn() {
-        assertThat(columnExists("scenario_slots", "evidence_policy")).isTrue();
-    }
-
-    @Test
-    void sessionTurnsHaveNextQuestionTargetSlotNameColumn() {
-        assertThat(columnExists("session_turns", "next_question_target_slot_name")).isTrue();
-    }
-
-    @Test
-    void airportScenariosAreSeededWithSituationsAndSlots() {
-        List<String> scenarioTitles = jdbcTemplate.queryForList("""
-                SELECT s.title
+        List<String> scenarios = jdbcTemplate.queryForList("""
+                SELECT s.id || '|' || s.title || '|' || s.total_question_count || '|' || s.locked
                 FROM scenarios s
                 JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Airport'
+                WHERE c.name = 'Free Talk'
                 ORDER BY s.display_order
                 """, String.class);
 
-        assertThat(scenarioTitles).containsExactly(
-                "공항에서 입국심사 받기",
-                "공항에서 수하물 문제 해결하기",
-                "환승편을 놓친 뒤 도움 요청하기");
+        assertThat(scenarios).containsExactly(
+                "1|음식 취향 이야기하기|4|FALSE",
+                "2|여행 경험 이야기하기|4|FALSE",
+                "3|일상 루틴 이야기하기|4|FALSE");
 
-        String transferQuestion = jdbcTemplate.queryForObject("""
-                SELECT s.translated_question
-                FROM scenarios s
+        List<Integer> questionCounts = jdbcTemplate.queryForList("""
+                SELECT COUNT(*)
+                FROM scenario_questions q
+                JOIN scenarios s ON s.id = q.scenario_id
                 JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Airport'
-                  AND s.display_order = 3
-                """, String.class);
-        assertThat(transferQuestion).isEqualTo("괜찮으세요? 무슨 일 있으신가요?");
-
-        List<String> aiRoles = jdbcTemplate.queryForList("""
-                SELECT s.ai_role
-                FROM scenarios s
-                JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Airport'
+                WHERE c.name = 'Free Talk'
+                GROUP BY s.id
                 ORDER BY s.display_order
-                """, String.class);
-        assertThat(aiRoles).containsExactly(
-                "미국 공항 입국심사관",
-                "항공사 수하물 서비스 직원",
-                "항공사 환승 데스크 직원");
+                """, Integer.class);
 
-        List<String> transferSlots = jdbcTemplate.queryForList("""
-                SELECT ss.name
-                FROM scenario_slots ss
-                JOIN scenarios s ON s.id = ss.scenario_id
-                JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Airport'
-                  AND s.display_order = 3
-                ORDER BY ss.name
-                """, String.class);
-        assertThat(transferSlots).containsExactly("baggage_delay_reason", "missed_connection", "next_options_request");
-    }
-
-    @Test
-    void scenarioSlotsAreSeededWithDescriptions() {
-        List<String> descriptions = jdbcTemplate.queryForList("""
-                SELECT c.name || '|' || s.title || '|' || ss.name || '|' || ss.description
-                FROM scenario_slots ss
-                JOIN scenarios s ON s.id = ss.scenario_id
-                JOIN categories c ON c.id = s.category_id
-                ORDER BY c.id, s.display_order, ss.id
-                """, String.class);
-
-        assertThat(descriptions).containsExactly(
-                "Cafe|카페에서 주문하기|drink|사용자가 주문하려는 음료 이름이나 종류를 구체적으로 말했는지 여부",
-                "Cafe|카페에서 주문하기|size|사용자가 음료의 크기나 사이즈를 말했는지 여부",
-                "Cafe|카페에서 옵션 말하기|temperature|사용자가 음료를 따뜻하게 받을지 차갑게 받을지 말했는지 여부",
-                "Cafe|카페에서 옵션 말하기|option|사용자가 샷 추가, 시럽, 우유 변경, 얼음 양 등 추가 옵션을 말했거나 추가 옵션이 없다고 표현했는지 여부",
-                "Cafe|카페에서 문제 해결하기|problem|사용자가 주문이나 음료에 생긴 문제를 구체적으로 설명했는지 여부",
-                "Cafe|카페에서 문제 해결하기|request|사용자가 교환, 환불, 다시 만들기, 주문 수정 등 원하는 해결 방식을 요청했는지 여부",
-                "Airport|공항에서 입국심사 받기|visit_purpose|사용자가 미국 방문 목적을 여행, 출장, 유학 등으로 설명했는지 여부",
-                "Airport|공항에서 입국심사 받기|stay_duration|사용자가 미국에 머무를 기간이나 출국 예정 시점을 설명했는지 여부",
-                "Airport|공항에서 입국심사 받기|accommodation|사용자가 머무를 숙소, 호텔, 주소, 지인 집 등 체류 장소를 설명했는지 여부",
-                "Airport|공항에서 수하물 문제 해결하기|baggage_issue|사용자가 수하물 파손, 분실, 지연 등 짐에 생긴 문제를 설명했는지 여부",
-                "Airport|공항에서 수하물 문제 해결하기|requested_help|사용자가 보상, 교환, 수리, 분실 신고 등 직원에게 원하는 도움을 요청했는지 여부",
-                "Airport|공항에서 수하물 문제 해결하기|contact_info|사용자가 후속 안내를 받을 수 있는 연락처나 이메일을 제공했는지 여부",
-                "Airport|환승편을 놓친 뒤 도움 요청하기|missed_connection|사용자가 환승편을 이미 놓쳤거나 비행기가 이미 출발했다고 설명했는지 여부",
-                "Airport|환승편을 놓친 뒤 도움 요청하기|baggage_delay_reason|사용자가 수하물 지연이나 수하물 문제 때문에 환승편을 놓쳤다고 설명했는지 여부",
-                "Airport|환승편을 놓친 뒤 도움 요청하기|next_options_request|사용자가 다음에 무엇을 해야 하는지, 대체 항공편이나 재예약 가능 여부를 물었는지 여부");
-    }
-
-    @Test
-    void transferScenarioSlotsAreSeededWithEvidencePolicies() {
-        List<String> policies = jdbcTemplate.queryForList("""
-                SELECT ss.name || '|' || ss.evidence_policy
-                FROM scenario_slots ss
-                WHERE ss.scenario_id = 6
-                ORDER BY ss.id
-                """, String.class);
-
-        assertThat(policies).hasSize(3);
-        assertThat(policies.get(0))
-                .contains("missed_connection")
-                .contains("\"mode\":\"semantic_evidence\"")
-                .contains("\"mustBeGroundedIn\":\"latest_user_utterance\"");
-        assertThat(policies.get(1))
-                .contains("baggage_delay_reason")
-                .contains("baggage")
-                .contains("items came out late")
-                .contains("baggage took too long")
-                .contains("delayed at baggage claim")
-                .doesNotContain("\"bag\"")
-                .contains("\"requiresEvidenceText\":true");
-        assertThat(policies.get(2))
-                .contains("next_options_request")
-                .contains("rebook")
-                .contains("what should I do")
-                .contains("find another flight")
-                .contains("\"mode\":\"semantic_evidence\"");
-    }
-
-    @Test
-    void airportSeedMigrationRestoresCategoriesBeforeScenarios() throws Exception {
-        String migration = Files.readString(Path.of("src/main/resources/db/migration/V3__seed_airport_scenarios.sql"));
-
-        assertThat(migration.indexOf("INSERT INTO categories")).isLessThan(migration.indexOf("INSERT INTO scenarios"));
-        assertThat(migration).contains("SELECT 2, 'Airport'");
+        assertThat(questionCounts).containsExactly(4, 4, 4);
     }
 
     private boolean tableExists(String tableName) {

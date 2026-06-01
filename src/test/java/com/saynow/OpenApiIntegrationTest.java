@@ -1,4 +1,4 @@
-// OpenAPI 문서가 2차 MVP API 경로와 공통 응답 예시를 노출하는지 검증한다.
+// OpenAPI 문서가 3차 MVP API 경로와 공통 응답 예시를 노출하는지 검증한다.
 package com.saynow;
 
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
     private MockMvc mockMvc;
 
     @Test
-    void exposesOpenApiDocumentForMvp2Apis() throws Exception {
+    void exposesOpenApiDocumentForMvp3Apis() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("SayNow Backend API"))
@@ -35,14 +35,13 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios/{scenarioId}/sessions")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/utterances")))
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/guide")))
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/result")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/feedback")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/abandon")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/nps")))
-                .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}")))
-                .andExpect(jsonPath("$.paths['/api/v1/categories']").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions']").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/turns']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback/stream']").doesNotExist())
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}']").doesNotExist())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Scenario')]").exists())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Session')]").exists())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Feedback')]").exists());
@@ -60,32 +59,24 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.success").value(true))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].categoryLocked").value(true))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[1].categoryName").value("Airport"))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[1].categoryLocked").value(false))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[1].scenarios[0].scenarioSituation").value("미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다."))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].categoryName").value("Free Talk"))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].scenarios[0].briefing").isString())
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].scenarios[0].conversationGoal").isString())
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].scenarios[0].firstQuestionPreview.aiQuestion").value("What is your favorite food? Why do you like it?"))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.401.content['application/json'].examples.AUTH_REQUIRED.value.error.code").value("AUTH_REQUIRED"))
-                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.data.feedbackAvailable").value(false))
+                .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.201.content['application/json'].examples.SUCCESS.value.data.currentTurn.sequence").value(1))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios/{scenarioId}/sessions'].post.responses.403.content['application/json'].examples.SCENARIO_LOCKED.value.error.code").value("SCENARIO_LOCKED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.originalQuestion").value("What size would you like?"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.remainingHearts").value(3))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.heartDeducted").value(false))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnClassification").value("ANSWER"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.submittedTurn.turnFeedbackStatus").value("PREPARING"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.nextTurn.sequence").value(2))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.400.content['application/json'].examples.INVALID_REQUEST.value.error.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.403.content['application/json'].examples.FORBIDDEN.value.error.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/utterances'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_COMPLETED.value.error.code").value("SESSION_ALREADY_COMPLETED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.sessionId").doesNotExist())
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.answer").value("would는 공손한 요청이나 가정 느낌을 줄 때 써요."))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.400.content['application/json'].examples.INVALID_REQUEST.value.error.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.403.content['application/json'].examples.FORBIDDEN.value.error.code").value("FORBIDDEN"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.409.content['application/json'].examples.SESSION_ALREADY_COMPLETED.value.error.code").value("SESSION_ALREADY_COMPLETED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/guide'].post.responses.500.content['application/json'].examples.AI_GENERATION_FAILED.value.error.code").value("AI_GENERATION_FAILED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.scenarioResult").value("SUCCESS"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/result'].get.responses.409.content['application/json'].examples.SESSION_NOT_COMPLETABLE.value.error.code").value("SESSION_NOT_COMPLETABLE"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnFeedbacks[0].userUtterance").value("I want iced americano."))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.503.content['application/json'].examples.FEEDBACK_GENERATION_FAILED.value.error.code").value("FEEDBACK_GENERATION_FAILED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.nativeScore").value(82))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.200.content['application/json'].examples.SUCCESS.value.data.turnFeedbacks[0].feedbackType").value("GOOD"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.409.content['application/json'].examples.SESSION_NOT_COMPLETED.value.error.code").value("SESSION_NOT_COMPLETED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/feedback'].post.responses.502.content['application/json'].examples.FEEDBACK_GENERATION_FAILED.value.error.code").value("FEEDBACK_GENERATION_FAILED"))
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/abandon'].patch.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()))
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/nps'].post.responses.201.content['application/json'].examples.SUCCESS.value.data").value(nullValue()))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/nps'].post.responses.409.content['application/json'].examples.NPS_ALREADY_SUBMITTED.value.error.code").value("NPS_ALREADY_SUBMITTED"))
-                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}'].delete.responses.200.content['application/json'].examples.SUCCESS.value.data").value(nullValue()));
+                .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}/nps'].post.responses.409.content['application/json'].examples.NPS_ALREADY_SUBMITTED.value.error.code").value("NPS_ALREADY_SUBMITTED"));
     }
 }
