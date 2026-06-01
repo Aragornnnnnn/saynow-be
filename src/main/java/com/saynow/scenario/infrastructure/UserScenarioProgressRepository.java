@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,9 +22,10 @@ public interface UserScenarioProgressRepository extends JpaRepository<UserScenar
     @Modifying
     @Query("""
             update UserScenarioProgress progress
-            set progress.cleared = true
+            set progress.completed = true,
+                progress.completedAt = :completedAt
             where progress.user.id = :userId
               and progress.scenario.id = :scenarioId
             """)
-    void markClearedByUserIdAndScenarioId(Long userId, Long scenarioId);
+    void markCompletedByUserIdAndScenarioId(Long userId, Long scenarioId, LocalDateTime completedAt);
 }

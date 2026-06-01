@@ -1,3 +1,4 @@
+// 시나리오별 고정 프리톡 질문을 순서대로 저장하는 엔티티
 package com.saynow.scenario.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
@@ -15,10 +16,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "scenario_slots")
+@Table(name = "scenario_questions")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ScenarioSlot extends BaseTimeEntity {
+public class ScenarioQuestion extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,13 +29,12 @@ public class ScenarioSlot extends BaseTimeEntity {
     @JoinColumn(name = "scenario_id", nullable = false)
     private Scenario scenario;
 
-    @Column(nullable = false, length = 80)
-    private String name;
+    @Column(nullable = false)
+    private int sequence;
 
-    @Column(nullable = false, length = 255)
-    private String description;
+    @Column(name = "question_en", nullable = false, length = 500)
+    private String questionEn;
 
-    @Column(name = "evidence_policy", columnDefinition = "text")
-    private String evidencePolicy;
-
+    @Column(name = "question_ko", nullable = false, length = 500)
+    private String questionKo;
 }

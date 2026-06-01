@@ -17,10 +17,13 @@ public interface SessionTurnRepository extends JpaRepository<SessionTurn, Long> 
 
     List<SessionTurn> findBySessionAndUserUtteranceIsNullOrderBySequenceAsc(Session session);
 
+    long countBySessionAndUserUtteranceIsNotNull(Session session);
+
     @Modifying
     @Query("""
             update SessionTurn turn
-            set turn.userUtterance = :userUtterance
+            set turn.userUtterance = :userUtterance,
+                turn.answeredAt = CURRENT_TIMESTAMP
             where turn.id = :turnId
               and turn.userUtterance is null
             """)

@@ -2,6 +2,7 @@
 package com.saynow.session.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
+import com.saynow.scenario.domain.ScenarioQuestion;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +15,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "session_turns")
@@ -28,6 +31,11 @@ public class SessionTurn extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "scenario_question_id", nullable = false)
+    @Getter
+    private ScenarioQuestion scenarioQuestion;
 
     @Column(nullable = false)
     @Getter
@@ -45,31 +53,22 @@ public class SessionTurn extends BaseTimeEntity {
     @Getter
     private String userUtterance;
 
-    @Column(name = "next_question_target_slot_name", length = 80)
+    @Column(name = "answered_at")
     @Getter
-    private String nextQuestionTargetSlotName;
+    private LocalDateTime answeredAt;
 
     public SessionTurn(
             Session session,
+            ScenarioQuestion scenarioQuestion,
             int sequence,
             String aiQuestion,
             String translatedQuestion
     ) {
-        this(session, sequence, aiQuestion, translatedQuestion, null);
-    }
-
-    public SessionTurn(
-            Session session,
-            int sequence,
-            String aiQuestion,
-            String translatedQuestion,
-            String nextQuestionTargetSlotName
-    ) {
         this.session = session;
+        this.scenarioQuestion = scenarioQuestion;
         this.sequence = sequence;
         this.aiQuestion = aiQuestion;
         this.translatedQuestion = translatedQuestion;
-        this.nextQuestionTargetSlotName = nextQuestionTargetSlotName;
     }
 
     public boolean isAnswered() {
@@ -78,6 +77,7 @@ public class SessionTurn extends BaseTimeEntity {
 
     public void submitUserUtterance(String userUtterance) {
         this.userUtterance = userUtterance;
+        this.answeredAt = LocalDateTime.now();
     }
 
 }

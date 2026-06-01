@@ -3,7 +3,6 @@ package com.saynow.session.domain;
 
 public enum SessionStatus {
     IN_PROGRESS,
-    SUCCESS,
-    FAILURE,
+    COMPLETED,
     ABANDONED
 }
