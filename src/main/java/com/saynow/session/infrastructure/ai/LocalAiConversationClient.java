@@ -1,116 +1,48 @@
-// 로컬 개발과 테스트에서 사용할 결정적 AI 대체 클라이언트
+// 로컬 개발과 테스트에서 사용할 3차 MVP 결정적 AI 대체 클라이언트
 package com.saynow.session.infrastructure.ai;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Component
 @ConditionalOnProperty(prefix = "saynow.ai", name = "client-mode", havingValue = "local", matchIfMissing = true)
-@RequiredArgsConstructor
-public class LocalAiConversationClient implements AiConversationClient, AiFeedbackStreamClient {
-
-    private final ObjectMapper objectMapper;
+public class LocalAiConversationClient implements AiConversationClient {
 
     @Override
     public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
-        List<AiNextQuestionSlotStatus> slots = request.slots() == null ? List.of() : request.slots();
-        List<AiFilledSlot> newlyFilled = new ArrayList<>();
-        for (AiNextQuestionSlotStatus slot : slots) {
-            if (!slot.filled()) {
-                newlyFilled.add(new AiFilledSlot(slot.slotName()));
-                break;
-            }
-        }
-
-        long remainingAfterFill = slots.stream()
-                .filter(slot -> !slot.filled())
-                .count() - newlyFilled.size();
-        if (remainingAfterFill <= 0) {
-            return new AiNextQuestionResponse(null, null, newlyFilled, TurnClassification.ANSWER);
-        }
-
-        String nextSlot = slots.stream()
-                .filter(slot -> !slot.filled())
-                .map(AiNextQuestionSlotStatus::slotName)
-                .filter(slotName -> newlyFilled.stream().noneMatch(filled -> filled.slotName().equals(slotName)))
-                .findFirst()
-                .orElse("detail");
         return new AiNextQuestionResponse(
-                "Could you tell me your " + nextSlot + "?",
-                nextSlot + "에 대해 말해주시겠어요?",
-                nextSlot,
-                newlyFilled,
-                TurnClassification.ANSWER);
+                request.nextQuestion().questionEn(),
+                request.nextQuestion().questionKo());
     }
 
     @Override
-    public AiFeedbackResponse generateFeedback(AiFeedbackRequest request) {
-        List<AiTurnFeedbackResponse> turnFeedbacks = request.turns().stream()
-                .map(turn -> new AiTurnFeedbackResponse(
-                        turn.turnId(),
-                        true,
-                        "의도는 전달됐지만 표현이 조금 짧게 들립니다.",
-                        "한국어로 치면 필요한 것만 짧게 말한 느낌입니다.",
-                        "I'd like " + turn.userUtterance() + ", please."))
+    public AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request) {
+        return new AiTurnFeedbackStatusResponse(
+                request.sessionId(),
+                request.turnId(),
+                TurnFeedbackStatus.PREPARING);
+    }
+
+    @Override
+    public AiSessionFeedbackResponse generateSessionFeedback(AiSessionFeedbackRequest request) {
+        List<AiSessionTurnFeedbackResponse> turnFeedbacks = request.expectedTurnIds().stream()
+                .map(turnId -> new AiSessionTurnFeedbackResponse(
+                        turnId,
+                        FeedbackType.GOOD,
+                        "한국어로 비유하자면 하고 싶은 말을 담백하게 전달한 느낌이에요.",
+                        null,
+                        null,
+                        null,
+                        "의도를 분명하게 전달했어요.",
+                        "질문에 맞는 답을 영어 문장으로 끝까지 말했기 때문이에요."))
                 .toList();
-        return new AiFeedbackResponse(
+        return new AiSessionFeedbackResponse(
+                request.sessionId(),
                 82,
-                "전체적으로 의도는 전달됐고, 조금 더 자연스러운 표현을 연습하면 좋습니다.",
+                "유학생 수준",
+                "하고 싶은 말을 끝까지 전달하는 힘이 좋았고, 이유를 덧붙이는 문장도 자연스러웠어요.",
                 turnFeedbacks);
-    }
-
-    @Override
-    public AiGuideResponse generateGuide(AiGuideRequest request) {
-        return new AiGuideResponse("영어 표현, 문법, 단어, 뉘앙스에 대한 질문으로 이해했어요. 궁금한 표현을 기준으로 자연스러운 쓰임을 짧게 설명드릴게요.");
-    }
-
-    @Override
-    public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
-        AiFeedbackResponse feedback = generateFeedback(request);
-        return Flux.concat(
-                Flux.just(new AiFeedbackStreamEvent(
-                        "summary",
-                        json(objectMap(
-                                "comprehensionScore", feedback.comprehensionScore(),
-                                "feedbackSummary", feedback.feedbackSummary()
-                        )))),
-                Flux.fromIterable(feedback.turnFeedbacks())
-                        .map(turnFeedback -> new AiFeedbackStreamEvent(
-                                "turnFeedback",
-                                json(objectMap(
-                                        "turnId", turnFeedback.turnId(),
-                                        "feedbackRequired", turnFeedback.feedbackRequired(),
-                                        "nativeUnderstanding", turnFeedback.nativeUnderstanding(),
-                                        "nativeLanguageInterpretation", turnFeedback.nativeLanguageInterpretation(),
-                                        "betterExpression", turnFeedback.betterExpression()
-                                )))),
-                Flux.just(new AiFeedbackStreamEvent(
-                        "done",
-                        json(objectMap("turnCount", feedback.turnFeedbacks().size())))));
-    }
-
-    private Map<String, Object> objectMap(Object... keyValues) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (int index = 0; index < keyValues.length; index += 2) {
-            map.put((String) keyValues[index], keyValues[index + 1]);
-        }
-        return map;
-    }
-
-    private String json(Map<String, Object> data) {
-        try {
-            return objectMapper.writeValueAsString(data);
-        } catch (JsonProcessingException exception) {
-            throw new AiFeedbackStreamException("로컬 AI 피드백 스트림을 생성할 수 없습니다.", exception);
-        }
     }
 }

@@ -1,22 +1,8 @@
-// AI 서버의 다음 꼬리 질문 생성 결과 DTO
+// AI 서버가 생성한 맞장구 포함 다음 질문 응답 DTO
 package com.saynow.session.infrastructure.ai;
 
-import java.util.List;
-
 public record AiNextQuestionResponse(
-        String nextQuestion,
-        String translatedQuestion,
-        String nextQuestionTargetSlotName,
-        List<AiFilledSlot> filledSlots,
-        TurnClassification turnClassification
+        String aiQuestion,
+        String translatedQuestion
 ) {
-
-    public AiNextQuestionResponse(
-            String nextQuestion,
-            String translatedQuestion,
-            List<AiFilledSlot> filledSlots,
-            TurnClassification turnClassification
-    ) {
-        this(nextQuestion, translatedQuestion, null, filledSlots, turnClassification);
-    }
 }

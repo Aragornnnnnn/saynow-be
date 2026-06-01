@@ -3,9 +3,6 @@ package com.saynow.session.api;
 
 import com.saynow.auth.security.AuthUserPrincipal;
 import com.saynow.common.response.ApiResponse;
-import com.saynow.session.api.dto.GuideQuestionRequest;
-import com.saynow.session.api.dto.GuideQuestionResponse;
-import com.saynow.session.api.dto.SessionResultResponse;
 import com.saynow.session.api.dto.SessionStartResponse;
 import com.saynow.session.api.dto.UserUtteranceRequest;
 import com.saynow.session.api.dto.UserUtteranceResponse;
@@ -16,8 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Session", description = "2차 MVP 시나리오 세션 진행 API")
+@Tag(name = "Session", description = "3차 MVP 프리톡 세션 진행 API")
 public class SessionController {
 
     private final SessionService sessionService;
@@ -51,32 +47,13 @@ public class SessionController {
         return ApiResponse.success(HttpStatus.OK, sessionService.submitUtterance(principal.userId(), sessionId, request));
     }
 
-    @PostMapping("/sessions/{sessionId}/guide")
-    @Operation(summary = "세션 중 영어 학습 가이드 질문", description = "시나리오 대화 중 영어 표현, 문법, 단어, 뉘앙스에 대한 가이드 답변을 생성합니다.")
-    public ResponseEntity<ApiResponse<GuideQuestionResponse>> generateGuideAnswer(
-            @AuthenticationPrincipal AuthUserPrincipal principal,
-            @PathVariable Long sessionId,
-            @RequestBody GuideQuestionRequest request
-    ) {
-        return ApiResponse.success(HttpStatus.OK, sessionService.generateGuideAnswer(principal.userId(), sessionId, request));
-    }
-
-    @GetMapping("/sessions/{sessionId}/result")
-    @Operation(summary = "세션 시나리오 결과 조회", description = "완료된 세션의 시나리오 성공 또는 실패 결과를 반환합니다.")
-    public ResponseEntity<ApiResponse<SessionResultResponse>> getSessionResult(
-            @AuthenticationPrincipal AuthUserPrincipal principal,
-            @PathVariable Long sessionId
-    ) {
-        return ApiResponse.success(HttpStatus.OK, sessionService.getSessionResult(principal.userId(), sessionId));
-    }
-
-    @DeleteMapping("/sessions/{sessionId}")
+    @PatchMapping("/sessions/{sessionId}/abandon")
     @Operation(summary = "세션 중도 종료", description = "사용자가 진행 중인 세션을 중도 종료하고 해당 세션 데이터를 삭제합니다.")
-    public ResponseEntity<ApiResponse<Void>> deleteSession(
+    public ResponseEntity<ApiResponse<Void>> abandonSession(
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long sessionId
     ) {
-        sessionService.deleteSession(principal.userId(), sessionId);
+        sessionService.abandonSession(principal.userId(), sessionId);
         return ApiResponse.success(HttpStatus.OK, null);
     }
 }

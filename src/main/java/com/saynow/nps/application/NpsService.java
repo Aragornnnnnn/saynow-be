@@ -7,6 +7,7 @@ import com.saynow.nps.api.dto.NpsSubmitRequest;
 import com.saynow.nps.domain.SessionNpsResponse;
 import com.saynow.nps.infrastructure.SessionNpsResponseRepository;
 import com.saynow.session.domain.Session;
+import com.saynow.session.domain.SessionStatus;
 import com.saynow.session.infrastructure.SessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,10 @@ public class NpsService {
         if (!session.isOwnedBy(userId)) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
-        if (session.isInProgress()) {
+        if (session.getStatus() != SessionStatus.COMPLETED) {
             throw new ApiException(ErrorCode.SESSION_IN_PROGRESS);
         }
-        if (sessionNpsResponseRepository.existsByUserAndSession(session.getUser(), session)) {
+        if (sessionNpsResponseRepository.existsBySession(session)) {
             throw new ApiException(ErrorCode.NPS_ALREADY_SUBMITTED);
         }
 

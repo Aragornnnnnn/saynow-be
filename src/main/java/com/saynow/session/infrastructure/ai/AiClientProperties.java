@@ -11,27 +11,23 @@ public record AiClientProperties(
         URI baseUrl,
         String clientMode,
         String nextQuestionPath,
-        String feedbackPath,
-        String feedbackStreamPath,
-        String guidePath,
-        Duration feedbackStreamTimeout
+        String turnFeedbackPath,
+        String sessionFeedbackPath,
+        Duration requestTimeout
 ) {
 
     public AiClientProperties {
         if (nextQuestionPath == null || nextQuestionPath.isBlank()) {
             nextQuestionPath = "/api/v1/conversation/next-question";
         }
-        if (feedbackPath == null || feedbackPath.isBlank()) {
-            feedbackPath = "/api/v1/conversation/feedback";
+        if (turnFeedbackPath == null || turnFeedbackPath.isBlank()) {
+            turnFeedbackPath = "/api/v1/conversation/turn-feedback";
         }
-        if (feedbackStreamPath == null || feedbackStreamPath.isBlank()) {
-            feedbackStreamPath = "/api/v1/conversation/feedback/stream";
+        if (sessionFeedbackPath == null || sessionFeedbackPath.isBlank()) {
+            sessionFeedbackPath = "/api/v1/conversation/session-feedback";
         }
-        if (guidePath == null || guidePath.isBlank()) {
-            guidePath = "/api/v1/conversation/guide";
-        }
-        if (feedbackStreamTimeout == null || feedbackStreamTimeout.isNegative() || feedbackStreamTimeout.isZero()) {
-            feedbackStreamTimeout = Duration.ofSeconds(180);
+        if (requestTimeout == null || requestTimeout.isNegative() || requestTimeout.isZero()) {
+            requestTimeout = Duration.ofSeconds(180);
         }
     }
 }

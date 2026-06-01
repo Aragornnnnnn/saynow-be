@@ -1,4 +1,4 @@
-// 원격 AI 서버의 꼬리 질문과 최종 피드백 API를 호출하는 클라이언트
+// 원격 AI 서버의 3차 MVP 대화와 피드백 API를 호출하는 클라이언트
 package com.saynow.session.infrastructure.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -9,13 +9,7 @@ import com.saynow.common.observability.RequestTraceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,18 +19,16 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @ConditionalOnProperty(prefix = "saynow.ai", name = "client-mode", havingValue = "remote")
 @RequiredArgsConstructor
 @Slf4j
-public class RemoteAiConversationClient implements AiConversationClient, AiFeedbackStreamClient {
+public class RemoteAiConversationClient implements AiConversationClient {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper;
     private final AiClientProperties properties;
-    private final WebClient.Builder webClientBuilder;
 
     @Override
     public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
@@ -44,63 +36,19 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
     }
 
     @Override
-    public AiFeedbackResponse generateFeedback(AiFeedbackRequest request) {
-        return post("feedback", feedbackUri(), request, RemoteFeedbackResponse.class).toResponse();
+    public AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request) {
+        return post("turn_feedback", turnFeedbackUri(), request, RemoteTurnFeedbackStatusResponse.class).toResponse();
     }
 
     @Override
-    public AiGuideResponse generateGuide(AiGuideRequest request) {
+    public AiSessionFeedbackResponse generateSessionFeedback(AiSessionFeedbackRequest request) {
         return post(
-                "guide",
-                guideUri(),
+                "session_feedback",
+                sessionFeedbackUri(),
                 request,
-                RemoteGuideResponse.class,
-                ErrorCode.AI_GENERATION_FAILED,
-                ErrorCode.AI_GENERATION_FAILED.getMessage()).toResponse();
-    }
-
-    @Override
-    public Flux<AiFeedbackStreamEvent> streamFeedback(AiFeedbackRequest request) {
-        URI uri = feedbackStreamUri();
-        Optional<String> requestId = RequestTraceContext.currentRequestId();
-        String requestIdForLog = requestId.orElse("none");
-        AtomicLong startedAt = new AtomicLong();
-        return webClientBuilder.build()
-                .post()
-                .uri(uri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .headers(headers -> requestId.ifPresent(value -> headers.set(RequestTraceContext.REQUEST_ID_HEADER, value)))
-                .bodyValue(request)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .map(body -> {
-                            log.warn(
-                                    "AI 서버 SSE 호출이 실패했습니다. requestId={} uri={} status={} body={}",
-                                    requestIdForLog,
-                                    uri,
-                                    response.statusCode(),
-                                    body);
-                            return new AiFeedbackStreamException("AI 서버 SSE 호출에 실패했습니다.");
-                        }))
-                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
-                })
-                .doOnSubscribe(subscription -> startedAt.set(System.nanoTime()))
-                .timeout(properties.feedbackStreamTimeout())
-                .take(properties.feedbackStreamTimeout())
-                .filter(event -> event.event() != null && event.data() != null)
-                .map(event -> new AiFeedbackStreamEvent(event.event(), event.data()))
-                .onErrorMap(exception -> !(exception instanceof AiFeedbackStreamException),
-                        exception -> {
-                            log.warn("AI 서버 SSE 연결에 실패했습니다. requestId={} uri={}", requestIdForLog, uri, exception);
-                            return new AiFeedbackStreamException("AI 서버 SSE 연결에 실패했습니다.", exception);
-                        })
-                .doFinally(signalType -> {
-                    if (startedAt.get() > 0) {
-                        logAiCallLatency("feedback_stream", uri, requestIdForLog, signalType.name(), System.nanoTime() - startedAt.get());
-                    }
-                });
+                RemoteSessionFeedbackResponse.class,
+                ErrorCode.FEEDBACK_GENERATION_FAILED,
+                ErrorCode.FEEDBACK_GENERATION_FAILED.getMessage()).toResponse();
     }
 
     private <T> T post(String workflow, URI uri, Object payload, Class<T> responseType) {
@@ -120,8 +68,7 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload), StandardCharsets.UTF_8));
             requestId.ifPresent(value -> requestBuilder.header(RequestTraceContext.REQUEST_ID_HEADER, value));
 
-            HttpRequest httpRequest = requestBuilder.build();
-            HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> httpResponse = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             status = String.valueOf(httpResponse.statusCode());
             if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
                 log.warn(
@@ -161,103 +108,101 @@ public class RemoteAiConversationClient implements AiConversationClient, AiFeedb
         return properties.baseUrl().resolve(properties.nextQuestionPath());
     }
 
-    private URI feedbackUri() {
-        return properties.baseUrl().resolve(properties.feedbackPath());
+    private URI turnFeedbackUri() {
+        return properties.baseUrl().resolve(properties.turnFeedbackPath());
     }
 
-    private URI feedbackStreamUri() {
-        return properties.baseUrl().resolve(properties.feedbackStreamPath());
-    }
-
-    private URI guideUri() {
-        return properties.baseUrl().resolve(properties.guidePath());
+    private URI sessionFeedbackUri() {
+        return properties.baseUrl().resolve(properties.sessionFeedbackPath());
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record RemoteNextQuestionResponse(
-            String nextQuestion,
-            String translatedQuestion,
-            String nextQuestionTargetSlotName,
-            List<RemoteFilledSlot> filledSlots,
-            TurnClassification turnClassification
+            String aiQuestion,
+            String translatedQuestion
     ) {
 
         private AiNextQuestionResponse toResponse() {
-            if (filledSlots == null || turnClassification == null) {
-                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 꼬리 질문 응답이 올바르지 않습니다.");
+            if (aiQuestion == null || aiQuestion.isBlank()
+                    || translatedQuestion == null || translatedQuestion.isBlank()) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 다음 질문 응답이 올바르지 않습니다.");
             }
-            return new AiNextQuestionResponse(
-                    nextQuestion,
-                    translatedQuestion,
-                    nextQuestionTargetSlotName,
-                    filledSlots.stream()
-                            .map(RemoteFilledSlot::toResponse)
-                            .toList(),
-                    turnClassification);
+            return new AiNextQuestionResponse(aiQuestion, translatedQuestion);
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record RemoteFilledSlot(String slotName) {
-
-        private AiFilledSlot toResponse() {
-            if (slotName == null || slotName.isBlank()) {
-                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 꼬리 질문 응답이 올바르지 않습니다.");
-            }
-            return new AiFilledSlot(slotName);
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record RemoteFeedbackResponse(
-            Integer comprehensionScore,
-            String feedbackSummary,
-            List<RemoteTurnFeedback> turnFeedbacks
+    private record RemoteTurnFeedbackStatusResponse(
+            Long sessionId,
+            Long turnId,
+            TurnFeedbackStatus feedbackStatus
     ) {
 
-        private AiFeedbackResponse toResponse() {
-            if (comprehensionScore == null || feedbackSummary == null || turnFeedbacks == null) {
-                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 피드백 응답이 올바르지 않습니다.");
+        private AiTurnFeedbackStatusResponse toResponse() {
+            if (sessionId == null || turnId == null || feedbackStatus == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴별 피드백 응답이 올바르지 않습니다.");
             }
-            return new AiFeedbackResponse(
-                    comprehensionScore,
-                    feedbackSummary,
+            return new AiTurnFeedbackStatusResponse(sessionId, turnId, feedbackStatus);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RemoteSessionFeedbackResponse(
+            Long sessionId,
+            Integer nativeScore,
+            String nativeLevelLabel,
+            String summary,
+            List<RemoteSessionTurnFeedback> turnFeedbacks
+    ) {
+
+        private AiSessionFeedbackResponse toResponse() {
+            if (sessionId == null
+                    || nativeScore == null
+                    || nativeScore < 0
+                    || nativeScore > 100
+                    || nativeLevelLabel == null
+                    || nativeLevelLabel.isBlank()
+                    || summary == null
+                    || summary.isBlank()
+                    || turnFeedbacks == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 최종 피드백 응답이 올바르지 않습니다.");
+            }
+            return new AiSessionFeedbackResponse(
+                    sessionId,
+                    nativeScore,
+                    nativeLevelLabel,
+                    summary,
                     turnFeedbacks.stream()
-                            .map(RemoteTurnFeedback::toResponse)
+                            .map(RemoteSessionTurnFeedback::toResponse)
                             .toList());
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record RemoteGuideResponse(String answer) {
-
-        private AiGuideResponse toResponse() {
-            if (answer == null || answer.isBlank()) {
-                throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
-            }
-            return new AiGuideResponse(answer);
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record RemoteTurnFeedback(
+    private record RemoteSessionTurnFeedback(
             Long turnId,
-            Boolean feedbackRequired,
-            String nativeUnderstanding,
-            String nativeLanguageInterpretation,
-            String betterExpression
+            FeedbackType feedbackType,
+            String koreanAnalogy,
+            String correctionPoint,
+            String correctionReason,
+            String plusOneExpression,
+            String praiseSummary,
+            String praiseReason
     ) {
 
-        private AiTurnFeedbackResponse toResponse() {
-            if (turnId == null || feedbackRequired == null) {
-                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴 피드백 응답이 올바르지 않습니다.");
+        private AiSessionTurnFeedbackResponse toResponse() {
+            if (turnId == null || feedbackType == null || koreanAnalogy == null || koreanAnalogy.isBlank()) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴별 피드백 응답이 올바르지 않습니다.");
             }
-            return new AiTurnFeedbackResponse(
+            return new AiSessionTurnFeedbackResponse(
                     turnId,
-                    feedbackRequired,
-                    nativeUnderstanding,
-                    nativeLanguageInterpretation,
-                    betterExpression);
+                    feedbackType,
+                    koreanAnalogy,
+                    correctionPoint,
+                    correctionReason,
+                    plusOneExpression,
+                    praiseSummary,
+                    praiseReason);
         }
     }
 }

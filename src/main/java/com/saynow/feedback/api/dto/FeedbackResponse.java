@@ -5,10 +5,9 @@ import java.util.List;
 
 public record FeedbackResponse(
         Long sessionId,
-        boolean cleared,
-        int comprehensionScore,
-        String feedbackSummary,
-        int remainingHearts,
+        int nativeScore,
+        String nativeLevelLabel,
+        String summary,
         List<TurnFeedbackResponse> turnFeedbacks
 ) {
 }

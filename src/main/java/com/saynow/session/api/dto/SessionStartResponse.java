@@ -3,9 +3,9 @@ package com.saynow.session.api.dto;
 
 public record SessionStartResponse(
         Long sessionId,
-        String originalQuestion,
-        String translatedQuestion,
-        int remainingHearts,
-        boolean feedbackAvailable
+        Long scenarioId,
+        int totalQuestionCount,
+        SessionTurnResponse currentTurn,
+        SessionProgressResponse progress
 ) {
 }

@@ -1,12 +1,12 @@
-// 공통 ApiResponse 래퍼 기준으로 주요 API 응답 예시를 주입하는 OpenAPI 설정
+// 공통 ApiResponse 래퍼 기준으로 3차 MVP 주요 API 응답 예시를 주입하는 OpenAPI 설정
 package com.saynow.common.openapi;
 
 import com.saynow.auth.api.AuthController;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.FeedbackController;
 import com.saynow.nps.api.NpsController;
-import com.saynow.session.api.SessionController;
 import com.saynow.scenario.api.ScenarioController;
+import com.saynow.session.api.SessionController;
 import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.media.BooleanSchema;
 import io.swagger.v3.oas.models.media.Content;
@@ -63,80 +63,87 @@ public class OpenApiResponseCustomizer {
                             "categories", List.of(
                                     objectMap(
                                             "categoryId", 1,
-                                            "categoryName", "Cafe",
-                                            "categoryLocked", true,
-                                            "categoryLockReason", "COMING_SOON",
-                                            "scenarios", List.of()),
-                                    objectMap(
-                                            "categoryId", 2,
-                                            "categoryName", "Airport",
+                                            "categoryName", "Free Talk",
                                             "categoryLocked", false,
                                             "categoryLockReason", null,
                                             "scenarios", List.of(objectMap(
-                                                    "scenarioId", 4,
+                                                    "scenarioId", 1,
                                                     "displayOrder", 1,
-                                                    "scenarioTitle", "공항에서 입국심사 받기",
-                                                    "scenarioGoal", "입국 목적과 체류 정보를 설명하고 입국심사를 통과할 수 있다.",
-                                                    "scenarioSituation", "미국 공항에 도착해 입국심사를 받는 상황입니다. 심사관의 질문에 여행 계획을 차분히 설명해야 합니다.",
-                                                    "scenarioEmoji", "🛂",
-                                                    "cleared", false,
+                                                    "scenarioTitle", "음식 취향 이야기하기",
+                                                    "briefing", "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
+                                                    "conversationGoal", "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.",
+                                                    "completed", false,
                                                     "locked", false,
-                                                    "lockReason", null)))
-                                    )
+                                                    "lockReason", null,
+                                                    "firstQuestionPreview", objectMap(
+                                                            "questionId", 100,
+                                                            "aiQuestion", "What is your favorite food? Why do you like it?",
+                                                            "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?")))),
+                                    objectMap(
+                                            "categoryId", 2,
+                                            "categoryName", "Airport",
+                                            "categoryLocked", true,
+                                            "categoryLockReason", "COMING_SOON",
+                                            "scenarios", List.of()))
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(SessionController.class, "startSession",
                     success(HttpStatus.CREATED, "시나리오 세션 시작 성공", objectMap(
                             "sessionId", 12,
-                            "originalQuestion", "Hi, what's the purpose of your visit?",
-                            "translatedQuestion", "안녕하세요. 방문 목적이 어떻게 되시나요?",
-                            "remainingHearts", 3,
-                            "feedbackAvailable", false
+                            "scenarioId", 1,
+                            "totalQuestionCount", 4,
+                            "currentTurn", objectMap(
+                                    "turnId", 101,
+                                    "sequence", 1,
+                                    "aiQuestion", "What is your favorite food? Why do you like it?",
+                                    "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?"),
+                            "progress", objectMap(
+                                    "currentSequence", 1,
+                                    "totalQuestionCount", 4,
+                                    "completed", false)
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SCENARIO_NOT_FOUND), error(ErrorCode.SCENARIO_LOCKED), error(ErrorCode.CATEGORY_LOCKED))),
             endpoint(SessionController.class, "submitUtterance",
                     success(HttpStatus.OK, "세션 사용자 발화 제출 성공", objectMap(
-                            "sessionId", 12,
-                            "originalQuestion", "What size would you like?",
-                            "translatedQuestion", "어떤 사이즈로 드릴까요?",
-                            "remainingHearts", 3,
-                            "feedbackAvailable", false,
-                            "heartDeducted", false,
-                            "turnClassification", "ANSWER"
+                            "submittedTurn", objectMap(
+                                    "turnId", 101,
+                                    "sequence", 1,
+                                    "turnFeedbackStatus", "PREPARING"),
+                            "nextTurn", objectMap(
+                                    "turnId", 102,
+                                    "sequence", 2,
+                                    "aiQuestion", "That sounds tasty. Do you cook often?",
+                                    "translatedQuestion", "맛있겠네요. 요리는 자주 하나요?"),
+                            "progress", objectMap(
+                                    "currentSequence", 2,
+                                    "totalQuestionCount", 4,
+                                    "completed", false)
                     )),
                     errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_RESPONSE_INVALID))),
-            endpoint(SessionController.class, "generateGuideAnswer",
-                    success(HttpStatus.OK, "세션 중 영어 학습 가이드 답변 생성 성공", objectMap(
-                            "answer", "would는 공손한 요청이나 가정 느낌을 줄 때 써요."
-                    )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AI_GENERATION_FAILED))),
-            endpoint(SessionController.class, "getSessionResult",
-                    success(HttpStatus.OK, "세션 시나리오 결과 조회 성공", objectMap(
-                            "scenarioResult", "SUCCESS"
-                    )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE))),
-            endpoint(SessionController.class, "deleteSession",
+            endpoint(SessionController.class, "abandonSession",
                     success(HttpStatus.OK, "세션 중도 종료 성공", null),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED))),
             endpoint(FeedbackController.class, "createFeedback",
                     success(HttpStatus.OK, "세션 최종 피드백 생성 성공", objectMap(
                             "sessionId", 12,
-                            "cleared", true,
-                            "comprehensionScore", 82,
-                            "feedbackSummary", "전체적으로 의도는 잘 전달됐지만 주문 표현이 조금 짧게 들립니다.",
-                            "remainingHearts", 1,
+                            "nativeScore", 82,
+                            "nativeLevelLabel", "유학생 수준",
+                            "summary", "하고 싶은 말을 끝까지 전달하는 힘이 좋았어요.",
                             "turnFeedbacks", List.of(objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
-                                    "originalQuestion", "What would you like to order?",
-                                    "translatedQuestion", "무엇을 주문하시겠어요?",
-                                    "userUtterance", "I want iced americano.",
-                                    "feedbackRequired", true,
-                                    "nativeUnderstanding", "아이스 아메리카노를 주문하고 싶다는 의미로 이해됩니다.",
-                                    "nativeLanguageInterpretation", "조금 짧고 문법적으로 어색하게 들립니다.",
-                                    "betterExpression", "I'd like an iced Americano, please."))
+                                    "aiQuestion", "What is your favorite food? Why do you like it?",
+                                    "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?",
+                                    "userUtterance", "I like pizza because it is spicy.",
+                                    "feedbackType", "GOOD",
+                                    "koreanAnalogy", "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
+                                    "correctionPoint", null,
+                                    "correctionReason", null,
+                                    "plusOneExpression", null,
+                                    "praiseSummary", "이유를 자연스럽게 붙였어요.",
+                                    "praiseReason", "좋아하는 음식과 이유를 분명하게 연결했기 때문이에요."))
                     )),
-                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETABLE), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),
+                    errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETED), error(ErrorCode.FEEDBACK_NOT_READY), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),
             endpoint(NpsController.class, "submitNps",
                     success(HttpStatus.CREATED, "세션 NPS 평가 제출 성공", null),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_IN_PROGRESS), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.NPS_ALREADY_SUBMITTED)))
@@ -230,10 +237,6 @@ public class OpenApiResponseCustomizer {
     }
 
     private static Map<String, Object> objectMap(Object... keyValues) {
-        if (keyValues.length % 2 != 0) {
-            throw new IllegalArgumentException("keyValues length must be even");
-        }
-
         Map<String, Object> map = new LinkedHashMap<>();
         for (int index = 0; index < keyValues.length; index += 2) {
             map.put((String) keyValues[index], keyValues[index + 1]);

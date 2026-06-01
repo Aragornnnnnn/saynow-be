@@ -29,6 +29,7 @@ public enum ErrorCode {
 
     SESSION_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 세션입니다."),
     SESSION_IN_PROGRESS(HttpStatus.BAD_REQUEST, "아직 진행 중인 세션입니다."),
+    SESSION_NOT_COMPLETED(HttpStatus.CONFLICT, "아직 모든 질문에 답하지 않은 세션입니다."),
     SESSION_NOT_COMPLETABLE(HttpStatus.CONFLICT, "세션을 완료할 수 없습니다."),
     NPS_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 평가가 제출된 세션입니다."),
 
@@ -41,7 +42,8 @@ public enum ErrorCode {
     AI_STT_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 서버가 transcript를 반환하지 않았습니다."),
     AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 응답을 처리할 수 없습니다."),
     AI_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "가이드 답변 생성에 실패했습니다."),
-    FEEDBACK_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "피드백 생성에 실패했습니다.");
+    FEEDBACK_NOT_READY(HttpStatus.CONFLICT, "피드백이 아직 준비되지 않았습니다."),
+    FEEDBACK_GENERATION_FAILED(HttpStatus.BAD_GATEWAY, "피드백 생성에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;
