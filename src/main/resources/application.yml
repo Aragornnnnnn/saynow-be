@@ -28,7 +28,7 @@ saynow:
     token:
       secret: ${SAYNOW_AUTH_TOKEN_SECRET:saynow-development-token-secret-change-before-production}
   ai:
-    base-url: ${SAYNOW_AI_BASE_URL:http://43.202.146.182:8080}
+    base-url: ${SAYNOW_AI_BASE_URL:http://15.164.34.102:8080}
     client-mode: ${SAYNOW_AI_CLIENT_MODE:local}
     next-question-path: ${SAYNOW_AI_NEXT_QUESTION_PATH:/api/v1/conversation/next-question}
     feedback-path: ${SAYNOW_AI_FEEDBACK_PATH:/api/v1/conversation/feedback}
