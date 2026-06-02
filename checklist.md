@@ -1,3 +1,18 @@
+# 피드백 API 새 명세 반영 체크리스트
+
+- [x] 현재 `POST /api/v1/sessions/{sessionId}/feedback` 구현, AI 응답 DTO, 저장 컬럼, OpenAPI 예시를 확인한다.
+- [x] 새 명세의 턴별 응답 필드 `originalQuestion`, `feedbackDetail`, `betterExpression`을 고정하는 RED 테스트를 추가한다.
+- [x] AI 최종 피드백 409 응답이 `FEEDBACK_NOT_READY` 409로 전달되는 RED 테스트를 추가한다.
+- [x] `FEEDBACK_GENERATION_FAILED` HTTP 상태를 명세의 503으로 맞춘다.
+- [x] BE 응답 DTO와 저장 매핑을 새 명세에 맞춘다.
+- [x] 원격 AI `session-feedback` 응답 매핑을 새 명세에 맞춘다.
+- [x] OpenAPI 예시와 통합 테스트를 새 명세에 맞춘다.
+- [x] 관련 테스트를 통과시킨다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+
+---
+
 # develop Swagger 서버 URL 분리 체크리스트
 
 - [x] 실제 dev `/v3/api-docs`가 prod server URL을 반환하는지 확인한다.
@@ -620,3 +635,17 @@
 - [ ] 변경 범위 점검 후 커밋한다.
 - [ ] develop으로 push한다.
 - [ ] dev 배포 workflow를 실행하고 health를 확인한다.
+
+---
+
+# 3차 MVP 전체 시나리오 live smoke 체크리스트
+
+- [x] 현재 dev/prod 도메인 매핑을 DNS와 EC2 IP 기준으로 확인한다.
+- [x] 이전 원격 smoke 실패가 API 실패인지 스크립트 파싱 실패인지 확인한다.
+- [x] 새 임시 dev DB 사용자를 만든다.
+- [x] dev BE 도메인으로 전체 시나리오를 순서대로 실행한다.
+- [x] 각 시나리오의 4개 발화와 최종 피드백 결과를 JSON evidence로 남긴다.
+- [x] 실패가 있으면 requestId와 응답 body 기준으로 원인을 분리한다.
+- [x] humanizer 기준으로 Obsidian 하위 문서에 과정과 결과를 정리한다.
+- [x] 문서에 보존해야 할 수치, 경로, requestId가 빠지지 않았는지 확인한다.
+- [x] 사용자 요청에 맞춰 기존 요약형 smoke 문서를 삭제 수준으로 덮어쓰고, 꼬리 질문과 턴별 피드백 상세를 모두 남긴다.

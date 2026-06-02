@@ -1,3 +1,24 @@
+# 피드백 API 새 명세 반영 컨텍스트 노트
+
+## 2026-06-03
+
+- 사용자는 `POST /api/v1/sessions/{sessionId}/feedback`의 새 API 명세를 공유했다.
+- endpoint와 요청 body 없음, 인증 방식은 기존과 같다.
+- 응답의 턴별 필드는 기존 `aiQuestion`, `correctionPoint`, `correctionReason`, `plusOneExpression`, `praiseSummary`, `praiseReason` 대신 `originalQuestion`, `feedbackDetail`, `betterExpression`을 사용한다.
+- `feedbackDetail`은 `NEEDS_IMPROVEMENT`와 `GOOD` 모두에서 필수 설명 필드다.
+- `betterExpression`은 `NEEDS_IMPROVEMENT`일 때 제공되는 선택 필드다.
+- DB는 `V11__simplify_turn_feedback_contract.sql`에서 `feedback_detail`, `better_expression`으로 정리한다. 기존 `correction_reason`, `plus_one_expression`, `praise_reason` 계열 컬럼은 backfill 뒤 제거한다.
+- 명세상 `FEEDBACK_GENERATION_FAILED`는 503이어야 하지만 현재 `ErrorCode`는 502로 정의되어 있다.
+- 명세상 AI 캐시가 아직 준비되지 않은 경우 `FEEDBACK_NOT_READY` 409를 반환해야 한다. 현재 원격 `session-feedback` 호출은 AI의 모든 non-2xx 응답을 `FEEDBACK_GENERATION_FAILED`로 감싼다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 새 `AiSessionTurnFeedbackResponse` 생성자와 `feedbackDetail`, `betterExpression` 접근자가 없어 `compileTestJava`에서 실패했다.
+- `TurnFeedbackResponse`는 `aiQuestion` 대신 `originalQuestion`을 반환한다. 값은 세션 턴에 저장된 실제 노출 질문 `session_turns.ai_question`을 사용한다.
+- `AiSessionTurnFeedbackResponse`와 원격 AI 응답 매핑은 `feedbackDetail`, `betterExpression`만 받도록 단순화했다.
+- AI `session-feedback`가 409를 반환하면 BE는 `FEEDBACK_NOT_READY` 409를 반환한다. 그 외 최종 피드백 생성 실패는 명세대로 `FEEDBACK_GENERATION_FAILED` 503이다.
+- 관련 GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # develop Swagger 서버 URL 분리 컨텍스트 노트
 
 ## 2026-06-02
@@ -737,3 +758,30 @@
 - GREEN 검증으로 같은 테스트 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# 3차 MVP 전체 시나리오 live smoke 컨텍스트 노트
+
+## 2026-06-02
+
+- 목표는 dev DB에 현재 존재하는 3차 MVP 시나리오를 임시 사용자 하나로 처음부터 끝까지 실행하고, 각 세션의 최종 피드백까지 실제 AI 서버 연동으로 받는 것이다.
+- 사용자가 `dev.saynow -> saynow` 도메인 변경을 언급했으므로 먼저 DNS와 EC2 매핑을 확인했다.
+- `saynow.p-e.kr`은 `13.209.216.213`으로 해석됐고, 이 IP는 `prod-saynow-backend` 인스턴스다.
+- `dev-saynow.p-e.kr`은 `43.202.167.164`로 해석됐고, 이 IP는 `dev-saynow-backend` 인스턴스다.
+- `https://saynow.p-e.kr/v3/api-docs`의 `servers[0].url`은 `https://saynow.p-e.kr`였다. 다만 이 응답은 prod BE에서 온 것이다.
+- dev DB에 만든 임시 사용자 `USER_ID=12`로 `https://saynow.p-e.kr/api/v1/scenarios`를 호출하면 401 `AUTH_REQUIRED`가 났다. 같은 requestId가 dev BE 로그에 없어서 dev BE가 아니라 prod BE로 간 요청으로 확인했다.
+- `https://dev-saynow.p-e.kr`로 다시 호출하면 인증은 통과했지만 3차 MVP 응답이 아니었다. 세션 시작 응답이 `currentTurn`가 아니라 `originalQuestion`, `remainingHearts`, `feedbackAvailable`를 반환했다.
+- `dev-saynow-backend` 인스턴스의 `/opt/saynow/app.jar`를 확인하니 `originalQuestion`, `remainingHearts`, `save_slot_statuses` 문자열이 있었다. 즉 이 인스턴스는 구버전 JAR를 실행 중이다.
+- 반대로 `prod-saynow-backend` 인스턴스의 `/opt/saynow/app.jar`에는 `totalQuestionCount`, `currentTurn`가 있고 service 설명도 `SayNow Backend Dev`다.
+- 런타임 env fingerprint 기준으로 `prod-saynow-backend`는 `SPRING_PROFILES_ACTIVE=dev`, `SAYNOW_OPENAPI_SERVER_URL=https://saynow.p-e.kr`, `SAYNOW_AI_BASE_URL=http://43.202.146.182:8080`을 사용한다.
+- 런타임 env fingerprint 기준으로 `dev-saynow-backend`는 `SPRING_PROFILES_ACTIVE=prod`, `SAYNOW_OPENAPI_SERVER_URL=https://dev-saynow.p-e.kr`, `SAYNOW_AI_BASE_URL=http://15.164.34.102:8080`을 사용한다.
+- 따라서 도메인 변경 뒤 active dev는 `https://saynow.p-e.kr`이다. 전체 시나리오 smoke는 `prod-saynow-backend` 인스턴스의 런타임 secret으로 토큰을 만들고 `https://saynow.p-e.kr`로 실행한다.
+- active dev 기준 전체 시나리오 smoke는 성공했다. 원격 evidence는 `/tmp/saynow-3mvp-all-scenarios-smoke-20260602T134840Z-user12-active-dev.json`이고, 로컬 summary는 `/private/tmp/saynow-3mvp-all-scenarios-summary-20260602T134840Z.json`이다.
+- 임시 사용자 `USER_ID=12`로 세션 `30`, `31`, `32`를 만들었다. 세 시나리오 모두 4턴 제출과 최종 피드백 생성까지 끝났고 실패 step은 0이다.
+- 최종 피드백 결과는 세션별 `nativeScore=82`, `nativeLevelLabel=유학생 수준`으로 같았다. 턴별 최종 피드백 타입도 세 시나리오 모두 `GOOD`, `GOOD`, `GOOD`, `GOOD`이다.
+- Obsidian 하위 문서 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/Backend/3차 MVP 전체 시나리오 live smoke.md`를 만들었고, 상위 `3차 MVP.md`와 `Backend/3차 MVP BE 구현 기록.md`에 링크를 추가했다.
+- 사용자가 기존 문서가 너무 요약형이라고 지적했다. 같은 하위 문서를 삭제 수준으로 덮어쓰고, 새 임시 사용자 `USER_ID=13`으로 상세 smoke를 다시 실행했다.
+- 새 상세 smoke 원격 원본은 `/tmp/saynow-3mvp-detail-all-scenarios-20260602T140450Z-user13.json`이다. 로컬에는 `/private/tmp/saynow-3mvp-detail-doc-20260602T140450Z-user13-meta.json`과 scenario별 detail JSON 3개를 저장했다.
+- 새 상세 smoke의 세션은 `sessionId=33`, `sessionId=34`, `sessionId=35`다. 실패 step은 0이고, 세 시나리오 모두 `nativeScore=82`, `nativeLevelLabel=유학생 수준`, 턴별 타입 `GOOD`, `GOOD`, `GOOD`, `GOOD`이었다.
+- 새 문서에는 각 턴의 사용자에게 보여준 질문, 사용자 발화, 다음 꼬리 질문, `turnFeedbackStatus`, 최종 턴별 피드백의 `koreanAnalogy`, `correctionPoint`, `correctionReason`, `plusOneExpression`, `praiseSummary`, `praiseReason`, 세션 총평을 모두 남겼다.
