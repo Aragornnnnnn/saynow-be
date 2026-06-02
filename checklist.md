@@ -24,6 +24,7 @@
 - [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
 - [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
 - [x] 의미 있는 단위로 커밋한다.
+- [x] 배포 후 active dev 도메인 기준 Swagger server URL이 이전 `dev-saynow`로 되돌아간 것을 확인하고 `saynow.p-e.kr`로 재보정한다.
 
 ---
 

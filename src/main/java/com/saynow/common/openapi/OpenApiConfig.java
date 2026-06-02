@@ -21,8 +21,8 @@ import java.util.Set;
 public class OpenApiConfig {
 
     private static final String BEARER_AUTH = "bearerAuth";
-    private static final String PROD_SERVER_URL = "https://saynow.p-e.kr";
-    private static final String DEV_SERVER_URL = "https://dev-saynow.p-e.kr";
+    private static final String DEV_SERVER_URL = "https://saynow.p-e.kr";
+    private static final String LEGACY_DEV_SERVER_URL = "https://dev-saynow.p-e.kr";
     private static final Set<String> PUBLIC_AUTH_METHODS = Set.of("socialLogin", "refresh");
 
     private final String serverUrl;
@@ -62,17 +62,17 @@ public class OpenApiConfig {
     }
 
     private String resolveServerUrl(String configuredServerUrl, Environment environment) {
-        if (environment.acceptsProfiles(Profiles.of("dev")) && isProdServerUrl(configuredServerUrl)) {
+        if (environment.acceptsProfiles(Profiles.of("dev")) && isLegacyDevServerUrl(configuredServerUrl)) {
             return DEV_SERVER_URL;
         }
         return configuredServerUrl;
     }
 
-    private boolean isProdServerUrl(String configuredServerUrl) {
+    private boolean isLegacyDevServerUrl(String configuredServerUrl) {
         if (configuredServerUrl == null) {
             return false;
         }
-        return PROD_SERVER_URL.equals(stripTrailingSlash(configuredServerUrl.trim()));
+        return LEGACY_DEV_SERVER_URL.equals(stripTrailingSlash(configuredServerUrl.trim()));
     }
 
     private String stripTrailingSlash(String value) {

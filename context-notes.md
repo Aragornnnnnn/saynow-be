@@ -38,6 +38,9 @@
 - `AWS_PROFILE=prod-saynow AWS_REGION=ap-northeast-2 aws ssm get-parameter --name /saynow/develop/SAYNOW_OPENAPI_SERVER_URL --with-decryption --query Parameter.Value --output text`로 SSM 현재값을 확인했고 `https://dev-saynow.p-e.kr`였다.
 - 따라서 현재 live dev Swagger가 prod 주소를 반환하는 것은 최신 SSM 값 자체보다는 이전 배포 산출물이나 이전 `.env`가 남아 있는 상태로 본다.
 - workflow 파일 변경은 현재 GitHub OAuth 권한에 `workflow` scope가 없어 push가 거부되므로 이번 커밋에서 제외했다.
+- 2026-06-03 재배포 후 `https://saynow.p-e.kr/v3/api-docs`는 새 피드백 계약을 노출했지만 `servers[0].url`이 `https://dev-saynow.p-e.kr`로 되돌아간 것을 확인했다.
+- 사용자가 현재 dev 도메인을 `https://saynow.p-e.kr`로 변경했다고 알려준 상태이므로, dev profile의 canonical OpenAPI URL은 `https://saynow.p-e.kr`로 다시 보정한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, 기대값 `https://saynow.p-e.kr` 대신 `https://dev-saynow.p-e.kr`가 반환되어 실패했다.
 
 ---
 

@@ -23,7 +23,7 @@ management:
 
 saynow:
   openapi:
-    server-url: ${SAYNOW_OPENAPI_SERVER_URL:https://dev-saynow.p-e.kr}
+    server-url: ${SAYNOW_OPENAPI_SERVER_URL:https://saynow.p-e.kr}
   auth:
     oidc:
       nonce-required: ${SAYNOW_AUTH_OIDC_NONCE_REQUIRED:false}
