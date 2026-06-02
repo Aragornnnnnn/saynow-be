@@ -6,15 +6,12 @@ import com.saynow.session.infrastructure.ai.FeedbackType;
 public record TurnFeedbackResponse(
         Long turnId,
         int sequence,
-        String aiQuestion,
+        String originalQuestion,
         String translatedQuestion,
         String userUtterance,
         FeedbackType feedbackType,
         String koreanAnalogy,
-        String correctionPoint,
-        String correctionReason,
-        String plusOneExpression,
-        String praiseSummary,
-        String praiseReason
+        String feedbackDetail,
+        String betterExpression
 ) {
 }

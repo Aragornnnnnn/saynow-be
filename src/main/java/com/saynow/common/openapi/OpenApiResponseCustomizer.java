@@ -132,16 +132,13 @@ public class OpenApiResponseCustomizer {
                             "turnFeedbacks", List.of(objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
-                                    "aiQuestion", "What is your favorite food? Why do you like it?",
+                                    "originalQuestion", "What is your favorite food? Why do you like it?",
                                     "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?",
                                     "userUtterance", "I like pizza because it is spicy.",
                                     "feedbackType", "GOOD",
                                     "koreanAnalogy", "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
-                                    "correctionPoint", null,
-                                    "correctionReason", null,
-                                    "plusOneExpression", null,
-                                    "praiseSummary", "이유를 자연스럽게 붙였어요.",
-                                    "praiseReason", "좋아하는 음식과 이유를 분명하게 연결했기 때문이에요."))
+                                    "feedbackDetail", "좋아하는 음식과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
+                                    "betterExpression", null))
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETED), error(ErrorCode.FEEDBACK_NOT_READY), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),
             endpoint(NpsController.class, "submitNps",

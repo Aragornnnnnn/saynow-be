@@ -43,7 +43,7 @@ public enum ErrorCode {
     AI_RESPONSE_INVALID(HttpStatus.SERVICE_UNAVAILABLE, "AI 응답을 처리할 수 없습니다."),
     AI_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "가이드 답변 생성에 실패했습니다."),
     FEEDBACK_NOT_READY(HttpStatus.CONFLICT, "피드백이 아직 준비되지 않았습니다."),
-    FEEDBACK_GENERATION_FAILED(HttpStatus.BAD_GATEWAY, "피드백 생성에 실패했습니다.");
+    FEEDBACK_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "피드백 생성에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;

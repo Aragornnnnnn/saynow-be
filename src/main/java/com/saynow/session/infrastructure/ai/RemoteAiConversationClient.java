@@ -77,6 +77,9 @@ public class RemoteAiConversationClient implements AiConversationClient {
                         uri,
                         httpResponse.statusCode(),
                         httpResponse.body());
+                if (errorCode == ErrorCode.FEEDBACK_GENERATION_FAILED && httpResponse.statusCode() == 409) {
+                    throw new ApiException(ErrorCode.FEEDBACK_NOT_READY);
+                }
                 throw new ApiException(errorCode, message);
             }
             return objectMapper.readValue(httpResponse.body(), responseType);
@@ -183,26 +186,25 @@ public class RemoteAiConversationClient implements AiConversationClient {
             Long turnId,
             FeedbackType feedbackType,
             String koreanAnalogy,
-            String correctionPoint,
-            String correctionReason,
-            String plusOneExpression,
-            String praiseSummary,
-            String praiseReason
+            String feedbackDetail,
+            String betterExpression
     ) {
 
         private AiSessionTurnFeedbackResponse toResponse() {
-            if (turnId == null || feedbackType == null || koreanAnalogy == null || koreanAnalogy.isBlank()) {
+            if (turnId == null
+                    || feedbackType == null
+                    || koreanAnalogy == null
+                    || koreanAnalogy.isBlank()
+                    || feedbackDetail == null
+                    || feedbackDetail.isBlank()) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴별 피드백 응답이 올바르지 않습니다.");
             }
             return new AiSessionTurnFeedbackResponse(
                     turnId,
                     feedbackType,
                     koreanAnalogy,
-                    correctionPoint,
-                    correctionReason,
-                    plusOneExpression,
-                    praiseSummary,
-                    praiseReason);
+                    feedbackDetail,
+                    betterExpression);
         }
     }
 }

@@ -134,9 +134,17 @@ public class FeedbackService {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
         Map<Long, AiSessionTurnFeedbackResponse> feedbackByTurnId = feedback.turnFeedbacks().stream()
-                .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity()));
+                .filter(turnFeedback -> turnFeedback.turnId() != null)
+                .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity(), (left, right) -> left));
         boolean allTurnsHaveFeedback = turns.stream().allMatch(turn -> feedbackByTurnId.containsKey(turn.getId()));
-        if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turns.size()) {
+        boolean allFeedbacksAreValid = feedback.turnFeedbacks().stream().allMatch(turnFeedback ->
+                turnFeedback.turnId() != null
+                        && turnFeedback.feedbackType() != null
+                        && turnFeedback.koreanAnalogy() != null
+                        && !turnFeedback.koreanAnalogy().isBlank()
+                        && turnFeedback.feedbackDetail() != null
+                        && !turnFeedback.feedbackDetail().isBlank());
+        if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turns.size() || feedback.turnFeedbacks().size() != turns.size() || !allFeedbacksAreValid) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
     }
@@ -153,11 +161,8 @@ public class FeedbackService {
                 FeedbackStatus.READY,
                 feedback.feedbackType(),
                 feedback.koreanAnalogy(),
-                feedback.correctionPoint(),
-                feedback.correctionReason(),
-                feedback.plusOneExpression(),
-                feedback.praiseSummary(),
-                feedback.praiseReason(),
+                feedback.feedbackDetail(),
+                feedback.betterExpression(),
                 generatedAt);
     }
 
@@ -188,11 +193,8 @@ public class FeedbackService {
                 turn.getUserUtterance(),
                 feedback.getFeedbackType(),
                 feedback.getKoreanAnalogy(),
-                feedback.getCorrectionPoint(),
-                feedback.getCorrectionReason(),
-                feedback.getPlusOneExpression(),
-                feedback.getPraiseSummary(),
-                feedback.getPraiseReason());
+                feedback.getFeedbackDetail(),
+                feedback.getBetterExpression());
     }
 
     private void logStageLatency(String workflow, String stage, Long userId, Long sessionId, long startedAtNanos) {

@@ -248,11 +248,8 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
                                     turnId,
                                     FeedbackType.GOOD,
                                     "한국어로 비유하자면 자연스럽게 들려요.",
-                                    null,
-                                    null,
-                                    null,
-                                    "이유를 잘 붙였어요.",
-                                    "답변 의도가 분명했기 때문이에요."))
+                                    "답변 의도가 분명했기 때문이에요.",
+                                    null))
                             .toList());
         }
     }

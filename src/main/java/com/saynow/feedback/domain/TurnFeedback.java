@@ -53,25 +53,13 @@ public class TurnFeedback extends BaseTimeEntity {
     @Getter
     private String koreanAnalogy;
 
-    @Column(name = "correction_point", columnDefinition = "text")
+    @Column(name = "feedback_detail", nullable = false, columnDefinition = "text")
     @Getter
-    private String correctionPoint;
+    private String feedbackDetail;
 
-    @Column(name = "correction_reason", columnDefinition = "text")
+    @Column(name = "better_expression", length = 500)
     @Getter
-    private String correctionReason;
-
-    @Column(name = "plus_one_expression", length = 500)
-    @Getter
-    private String plusOneExpression;
-
-    @Column(name = "praise_summary", columnDefinition = "text")
-    @Getter
-    private String praiseSummary;
-
-    @Column(name = "praise_reason", columnDefinition = "text")
-    @Getter
-    private String praiseReason;
+    private String betterExpression;
 
     @Column(name = "generated_at", nullable = false)
     @Getter
@@ -83,11 +71,8 @@ public class TurnFeedback extends BaseTimeEntity {
             FeedbackStatus status,
             FeedbackType feedbackType,
             String koreanAnalogy,
-            String correctionPoint,
-            String correctionReason,
-            String plusOneExpression,
-            String praiseSummary,
-            String praiseReason,
+            String feedbackDetail,
+            String betterExpression,
             LocalDateTime generatedAt
     ) {
         this.sessionFeedback = sessionFeedback;
@@ -95,11 +80,8 @@ public class TurnFeedback extends BaseTimeEntity {
         this.status = status;
         this.feedbackType = feedbackType;
         this.koreanAnalogy = koreanAnalogy;
-        this.correctionPoint = correctionPoint;
-        this.correctionReason = correctionReason;
-        this.plusOneExpression = plusOneExpression;
-        this.praiseSummary = praiseSummary;
-        this.praiseReason = praiseReason;
+        this.feedbackDetail = feedbackDetail;
+        this.betterExpression = betterExpression;
         this.generatedAt = generatedAt;
     }
 

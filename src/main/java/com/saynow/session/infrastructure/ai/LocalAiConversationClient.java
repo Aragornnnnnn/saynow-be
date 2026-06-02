@@ -32,11 +32,8 @@ public class LocalAiConversationClient implements AiConversationClient {
                         turnId,
                         FeedbackType.GOOD,
                         "한국어로 비유하자면 하고 싶은 말을 담백하게 전달한 느낌이에요.",
-                        null,
-                        null,
-                        null,
-                        "의도를 분명하게 전달했어요.",
-                        "질문에 맞는 답을 영어 문장으로 끝까지 말했기 때문이에요."))
+                        "질문에 맞는 답을 영어 문장으로 끝까지 말했기 때문이에요.",
+                        null))
                 .toList();
         return new AiSessionFeedbackResponse(
                 request.sessionId(),

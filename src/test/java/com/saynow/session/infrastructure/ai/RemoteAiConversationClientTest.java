@@ -118,11 +118,8 @@ class RemoteAiConversationClientTest {
                               "turnId":5000,
                               "feedbackType":"GOOD",
                               "koreanAnalogy":"한국어로 비유하자면 담백하게 들려요.",
-                              "correctionPoint":null,
-                              "correctionReason":null,
-                              "plusOneExpression":null,
-                              "praiseSummary":"이유를 자연스럽게 붙였어요.",
-                              "praiseReason":"좋아하는 음식과 이유를 분명하게 연결했어요."
+                              "feedbackDetail":"좋아하는 음식과 이유를 분명하게 연결했어요.",
+                              "betterExpression":null
                             }
                           ]
                         }
@@ -138,6 +135,8 @@ class RemoteAiConversationClientTest {
         assertThat(response.nativeLevelLabel()).isEqualTo("유학생 수준");
         assertThat(response.turnFeedbacks()).hasSize(1);
         assertThat(response.turnFeedbacks().getFirst().feedbackType()).isEqualTo(FeedbackType.GOOD);
+        assertThat(response.turnFeedbacks().getFirst().feedbackDetail()).isEqualTo("좋아하는 음식과 이유를 분명하게 연결했어요.");
+        assertThat(response.turnFeedbacks().getFirst().betterExpression()).isNull();
     }
 
     @Test
@@ -160,10 +159,40 @@ class RemoteAiConversationClientTest {
                 .isEqualTo(ErrorCode.AI_RESPONSE_INVALID);
     }
 
+    @Test
+    void mapsSessionFeedbackConflictToFeedbackNotReady() throws Exception {
+        RemoteAiConversationClient client = clientWithResponse(
+                "/api/v1/conversation/session-feedback",
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                409,
+                """
+                        {
+                          "code":"FEEDBACK_NOT_READY",
+                          "message":"피드백이 아직 준비되지 않았습니다."
+                        }
+                        """);
+
+        assertThatThrownBy(() -> client.generateSessionFeedback(sessionFeedbackRequest()))
+                .isInstanceOf(ApiException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.FEEDBACK_NOT_READY);
+    }
+
     private RemoteAiConversationClient clientWithResponse(
             String path,
             AtomicReference<String> requestBody,
             AtomicReference<String> requestIdHeader,
+            String responseBody
+    ) throws IOException {
+        return clientWithResponse(path, requestBody, requestIdHeader, 200, responseBody);
+    }
+
+    private RemoteAiConversationClient clientWithResponse(
+            String path,
+            AtomicReference<String> requestBody,
+            AtomicReference<String> requestIdHeader,
+            int status,
             String responseBody
     ) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -172,7 +201,7 @@ class RemoteAiConversationClientTest {
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, responseBytes.length);
+            exchange.sendResponseHeaders(status, responseBytes.length);
             exchange.getResponseBody().write(responseBytes);
             exchange.close();
         });

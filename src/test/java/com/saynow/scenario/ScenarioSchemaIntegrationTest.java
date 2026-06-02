@@ -56,13 +56,14 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(columnExists("turn_feedbacks", "status")).isTrue();
         assertThat(columnExists("turn_feedbacks", "feedback_type")).isTrue();
         assertThat(columnExists("turn_feedbacks", "korean_analogy")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "correction_point")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "correction_reason")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "plus_one_expression")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "praise_summary")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "praise_reason")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "feedback_detail")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "better_expression")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "correction_point")).isFalse();
+        assertThat(columnExists("turn_feedbacks", "correction_reason")).isFalse();
+        assertThat(columnExists("turn_feedbacks", "plus_one_expression")).isFalse();
+        assertThat(columnExists("turn_feedbacks", "praise_summary")).isFalse();
+        assertThat(columnExists("turn_feedbacks", "praise_reason")).isFalse();
         assertThat(columnExists("turn_feedbacks", "feedback_required")).isFalse();
-        assertThat(columnExists("turn_feedbacks", "better_expression")).isFalse();
     }
 
     @Test

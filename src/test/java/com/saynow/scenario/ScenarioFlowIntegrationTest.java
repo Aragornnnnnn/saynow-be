@@ -144,10 +144,18 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.summary").value("하고 싶은 말을 끝까지 전달했고 이유를 붙이는 힘이 좋았어요."))
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].originalQuestion")
+                        .value("What is your favorite food? Why do you like it?"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackType").value("GOOD"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].koreanAnalogy").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackDetail").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].betterExpression").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackType").value("NEEDS_IMPROVEMENT"))
-                .andExpect(jsonPath("$.data.turnFeedbacks[1].plusOneExpression").isString());
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackDetail").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].betterExpression").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].correctionPoint").doesNotExist())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].plusOneExpression").doesNotExist())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].praiseReason").doesNotExist());
 
         assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds()).hasSize(4);
         Integer sessionFeedbackCount = jdbcTemplate.queryForObject("""
@@ -333,11 +341,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     turnId,
                     FeedbackType.GOOD,
                     "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
-                    null,
-                    null,
-                    null,
-                    "이유를 자연스럽게 붙였어요.",
-                    "좋아하는 것과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.");
+                    "좋아하는 것과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
+                    null);
         }
 
         private AiSessionTurnFeedbackResponse improvement(Long turnId) {
@@ -345,11 +350,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     turnId,
                     FeedbackType.NEEDS_IMPROVEMENT,
                     "한국어로 비유하자면 조금 단어만 놓고 말한 느낌이에요.",
-                    "on weekends 앞에 자연스러운 빈도 표현을 붙이면 좋아요.",
                     "습관을 말할 때는 usually 같은 부사를 쓰면 더 자연스럽게 들려요.",
-                    "I usually cook pasta on weekends.",
-                    null,
-                    null);
+                    "I usually cook pasta on weekends.");
         }
     }
 }
