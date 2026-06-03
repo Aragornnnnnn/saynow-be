@@ -47,9 +47,8 @@ public class ScenarioService {
                 .collect(Collectors.toMap(progress -> progress.getScenario().getId(), UserScenarioProgress::isCompleted));
         Map<Long, List<Scenario>> scenariosByCategoryId = scenarios.stream()
                 .collect(Collectors.groupingBy(scenario -> scenario.getCategory().getId(), LinkedHashMap::new, Collectors.toList()));
-        Map<Long, ScenarioQuestion> firstQuestionByScenarioId = scenarioQuestionRepository.findByScenarioInOrderByScenarioIdAscSequenceAsc(scenarios)
+        Map<Long, ScenarioQuestion> firstQuestionByScenarioId = scenarioQuestionRepository.findFirstQuestionsByScenarioIn(scenarios)
                 .stream()
-                .filter(question -> question.getSequence() == 1)
                 .collect(Collectors.toMap(
                         question -> question.getScenario().getId(),
                         Function.identity(),
