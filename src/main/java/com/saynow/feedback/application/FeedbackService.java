@@ -26,13 +26,17 @@ import com.saynow.session.infrastructure.ai.AiSessionTurnFeedbackResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,34 +50,72 @@ public class FeedbackService {
     private final TurnFeedbackRepository turnFeedbackRepository;
     private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final AiConversationClient aiConversationClient;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
     public FeedbackResponse createFeedback(Long userId, Long sessionId) {
         long stageStartedAt = System.nanoTime();
-        Session session = findOwnedSession(userId, sessionId);
-        List<SessionTurn> turns = turnRepository.findBySessionOrderBySequenceAsc(session);
+        FeedbackLoadResult loadResult = executeReadOnly(() -> loadFeedbackContext(userId, sessionId));
         logStageLatency("feedback", "load_context", userId, sessionId, stageStartedAt);
-
-        SessionFeedback existingFeedback = sessionFeedbackRepository.findBySession(session).orElse(null);
-        if (existingFeedback != null) {
-            return toResponse(session, existingFeedback, turns, turnFeedbackRepository.findBySessionFeedbackOrderByTurnSequenceAsc(existingFeedback));
+        if (loadResult.existingResponse() != null) {
+            return loadResult.existingResponse();
         }
-
-        validateFeedbackReady(session, turns);
 
         stageStartedAt = System.nanoTime();
         AiSessionFeedbackResponse aiFeedback = aiConversationClient.generateSessionFeedback(new AiSessionFeedbackRequest(
-                session.getId(),
+                loadResult.context().sessionId(),
                 new AiScenarioContext(
-                        session.getScenario().getId(),
-                        session.getScenario().getTitle(),
-                        session.getScenario().getBriefing(),
-                        session.getScenario().getConversationGoal()),
-                turns.stream().map(SessionTurn::getId).toList()));
-        validateAiFeedback(aiFeedback, sessionId, turns);
+                        loadResult.context().scenarioId(),
+                        loadResult.context().scenarioTitle(),
+                        loadResult.context().scenarioBriefing(),
+                        loadResult.context().scenarioConversationGoal()),
+                loadResult.context().turnIds()));
+        validateAiFeedback(aiFeedback, sessionId, loadResult.context().turnIds());
         logStageLatency("feedback", "generate_session_feedback", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
+        FeedbackResponse response = executeInTransaction(() -> persistFeedback(userId, sessionId, aiFeedback));
+        logStageLatency("feedback", "save_session_feedback", userId, sessionId, stageStartedAt);
+
+        log.info(
+                "세션 피드백 생성을 완료했습니다. userId={} sessionId={} nativeScore={} turnCount={}",
+                userId,
+                sessionId,
+                response.nativeScore(),
+                response.turnFeedbacks().size());
+        return response;
+    }
+
+    private FeedbackLoadResult loadFeedbackContext(Long userId, Long sessionId) {
+        Session session = findOwnedSession(userId, sessionId);
+        List<SessionTurn> turns = turnRepository.findBySessionOrderBySequenceAsc(session);
+        SessionFeedback existingFeedback = sessionFeedbackRepository.findBySession(session).orElse(null);
+        if (existingFeedback != null) {
+            return new FeedbackLoadResult(
+                    toResponse(
+                            session,
+                            existingFeedback,
+                            turns,
+                            turnFeedbackRepository.findBySessionFeedbackWithTurnOrderByTurnSequenceAsc(existingFeedback)),
+                    null);
+        }
+
+        validateFeedbackReady(session, turns);
+        return new FeedbackLoadResult(null, toFeedbackContext(session, turns));
+    }
+
+    private FeedbackResponse persistFeedback(Long userId, Long sessionId, AiSessionFeedbackResponse aiFeedback) {
+        Session session = findOwnedSession(userId, sessionId);
+        List<SessionTurn> turns = turnRepository.findBySessionOrderBySequenceAsc(session);
+        SessionFeedback existingFeedback = sessionFeedbackRepository.findBySession(session).orElse(null);
+        if (existingFeedback != null) {
+            return toResponse(
+                    session,
+                    existingFeedback,
+                    turns,
+                    turnFeedbackRepository.findBySessionFeedbackWithTurnOrderByTurnSequenceAsc(existingFeedback));
+        }
+        validateFeedbackReady(session, turns);
+
         LocalDateTime now = LocalDateTime.now();
         SessionFeedback sessionFeedback = sessionFeedbackRepository.save(new SessionFeedback(
                 session,
@@ -86,20 +128,12 @@ public class FeedbackService {
                 .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity()));
         List<TurnFeedback> turnFeedbacks = turns.stream()
                 .map(turn -> toTurnFeedback(sessionFeedback, turn, aiFeedbackByTurnId.get(turn.getId()), now))
-                .map(turnFeedbackRepository::save)
                 .toList();
+        turnFeedbackRepository.saveAll(turnFeedbacks);
         session.complete(now);
         userScenarioProgressRepository.findByUserAndScenario(session.getUser(), session.getScenario())
                 .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(session.getUser(), session.getScenario())))
                 .markCompleted(now);
-        logStageLatency("feedback", "save_session_feedback", userId, sessionId, stageStartedAt);
-
-        log.info(
-                "세션 피드백 생성을 완료했습니다. userId={} sessionId={} nativeScore={} turnCount={}",
-                userId,
-                sessionId,
-                sessionFeedback.getNativeScore(),
-                turnFeedbacks.size());
         return toResponse(session, sessionFeedback, turns, turnFeedbacks);
     }
 
@@ -120,7 +154,7 @@ public class FeedbackService {
         }
     }
 
-    private void validateAiFeedback(AiSessionFeedbackResponse feedback, Long sessionId, List<SessionTurn> turns) {
+    private void validateAiFeedback(AiSessionFeedbackResponse feedback, Long sessionId, List<Long> turnIds) {
         if (feedback == null
                 || feedback.sessionId() == null
                 || !feedback.sessionId().equals(sessionId)
@@ -136,7 +170,7 @@ public class FeedbackService {
         Map<Long, AiSessionTurnFeedbackResponse> feedbackByTurnId = feedback.turnFeedbacks().stream()
                 .filter(turnFeedback -> turnFeedback.turnId() != null)
                 .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity(), (left, right) -> left));
-        boolean allTurnsHaveFeedback = turns.stream().allMatch(turn -> feedbackByTurnId.containsKey(turn.getId()));
+        boolean allTurnsHaveFeedback = turnIds.stream().allMatch(feedbackByTurnId::containsKey);
         boolean allFeedbacksAreValid = feedback.turnFeedbacks().stream().allMatch(turnFeedback ->
                 turnFeedback.turnId() != null
                         && turnFeedback.feedbackType() != null
@@ -144,7 +178,7 @@ public class FeedbackService {
                         && !turnFeedback.koreanAnalogy().isBlank()
                         && turnFeedback.feedbackDetail() != null
                         && !turnFeedback.feedbackDetail().isBlank());
-        if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turns.size() || feedback.turnFeedbacks().size() != turns.size() || !allFeedbacksAreValid) {
+        if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turnIds.size() || feedback.turnFeedbacks().size() != turnIds.size() || !allFeedbacksAreValid) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
     }
@@ -207,5 +241,41 @@ public class FeedbackService {
                 elapsedMs,
                 sessionId == null ? "none" : sessionId,
                 userId);
+    }
+
+    private FeedbackContext toFeedbackContext(Session session, List<SessionTurn> turns) {
+        return new FeedbackContext(
+                session.getId(),
+                session.getScenario().getId(),
+                session.getScenario().getTitle(),
+                session.getScenario().getBriefing(),
+                session.getScenario().getConversationGoal(),
+                turns.stream().map(SessionTurn::getId).toList());
+    }
+
+    private <T> T executeReadOnly(Supplier<T> supplier) {
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_REQUIRED);
+        definition.setReadOnly(true);
+        return new TransactionTemplate(transactionManager, definition).execute(status -> supplier.get());
+    }
+
+    private <T> T executeInTransaction(Supplier<T> supplier) {
+        return new TransactionTemplate(transactionManager).execute(status -> supplier.get());
+    }
+
+    private record FeedbackLoadResult(
+            FeedbackResponse existingResponse,
+            FeedbackContext context
+    ) {
+    }
+
+    private record FeedbackContext(
+            Long sessionId,
+            Long scenarioId,
+            String scenarioTitle,
+            String scenarioBriefing,
+            String scenarioConversationGoal,
+            List<Long> turnIds
+    ) {
     }
 }
