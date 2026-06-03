@@ -1,3 +1,26 @@
+# 3차 MVP BE 성능 안정화 컨텍스트 노트
+
+## 2026-06-03
+
+- 사용자는 3차 MVP BE 기능 작업이 끝난 상태에서 캐시, custom query, DB I/O 감소 같은 추가 작업이 있는지 물었다.
+- 코드 확인 결과, 지금 가장 큰 운영 리스크는 단순 쿼리 수보다 AI 원격 호출이 `@Transactional` 메서드 안에서 수행되는 구조다.
+- Redis 같은 외부 캐시 인프라는 현재 시나리오 수와 턴 수가 작아 이번 범위에서 제외한다.
+- 캐시를 적용한다면 사용자 진행도까지 캐시하지 않고 정적 시나리오 마스터 데이터만 짧게 캐시하는 것이 맞지만, 이번 작업은 repository 조회 범위 축소로 충분하다고 판단했다.
+- GitHub sub-issue #39 `AI 원격 호출 트랜잭션 분리`, #40 `시나리오 목록 조회 최적화`, #41 `최종 피드백 재조회 경로 최적화`, #42 `턴 조회와 피드백 저장 경량화`를 생성하고 상위 이슈 #20에 연결했다.
+- #20은 GitHub Project item이 없어서, 사용자가 말한 Done 변경은 기존 하위 이슈와 동일하게 issue close로 처리한다.
+- `SessionService.submitUtterance`는 read-only context 조회, AI `next-question`/`turn-feedback` 호출, 조건부 DB update와 다음 턴 저장 단계로 분리했다.
+- 발화 저장은 `SessionTurnRepository.updateUserUtteranceIfPending`에서 `turnId`, `sessionId`, `userId`, `SessionStatus.IN_PROGRESS`, 미응답 조건을 함께 확인한다.
+- 다음 턴 저장은 `Session`과 `ScenarioQuestion`을 재조회하지 않고 JPA reference로 연결해 write 단계 DB 왕복을 줄였다.
+- `FeedbackService.createFeedback`는 read-only context 조회, AI `session-feedback` 호출, DB 저장 단계로 분리했다.
+- 이미 생성된 피드백 재조회는 AI를 다시 호출하지 않고 저장된 `session_feedbacks`, `turn_feedbacks`, `session_turns` 기준으로 응답한다.
+- 시나리오 목록 조회는 모든 질문을 가져온 뒤 필터링하지 않고, `sequence=1` 질문만 조회하도록 좁혔다.
+- 검증 중 `SessionQueryEfficiencyIntegrationTest`가 statement count 9로 실패했다. 원인은 트랜잭션 분리 후 write 단계에서 세션, 턴, 다음 질문을 다시 조회한 것이다.
+- 조건부 update와 reference 저장으로 조정한 뒤 `SessionQueryEfficiencyIntegrationTest`가 통과했고, `ScenarioFlowIntegrationTest`에는 AI 호출 시점에 실제 트랜잭션이 열려 있지 않음을 확인하는 검증을 추가했다.
+- 관련 검증 `./gradlew test --tests com.saynow.session.SessionQueryEfficiencyIntegrationTest --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`는 통과했다.
+- 전체 검증 `./gradlew test`도 통과했다.
+
+---
+
 # 피드백 API 새 명세 반영 컨텍스트 노트
 
 ## 2026-06-03

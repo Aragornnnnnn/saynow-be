@@ -1,3 +1,18 @@
+# 3차 MVP BE 성능 안정화 체크리스트
+
+- [x] 성능 안정화 sub-issue #39, #40, #41, #42를 생성하고 상위 이슈 #20에 연결한다.
+- [x] `submitUtterance`의 context 조회, AI 호출, DB 반영 단계를 분리한다.
+- [x] `createFeedback`의 context 조회, AI 호출, DB 저장 단계를 분리한다.
+- [x] 시나리오 목록 조회에서 첫 질문 조회 범위를 1번 질문으로 좁힌다.
+- [x] 미응답 턴 조회를 첫 건 조회 방식으로 변경한다.
+- [x] 최종 피드백 재조회 경로에서 턴별 피드백과 턴 조회를 줄인다.
+- [x] 턴별 피드백 저장을 일괄 저장 방식으로 정리한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] 완료된 GitHub sub-issue 체크리스트를 체크하고 이슈를 close한다.
+- [x] 변경 범위를 점검하고 의미 단위로 커밋한다.
+
+---
+
 # 피드백 API 새 명세 반영 체크리스트
 
 - [x] 현재 `POST /api/v1/sessions/{sessionId}/feedback` 구현, AI 응답 DTO, 저장 컬럼, OpenAPI 예시를 확인한다.
