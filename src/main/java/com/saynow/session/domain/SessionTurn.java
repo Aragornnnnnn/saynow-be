@@ -75,9 +75,4 @@ public class SessionTurn extends BaseTimeEntity {
         return userUtterance != null && !userUtterance.isBlank();
     }
 
-    public void submitUserUtterance(String userUtterance) {
-        this.userUtterance = userUtterance;
-        this.answeredAt = LocalDateTime.now();
-    }
-
 }

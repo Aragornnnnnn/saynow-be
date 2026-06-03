@@ -2,11 +2,13 @@
 package com.saynow.session.infrastructure;
 
 import com.saynow.session.domain.Session;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
 public interface SessionRepository extends JpaRepository<Session, Long> {
 
+    @EntityGraph(attributePaths = "scenario")
     Optional<Session> findByIdAndUserId(Long id, Long userId);
 }

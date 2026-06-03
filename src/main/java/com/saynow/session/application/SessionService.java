@@ -35,12 +35,17 @@ import com.saynow.session.infrastructure.ai.AiTurnFeedbackStatusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +60,7 @@ public class SessionService {
     private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final UserRepository userRepository;
     private final AiConversationClient aiConversationClient;
+    private final PlatformTransactionManager transactionManager;
 
     @Transactional
     public SessionStartResponse startSession(Long userId, Long scenarioId) {
@@ -97,74 +103,118 @@ public class SessionService {
                 new SessionProgressResponse(1, scenario.getTotalQuestionCount(), false));
     }
 
-    @Transactional
     public UserUtteranceResponse submitUtterance(Long userId, Long sessionId, UserUtteranceRequest request) {
         validateUserUtterance(request);
         String userUtterance = request.userUtterance().trim();
 
         long stageStartedAt = System.nanoTime();
-        Session session = findOwnedSession(userId, sessionId);
-        assertInProgress(session);
-        SessionTurn currentTurn = turnRepository.findBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED));
+        SubmitUtteranceContext context = executeReadOnly(() -> loadSubmitUtteranceContext(userId, sessionId));
         logStageLatency("submit_utterance", "load_context", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
-        ScenarioQuestion nextQuestion = scenarioQuestionRepository
-                .findByScenarioAndSequence(session.getScenario(), currentTurn.getSequence() + 1)
-                .orElse(null);
         AiNextQuestionResponse nextQuestionResponse = null;
-        if (nextQuestion != null) {
+        if (context.nextQuestion() != null) {
             nextQuestionResponse = aiConversationClient.generateNextQuestion(new AiNextQuestionRequest(
-                    session.getId(),
-                    currentTurn.getId(),
-                    currentTurn.getSequence(),
-                    toScenarioContext(session.getScenario()),
-                    new AiTurnContext(currentTurn.getAiQuestion(), currentTurn.getTranslatedQuestion(), userUtterance),
-                    toFixedQuestion(nextQuestion)));
+                    context.sessionId(),
+                    context.currentTurnId(),
+                    context.currentSequence(),
+                    toScenarioContext(context),
+                    new AiTurnContext(context.currentAiQuestion(), context.currentTranslatedQuestion(), userUtterance),
+                    toFixedQuestion(context.nextQuestion())));
             validateNextQuestionResponse(nextQuestionResponse);
         }
         logStageLatency("submit_utterance", "generate_next_question", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
         AiTurnFeedbackStatusResponse turnFeedback = aiConversationClient.generateTurnFeedback(new AiTurnFeedbackRequest(
-                session.getId(),
-                currentTurn.getId(),
-                currentTurn.getSequence(),
-                toScenarioContext(session.getScenario()),
-                new AiTurnContext(currentTurn.getAiQuestion(), currentTurn.getTranslatedQuestion(), userUtterance)));
-        validateTurnFeedbackResponse(turnFeedback, session.getId(), currentTurn.getId());
+                context.sessionId(),
+                context.currentTurnId(),
+                context.currentSequence(),
+                toScenarioContext(context),
+                new AiTurnContext(context.currentAiQuestion(), context.currentTranslatedQuestion(), userUtterance)));
+        validateTurnFeedbackResponse(turnFeedback, context.sessionId(), context.currentTurnId());
         logStageLatency("submit_utterance", "request_turn_feedback", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
-        currentTurn.submitUserUtterance(userUtterance);
-        SessionTurn nextTurn = null;
-        if (nextQuestion != null) {
-            nextTurn = turnRepository.save(new SessionTurn(
-                    session,
-                    nextQuestion,
-                    nextQuestion.getSequence(),
-                    nextQuestionResponse.aiQuestion(),
-                    nextQuestionResponse.translatedQuestion()));
-        }
+        AiNextQuestionResponse generatedNextQuestion = nextQuestionResponse;
+        UserUtteranceResponse response = executeInTransaction(() -> persistSubmittedUtterance(
+                userId,
+                sessionId,
+                context,
+                userUtterance,
+                generatedNextQuestion,
+                turnFeedback));
         logStageLatency("submit_utterance", "persist_result_transaction", userId, sessionId, stageStartedAt);
 
-        boolean completed = nextTurn == null;
-        int currentSequence = completed ? currentTurn.getSequence() : nextTurn.getSequence();
         log.info(
                 "세션 발화를 처리했습니다. userId={} sessionId={} turnId={} submittedSequence={} turnFeedbackStatus={} progressCompleted={}",
                 userId,
                 sessionId,
+                context.currentTurnId(),
+                context.currentSequence(),
+                turnFeedback.feedbackStatus(),
+                response.progress().completed());
+        return response;
+    }
+
+    private SubmitUtteranceContext loadSubmitUtteranceContext(Long userId, Long sessionId) {
+        Session session = findOwnedSession(userId, sessionId);
+        assertInProgress(session);
+        SessionTurn currentTurn = turnRepository.findFirstBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
+                .orElseThrow(() -> new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED));
+        ScenarioQuestion nextQuestion = scenarioQuestionRepository
+                .findByScenarioAndSequence(session.getScenario(), currentTurn.getSequence() + 1)
+                .orElse(null);
+        Scenario scenario = session.getScenario();
+        return new SubmitUtteranceContext(
+                session.getId(),
+                scenario.getId(),
+                scenario.getTitle(),
+                scenario.getBriefing(),
+                scenario.getConversationGoal(),
+                scenario.getTotalQuestionCount(),
                 currentTurn.getId(),
                 currentTurn.getSequence(),
-                turnFeedback.feedbackStatus(),
-                completed);
+                currentTurn.getAiQuestion(),
+                currentTurn.getTranslatedQuestion(),
+                nextQuestion == null ? null : toFixedQuestionContext(nextQuestion));
+    }
+
+    private UserUtteranceResponse persistSubmittedUtterance(
+            Long userId,
+            Long sessionId,
+            SubmitUtteranceContext context,
+            String userUtterance,
+            AiNextQuestionResponse nextQuestionResponse,
+            AiTurnFeedbackStatusResponse turnFeedback
+    ) {
+        int updatedRows = turnRepository.updateUserUtteranceIfPending(
+                context.currentTurnId(),
+                sessionId,
+                userId,
+                SessionStatus.IN_PROGRESS,
+                userUtterance);
+        if (updatedRows == 0) {
+            throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
+        }
+        SessionTurn nextTurn = null;
+        if (context.nextQuestion() != null) {
+            Session session = sessionRepository.getReferenceById(sessionId);
+            ScenarioQuestion nextQuestion = scenarioQuestionRepository.getReferenceById(context.nextQuestion().id());
+            nextTurn = turnRepository.save(new SessionTurn(
+                    session,
+                    nextQuestion,
+                    context.nextQuestion().sequence(),
+                    nextQuestionResponse.aiQuestion(),
+                    nextQuestionResponse.translatedQuestion()));
+        }
+
+        boolean completed = nextTurn == null;
+        int currentSequence = completed ? context.currentSequence() : nextTurn.getSequence();
         return new UserUtteranceResponse(
-                new SubmittedTurnResponse(currentTurn.getId(), currentTurn.getSequence(), turnFeedback.feedbackStatus()),
+                new SubmittedTurnResponse(context.currentTurnId(), context.currentSequence(), turnFeedback.feedbackStatus()),
                 nextTurn == null ? null : toTurnResponse(nextTurn),
-                new SessionProgressResponse(currentSequence, session.getScenario().getTotalQuestionCount(), completed));
+                new SessionProgressResponse(currentSequence, context.totalQuestionCount(), completed));
     }
 
     @Transactional
@@ -259,8 +309,32 @@ public class SessionService {
                 scenario.getConversationGoal());
     }
 
+    private AiScenarioContext toScenarioContext(SubmitUtteranceContext context) {
+        return new AiScenarioContext(
+                context.scenarioId(),
+                context.scenarioTitle(),
+                context.scenarioBriefing(),
+                context.scenarioConversationGoal());
+    }
+
     private AiFixedQuestion toFixedQuestion(ScenarioQuestion question) {
         return new AiFixedQuestion(
+                question.getId(),
+                question.getSequence(),
+                question.getQuestionEn(),
+                question.getQuestionKo());
+    }
+
+    private AiFixedQuestion toFixedQuestion(FixedQuestionContext question) {
+        return new AiFixedQuestion(
+                question.id(),
+                question.sequence(),
+                question.questionEn(),
+                question.questionKo());
+    }
+
+    private FixedQuestionContext toFixedQuestionContext(ScenarioQuestion question) {
+        return new FixedQuestionContext(
                 question.getId(),
                 question.getSequence(),
                 question.getQuestionEn(),
@@ -285,5 +359,38 @@ public class SessionService {
                 elapsedMs,
                 sessionId == null ? "none" : sessionId,
                 userId);
+    }
+
+    private <T> T executeReadOnly(Supplier<T> supplier) {
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_REQUIRED);
+        definition.setReadOnly(true);
+        return new TransactionTemplate(transactionManager, definition).execute(status -> supplier.get());
+    }
+
+    private <T> T executeInTransaction(Supplier<T> supplier) {
+        return new TransactionTemplate(transactionManager).execute(status -> supplier.get());
+    }
+
+    private record SubmitUtteranceContext(
+            Long sessionId,
+            Long scenarioId,
+            String scenarioTitle,
+            String scenarioBriefing,
+            String scenarioConversationGoal,
+            int totalQuestionCount,
+            Long currentTurnId,
+            int currentSequence,
+            String currentAiQuestion,
+            String currentTranslatedQuestion,
+            FixedQuestionContext nextQuestion
+    ) {
+    }
+
+    private record FixedQuestionContext(
+            Long id,
+            int sequence,
+            String questionEn,
+            String questionKo
+    ) {
     }
 }
