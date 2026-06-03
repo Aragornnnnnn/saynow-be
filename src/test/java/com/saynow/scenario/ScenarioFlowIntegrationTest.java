@@ -25,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,6 +125,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         assertThat(aiConversationClient.nextQuestionRequests).hasSize(3);
         assertThat(aiConversationClient.turnFeedbackRequests).hasSize(4);
+        assertThat(aiConversationClient.nextQuestionTransactionActive).containsOnly(false);
+        assertThat(aiConversationClient.turnFeedbackTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().currentTurn().userUtterance())
                 .isEqualTo("I like pizza because it is spicy.");
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().nextQuestion().sequence())
@@ -158,6 +161,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].praiseReason").doesNotExist());
 
         assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds()).hasSize(4);
+        assertThat(aiConversationClient.sessionFeedbackTransactionActive).isFalse();
+        assertThat(aiConversationClient.sessionFeedbackRequestCount).isEqualTo(1);
         Integer sessionFeedbackCount = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM session_feedbacks
@@ -174,6 +179,14 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 WHERE st.session_id = ?
                 """, Integer.class, sessionId);
         assertThat(turnFeedbackCount).isEqualTo(4);
+
+        mockMvc.perform(post("/api/v1/sessions/{sessionId}/feedback", sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.nativeScore").value(82))
+                .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4));
+        assertThat(aiConversationClient.sessionFeedbackRequestCount).isEqualTo(1);
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -290,17 +303,26 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         private final List<AiNextQuestionRequest> nextQuestionRequests = new ArrayList<>();
         private final List<AiTurnFeedbackRequest> turnFeedbackRequests = new ArrayList<>();
+        private final List<Boolean> nextQuestionTransactionActive = new ArrayList<>();
+        private final List<Boolean> turnFeedbackTransactionActive = new ArrayList<>();
         private AiSessionFeedbackRequest sessionFeedbackRequest;
+        private int sessionFeedbackRequestCount;
+        private boolean sessionFeedbackTransactionActive;
 
         void reset() {
             nextQuestionRequests.clear();
             turnFeedbackRequests.clear();
+            nextQuestionTransactionActive.clear();
+            turnFeedbackTransactionActive.clear();
             sessionFeedbackRequest = null;
+            sessionFeedbackRequestCount = 0;
+            sessionFeedbackTransactionActive = false;
         }
 
         @Override
         public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
             nextQuestionRequests.add(request);
+            nextQuestionTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return switch (request.nextQuestion().sequence()) {
                 case 2 -> new AiNextQuestionResponse(
                         "That sounds tasty. Do you cook often?",
@@ -318,12 +340,15 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         @Override
         public AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request) {
             turnFeedbackRequests.add(request);
+            turnFeedbackTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return new AiTurnFeedbackStatusResponse(request.sessionId(), request.turnId(), TurnFeedbackStatus.PREPARING);
         }
 
         @Override
         public AiSessionFeedbackResponse generateSessionFeedback(AiSessionFeedbackRequest request) {
             sessionFeedbackRequest = request;
+            sessionFeedbackRequestCount++;
+            sessionFeedbackTransactionActive = TransactionSynchronizationManager.isActualTransactionActive();
             return new AiSessionFeedbackResponse(
                     request.sessionId(),
                     82,
