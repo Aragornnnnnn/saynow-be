@@ -143,19 +143,24 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.nativeScore").value(82))
-                .andExpect(jsonPath("$.data.nativeLevelLabel").value("유학생 수준"))
-                .andExpect(jsonPath("$.data.summary").value("하고 싶은 말을 끝까지 전달했고 이유를 붙이는 힘이 좋았어요."))
+                .andExpect(jsonPath("$.data.nativeScoreBreakdown").doesNotExist())
+                .andExpect(jsonPath("$.data.highlightMessage").value("한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요."))
+                .andExpect(jsonPath("$.data.nativeLevelLabel").doesNotExist())
+                .andExpect(jsonPath("$.data.summary").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].originalQuestion")
                         .value("What is your favorite food? Why do you like it?"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackType").value("GOOD"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].koreanAnalogy").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].positiveFeedback").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackDetail").isString())
-                .andExpect(jsonPath("$.data.turnFeedbacks[0].betterExpression").value(nullValue()))
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].benchmarkMessage").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].betterExpression").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackType").value("NEEDS_IMPROVEMENT"))
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].positiveFeedback").isString())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackDetail").isString())
-                .andExpect(jsonPath("$.data.turnFeedbacks[1].betterExpression").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].benchmarkMessage").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].correctionPoint").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].plusOneExpression").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].praiseReason").doesNotExist());
@@ -168,7 +173,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 FROM session_feedbacks
                 WHERE session_id = ?
                   AND native_score = 82
-                  AND native_level_label = '유학생 수준'
+                  AND highlight_message = '한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.'
                 """, Integer.class, sessionId);
         assertThat(sessionFeedbackCount).isEqualTo(1);
 
@@ -185,6 +190,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.nativeScore").value(82))
+                .andExpect(jsonPath("$.data.highlightMessage").value("한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요."))
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4));
         assertThat(aiConversationClient.sessionFeedbackRequestCount).isEqualTo(1);
 
@@ -352,8 +358,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             return new AiSessionFeedbackResponse(
                     request.sessionId(),
                     82,
-                    "유학생 수준",
-                    "하고 싶은 말을 끝까지 전달했고 이유를 붙이는 힘이 좋았어요.",
+                    "한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.",
                     List.of(
                             good(request.expectedTurnIds().get(0)),
                             improvement(request.expectedTurnIds().get(1)),
@@ -366,8 +371,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     turnId,
                     FeedbackType.GOOD,
                     "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
+                    null,
                     "좋아하는 것과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
-                    null);
+                    "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요.");
         }
 
         private AiSessionTurnFeedbackResponse improvement(Long turnId) {
@@ -375,8 +381,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     turnId,
                     FeedbackType.NEEDS_IMPROVEMENT,
                     "한국어로 비유하자면 조금 단어만 놓고 말한 느낌이에요.",
-                    "습관을 말할 때는 usually 같은 부사를 쓰면 더 자연스럽게 들려요.",
-                    "I usually cook pasta on weekends.");
+                    "어려운 표현에 도전한 점은 좋아요. 틀리는 것보다 시도한 게 더 중요해요.",
+                    "I cook pasta on weekends. → 습관을 말할 때는 usually 같은 부사를 쓰면 더 자연스럽게 들려요. I usually cook pasta on weekends.처럼 말할 수 있어요.",
+                    null);
         }
     }
 }

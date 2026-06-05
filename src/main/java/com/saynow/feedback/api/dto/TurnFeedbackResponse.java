@@ -11,7 +11,8 @@ public record TurnFeedbackResponse(
         String userUtterance,
         FeedbackType feedbackType,
         String koreanAnalogy,
+        String positiveFeedback,
         String feedbackDetail,
-        String betterExpression
+        String benchmarkMessage
 ) {
 }

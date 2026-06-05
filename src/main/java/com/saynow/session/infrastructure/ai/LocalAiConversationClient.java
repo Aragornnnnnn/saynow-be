@@ -32,14 +32,14 @@ public class LocalAiConversationClient implements AiConversationClient {
                         turnId,
                         FeedbackType.GOOD,
                         "한국어로 비유하자면 하고 싶은 말을 담백하게 전달한 느낌이에요.",
+                        null,
                         "질문에 맞는 답을 영어 문장으로 끝까지 말했기 때문이에요.",
-                        null))
+                        "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."))
                 .toList();
         return new AiSessionFeedbackResponse(
                 request.sessionId(),
                 82,
-                "유학생 수준",
-                "하고 싶은 말을 끝까지 전달하는 힘이 좋았고, 이유를 덧붙이는 문장도 자연스러웠어요.",
+                "한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.",
                 turnFeedbacks);
     }
 }

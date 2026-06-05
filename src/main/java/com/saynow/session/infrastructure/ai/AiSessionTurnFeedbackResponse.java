@@ -5,7 +5,8 @@ public record AiSessionTurnFeedbackResponse(
         Long turnId,
         FeedbackType feedbackType,
         String koreanAnalogy,
+        String positiveFeedback,
         String feedbackDetail,
-        String betterExpression
+        String benchmarkMessage
 ) {
 }

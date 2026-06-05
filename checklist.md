@@ -1,3 +1,17 @@
+# 세션 최종 피드백 점수/후킹 계약 변경 체크리스트
+
+- [x] 현재 최신 `develop`의 3차 MVP 피드백 계약과 새 명세 차이를 확인한다.
+- [x] AI `session-feedback` 응답의 `nativeScoreBreakdown`, `highlightMessage`, `positiveFeedback`, `benchmarkMessage` 매핑 RED 테스트를 추가한다.
+- [x] FE 응답에서 `nativeLevelLabel`, `summary`, `betterExpression`이 제거되는 RED 테스트를 추가한다.
+- [x] DB 스키마가 새 저장 필드와 구 제거 필드를 반영하는 RED 테스트를 추가한다.
+- [x] AI DTO, 원격/로컬 AI client, 피드백 응답 DTO를 새 계약으로 수정한다.
+- [x] `session_feedbacks`, `turn_feedbacks` Flyway migration과 엔티티 매핑을 수정한다.
+- [x] OpenAPI 예시와 통합 테스트를 새 BE-FE 명세로 갱신한다.
+- [x] 관련 focused 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
 # 3차 MVP BE 성능 안정화 체크리스트
 
 - [x] 성능 안정화 sub-issue #39, #40, #41, #42를 생성하고 상위 이슈 #20에 연결한다.

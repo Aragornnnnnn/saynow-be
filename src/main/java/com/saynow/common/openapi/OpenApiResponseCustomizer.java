@@ -127,8 +127,7 @@ public class OpenApiResponseCustomizer {
                     success(HttpStatus.OK, "세션 최종 피드백 생성 성공", objectMap(
                             "sessionId", 12,
                             "nativeScore", 82,
-                            "nativeLevelLabel", "유학생 수준",
-                            "summary", "하고 싶은 말을 끝까지 전달하는 힘이 좋았어요.",
+                            "highlightMessage", "한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.",
                             "turnFeedbacks", List.of(objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
@@ -137,8 +136,9 @@ public class OpenApiResponseCustomizer {
                                     "userUtterance", "I like pizza because it is spicy.",
                                     "feedbackType", "GOOD",
                                     "koreanAnalogy", "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
+                                    "positiveFeedback", null,
                                     "feedbackDetail", "좋아하는 음식과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
-                                    "betterExpression", null))
+                                    "benchmarkMessage", "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."))
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETED), error(ErrorCode.FEEDBACK_NOT_READY), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),
             endpoint(NpsController.class, "submitNps",

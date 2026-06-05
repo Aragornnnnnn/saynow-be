@@ -1,3 +1,27 @@
+# 세션 최종 피드백 점수/후킹 계약 변경 컨텍스트 노트
+
+## 2026-06-06
+
+- 사용자는 AI 쪽 변경 명세에 맞춰 BE-FE 최종 피드백 명세를 바꾼 뒤, 그 명세대로 개발을 진행하라고 요청했다.
+- 현재 최신 `develop`은 이미 3차 MVP 구조이며, 최종 피드백은 AI `session-feedback` 응답을 받아 `session_feedbacks`와 `turn_feedbacks`에 저장한다.
+- 현재 BE에는 구 계약인 `nativeLevelLabel`, `summary`, `betterExpression`이 남아 있다.
+- 새 계약은 `nativeLevelLabel`을 제거하고, `summary` 대신 후킹 메시지인 `highlightMessage`를 사용한다.
+- `nativeScore`는 유지하고 `nativeScoreBreakdown.attemptedWordScore`, `sentenceComplexityScore`, `comprehensibilityScore`를 추가한다.
+- 턴별 피드백은 `betterExpression`을 제거하고, `feedbackDetail` 안에 개선 표현까지 합쳐서 받는다.
+- `NEEDS_IMPROVEMENT`는 `positiveFeedback`이 필요하고, `GOOD`은 제공 가능한 경우 `benchmarkMessage`를 내려준다.
+- 저장 구조도 새 응답과 재조회가 일치하도록 변경한다. 기존 배포 migration은 수정하지 않고 새 migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `AiNativeScoreBreakdown`이 없어 `compileTestJava`에서 실패했다.
+- `AiNativeScoreBreakdown`, `NativeScoreBreakdownResponse`를 추가하고 AI/FE 응답 DTO를 새 계약으로 바꿨다.
+- `V12__update_session_feedback_score_breakdown_contract.sql`로 `session_feedbacks`에 점수 세부 항목과 `highlight_message`를 추가하고 `native_level_label`, `summary`를 제거한다. `turn_feedbacks`에는 `positive_feedback`, `benchmark_message`를 추가하고 `better_expression`을 제거한다.
+- 원격 AI 응답 매핑은 `nativeScoreBreakdown`, `highlightMessage`를 필수로 검증하고, `NEEDS_IMPROVEMENT`의 `positiveFeedback`도 필수로 검증한다.
+- GREEN 검증으로 RED와 같은 focused 테스트 명령을 재실행했고 통과했다.
+- 추가 관련 검증으로 `./gradlew test --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.session.SessionQueryEfficiencyIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 코드, migration, 테스트, OpenAPI 예시 변경은 `feat: 세션 최종 피드백 점수 계약 변경` 커밋으로 묶었다.
+
+---
+
 # 3차 MVP BE 성능 안정화 컨텍스트 노트
 
 ## 2026-06-03

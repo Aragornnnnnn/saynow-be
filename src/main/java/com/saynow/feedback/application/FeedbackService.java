@@ -23,6 +23,7 @@ import com.saynow.session.infrastructure.ai.AiScenarioContext;
 import com.saynow.session.infrastructure.ai.AiSessionFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiSessionFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiSessionTurnFeedbackResponse;
+import com.saynow.session.infrastructure.ai.FeedbackType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -121,8 +122,7 @@ public class FeedbackService {
                 session,
                 FeedbackStatus.READY,
                 aiFeedback.nativeScore(),
-                aiFeedback.nativeLevelLabel(),
-                aiFeedback.summary(),
+                aiFeedback.highlightMessage(),
                 now));
         Map<Long, AiSessionTurnFeedbackResponse> aiFeedbackByTurnId = aiFeedback.turnFeedbacks().stream()
                 .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity()));
@@ -160,10 +160,8 @@ public class FeedbackService {
                 || !feedback.sessionId().equals(sessionId)
                 || feedback.nativeScore() < 0
                 || feedback.nativeScore() > 100
-                || feedback.nativeLevelLabel() == null
-                || feedback.nativeLevelLabel().isBlank()
-                || feedback.summary() == null
-                || feedback.summary().isBlank()
+                || feedback.highlightMessage() == null
+                || feedback.highlightMessage().isBlank()
                 || feedback.turnFeedbacks() == null) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
@@ -176,6 +174,8 @@ public class FeedbackService {
                         && turnFeedback.feedbackType() != null
                         && turnFeedback.koreanAnalogy() != null
                         && !turnFeedback.koreanAnalogy().isBlank()
+                        && (turnFeedback.feedbackType() != FeedbackType.NEEDS_IMPROVEMENT
+                        || (turnFeedback.positiveFeedback() != null && !turnFeedback.positiveFeedback().isBlank()))
                         && turnFeedback.feedbackDetail() != null
                         && !turnFeedback.feedbackDetail().isBlank());
         if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turnIds.size() || feedback.turnFeedbacks().size() != turnIds.size() || !allFeedbacksAreValid) {
@@ -195,8 +195,9 @@ public class FeedbackService {
                 FeedbackStatus.READY,
                 feedback.feedbackType(),
                 feedback.koreanAnalogy(),
+                feedback.positiveFeedback(),
                 feedback.feedbackDetail(),
-                feedback.betterExpression(),
+                feedback.benchmarkMessage(),
                 generatedAt);
     }
 
@@ -211,8 +212,7 @@ public class FeedbackService {
         return new FeedbackResponse(
                 session.getId(),
                 sessionFeedback.getNativeScore(),
-                sessionFeedback.getNativeLevelLabel(),
-                sessionFeedback.getSummary(),
+                sessionFeedback.getHighlightMessage(),
                 turns.stream()
                         .map(turn -> toTurnFeedbackResponse(turn, feedbackByTurnId.get(turn.getId())))
                         .toList());
@@ -227,8 +227,9 @@ public class FeedbackService {
                 turn.getUserUtterance(),
                 feedback.getFeedbackType(),
                 feedback.getKoreanAnalogy(),
+                feedback.getPositiveFeedback(),
                 feedback.getFeedbackDetail(),
-                feedback.getBetterExpression());
+                feedback.getBenchmarkMessage());
     }
 
     private void logStageLatency(String workflow, String stage, Long userId, Long sessionId, long startedAtNanos) {

@@ -6,8 +6,7 @@ import java.util.List;
 public record FeedbackResponse(
         Long sessionId,
         int nativeScore,
-        String nativeLevelLabel,
-        String summary,
+        String highlightMessage,
         List<TurnFeedbackResponse> turnFeedbacks
 ) {
 }

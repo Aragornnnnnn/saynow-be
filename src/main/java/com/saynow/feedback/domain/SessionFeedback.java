@@ -40,11 +40,8 @@ public class SessionFeedback extends BaseTimeEntity {
     @Column(name = "native_score", nullable = false)
     private int nativeScore;
 
-    @Column(name = "native_level_label", nullable = false, length = 100)
-    private String nativeLevelLabel;
-
-    @Column(nullable = false, columnDefinition = "text")
-    private String summary;
+    @Column(name = "highlight_message", nullable = false, columnDefinition = "text")
+    private String highlightMessage;
 
     @Column(name = "generated_at", nullable = false)
     private LocalDateTime generatedAt;
@@ -53,15 +50,13 @@ public class SessionFeedback extends BaseTimeEntity {
             Session session,
             FeedbackStatus status,
             int nativeScore,
-            String nativeLevelLabel,
-            String summary,
+            String highlightMessage,
             LocalDateTime generatedAt
     ) {
         this.session = session;
         this.status = status;
         this.nativeScore = nativeScore;
-        this.nativeLevelLabel = nativeLevelLabel;
-        this.summary = summary;
+        this.highlightMessage = highlightMessage;
         this.generatedAt = generatedAt;
     }
 

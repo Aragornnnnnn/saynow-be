@@ -111,15 +111,15 @@ class RemoteAiConversationClientTest {
                         {
                           "sessionId":1000,
                           "nativeScore":82,
-                          "nativeLevelLabel":"유학생 수준",
-                          "summary":"하고 싶은 말을 끝까지 전달하는 힘이 좋았어요.",
+                          "highlightMessage":"한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.",
                           "turnFeedbacks":[
                             {
                               "turnId":5000,
                               "feedbackType":"GOOD",
                               "koreanAnalogy":"한국어로 비유하자면 담백하게 들려요.",
+                              "positiveFeedback":null,
                               "feedbackDetail":"좋아하는 음식과 이유를 분명하게 연결했어요.",
-                              "betterExpression":null
+                              "benchmarkMessage":"한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."
                             }
                           ]
                         }
@@ -132,11 +132,12 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("scenario").get("scenarioId").asLong()).isEqualTo(10L);
         assertThat(json.get("expectedTurnIds").get(0).asLong()).isEqualTo(5000L);
         assertThat(response.nativeScore()).isEqualTo(82);
-        assertThat(response.nativeLevelLabel()).isEqualTo("유학생 수준");
+        assertThat(response.highlightMessage()).isEqualTo("한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.");
         assertThat(response.turnFeedbacks()).hasSize(1);
         assertThat(response.turnFeedbacks().getFirst().feedbackType()).isEqualTo(FeedbackType.GOOD);
         assertThat(response.turnFeedbacks().getFirst().feedbackDetail()).isEqualTo("좋아하는 음식과 이유를 분명하게 연결했어요.");
-        assertThat(response.turnFeedbacks().getFirst().betterExpression()).isNull();
+        assertThat(response.turnFeedbacks().getFirst().positiveFeedback()).isNull();
+        assertThat(response.turnFeedbacks().getFirst().benchmarkMessage()).isEqualTo("한국인의 35%가 틀리는 표현인데 정확히 맞췄어요.");
     }
 
     @Test

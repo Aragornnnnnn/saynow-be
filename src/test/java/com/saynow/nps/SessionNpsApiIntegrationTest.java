@@ -241,15 +241,15 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
             return new AiSessionFeedbackResponse(
                     request.sessionId(),
                     82,
-                    "유학생 수준",
-                    "하고 싶은 말을 끝까지 전달하는 힘이 좋았어요.",
+                    "한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.",
                     request.expectedTurnIds().stream()
                             .map(turnId -> new AiSessionTurnFeedbackResponse(
                                     turnId,
                                     FeedbackType.GOOD,
                                     "한국어로 비유하자면 자연스럽게 들려요.",
+                                    null,
                                     "답변 의도가 분명했기 때문이에요.",
-                                    null))
+                                    "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."))
                             .toList());
         }
     }

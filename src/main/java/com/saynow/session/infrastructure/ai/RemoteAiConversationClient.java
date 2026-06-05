@@ -153,8 +153,7 @@ public class RemoteAiConversationClient implements AiConversationClient {
     private record RemoteSessionFeedbackResponse(
             Long sessionId,
             Integer nativeScore,
-            String nativeLevelLabel,
-            String summary,
+            String highlightMessage,
             List<RemoteSessionTurnFeedback> turnFeedbacks
     ) {
 
@@ -163,18 +162,15 @@ public class RemoteAiConversationClient implements AiConversationClient {
                     || nativeScore == null
                     || nativeScore < 0
                     || nativeScore > 100
-                    || nativeLevelLabel == null
-                    || nativeLevelLabel.isBlank()
-                    || summary == null
-                    || summary.isBlank()
+                    || highlightMessage == null
+                    || highlightMessage.isBlank()
                     || turnFeedbacks == null) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 최종 피드백 응답이 올바르지 않습니다.");
             }
             return new AiSessionFeedbackResponse(
                     sessionId,
                     nativeScore,
-                    nativeLevelLabel,
-                    summary,
+                    highlightMessage,
                     turnFeedbacks.stream()
                             .map(RemoteSessionTurnFeedback::toResponse)
                             .toList());
@@ -186,8 +182,9 @@ public class RemoteAiConversationClient implements AiConversationClient {
             Long turnId,
             FeedbackType feedbackType,
             String koreanAnalogy,
+            String positiveFeedback,
             String feedbackDetail,
-            String betterExpression
+            String benchmarkMessage
     ) {
 
         private AiSessionTurnFeedbackResponse toResponse() {
@@ -195,6 +192,8 @@ public class RemoteAiConversationClient implements AiConversationClient {
                     || feedbackType == null
                     || koreanAnalogy == null
                     || koreanAnalogy.isBlank()
+                    || (feedbackType == FeedbackType.NEEDS_IMPROVEMENT
+                    && (positiveFeedback == null || positiveFeedback.isBlank()))
                     || feedbackDetail == null
                     || feedbackDetail.isBlank()) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴별 피드백 응답이 올바르지 않습니다.");
@@ -203,8 +202,9 @@ public class RemoteAiConversationClient implements AiConversationClient {
                     turnId,
                     feedbackType,
                     koreanAnalogy,
+                    positiveFeedback,
                     feedbackDetail,
-                    betterExpression);
+                    benchmarkMessage);
         }
     }
 }

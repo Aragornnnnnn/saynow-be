@@ -47,8 +47,12 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     void feedbackSchemaUsesNativeScoreAndQualityFeedbackFields() {
         assertThat(columnExists("session_feedbacks", "status")).isTrue();
         assertThat(columnExists("session_feedbacks", "native_score")).isTrue();
-        assertThat(columnExists("session_feedbacks", "native_level_label")).isTrue();
-        assertThat(columnExists("session_feedbacks", "summary")).isTrue();
+        assertThat(columnExists("session_feedbacks", "attempted_word_score")).isFalse();
+        assertThat(columnExists("session_feedbacks", "sentence_complexity_score")).isFalse();
+        assertThat(columnExists("session_feedbacks", "comprehensibility_score")).isFalse();
+        assertThat(columnExists("session_feedbacks", "highlight_message")).isTrue();
+        assertThat(columnExists("session_feedbacks", "native_level_label")).isFalse();
+        assertThat(columnExists("session_feedbacks", "summary")).isFalse();
         assertThat(columnExists("session_feedbacks", "generated_at")).isTrue();
         assertThat(columnExists("session_feedbacks", "comprehension_score")).isFalse();
         assertThat(columnExists("session_feedbacks", "feedback_summary")).isFalse();
@@ -56,8 +60,10 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(columnExists("turn_feedbacks", "status")).isTrue();
         assertThat(columnExists("turn_feedbacks", "feedback_type")).isTrue();
         assertThat(columnExists("turn_feedbacks", "korean_analogy")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "positive_feedback")).isTrue();
         assertThat(columnExists("turn_feedbacks", "feedback_detail")).isTrue();
-        assertThat(columnExists("turn_feedbacks", "better_expression")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "benchmark_message")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "better_expression")).isFalse();
         assertThat(columnExists("turn_feedbacks", "correction_point")).isFalse();
         assertThat(columnExists("turn_feedbacks", "correction_reason")).isFalse();
         assertThat(columnExists("turn_feedbacks", "plus_one_expression")).isFalse();
