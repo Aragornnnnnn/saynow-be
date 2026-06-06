@@ -95,9 +95,9 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, String.class);
 
         assertThat(scenarios).containsExactly(
-                "1|음식 취향 이야기하기|4|FALSE",
-                "2|여행 경험 이야기하기|4|FALSE",
-                "3|일상 루틴 이야기하기|4|FALSE");
+                "1|여행 취향 이야기하기|4|FALSE",
+                "2|음식 취향 이야기하기|4|FALSE",
+                "3|음악 취향 이야기하기|4|FALSE");
 
         List<Integer> questionCounts = jdbcTemplate.queryForList("""
                 SELECT COUNT(*)
@@ -110,6 +110,29 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, Integer.class);
 
         assertThat(questionCounts).containsExactly(4, 4, 4);
+
+        List<String> questions = jdbcTemplate.queryForList("""
+                SELECT s.id || '|' || q.sequence || '|' || q.question_en || '|' || q.question_ko
+                FROM scenario_questions q
+                JOIN scenarios s ON s.id = q.scenario_id
+                JOIN categories c ON c.id = s.category_id
+                WHERE c.name = 'Free Talk'
+                ORDER BY s.display_order, q.sequence
+                """, String.class);
+
+        assertThat(questions).containsExactly(
+                "1|1|If you could travel anywhere for free right now, where would you go? And what draws you to that place?|지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?",
+                "1|2|Do you prefer traveling alone, or with other people? Why?|혼자 여행이 더 좋아, 같이 가는 게 더 좋아? 왜?",
+                "1|3|Do you plan everything before a trip, or just go and figure it out? Has anything unexpected ever thrown you off?|여행 전에 다 계획해, 아니면 그냥 가서 해결해? 예상 못한 일이 생겨서 멘붕온 적 있어?",
+                "1|4|Do you dream of living abroad someday, or would you rather stay in Korea? Why?|언젠가 해외에서 사는 게 꿈이야, 아니면 한국이 좋아? 왜?",
+                "2|1|What food could you eat every week and never get tired of?|매주 먹어도 안 질릴 음식 뭐야?",
+                "2|2|What's your go-to comfort food?|스트레스 받을 때 찾는 음식 뭐야?",
+                "2|3|If you could eat only one food forever, what would you pick?|평생 한 가지만 먹을 수 있다면 뭐 고를래?",
+                "2|4|Never eat meat again, or never eat rice & bread again? Which would you pick? Why?|평생 고기 금지 vs 평생 밥·빵(탄수) 금지. 뭐 고를래? 왜?",
+                "3|1|What song have you been playing on repeat lately?|요즘 무한 반복하는 노래 뭐야?",
+                "3|2|What music app do you use, and what makes it your favorite?|음악 스트리밍 어플 뭐 써? 그거 쓰는 이유가 뭐야?",
+                "3|3|Have you ever seen an artist live in concert? How was it? If not, who would you most want to see?|실제로 콘서트 가본 적 있어? 어땠어? 만약 없다면 제일 보고 싶은 가수는 누구야?",
+                "3|4|What's your go-to karaoke song — the one you can always nail? Why that one?|노래방 18번 뭐야? 가면 무조건 부르는 곡. 왜 그거 불러?");
     }
 
     private boolean tableExists(String tableName) {

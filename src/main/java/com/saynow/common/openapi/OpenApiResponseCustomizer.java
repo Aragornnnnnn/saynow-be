@@ -69,16 +69,16 @@ public class OpenApiResponseCustomizer {
                                             "scenarios", List.of(objectMap(
                                                     "scenarioId", 1,
                                                     "displayOrder", 1,
-                                                    "scenarioTitle", "음식 취향 이야기하기",
-                                                    "briefing", "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
-                                                    "conversationGoal", "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.",
+                                                    "scenarioTitle", "여행 취향 이야기하기",
+                                                    "briefing", "가고 싶은 여행지, 여행 방식, 예상치 못한 상황, 해외 생활에 대해 이야기합니다.",
+                                                    "conversationGoal", "여행 취향과 해외 생활에 대한 생각을 영어로 자연스럽게 설명할 수 있다.",
                                                     "completed", false,
                                                     "locked", false,
                                                     "lockReason", null,
                                                     "firstQuestionPreview", objectMap(
                                                             "questionId", 100,
-                                                            "aiQuestion", "What is your favorite food? Why do you like it?",
-                                                            "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?")))),
+                                                            "aiQuestion", "If you could travel anywhere for free right now, where would you go? And what draws you to that place?",
+                                                            "translatedQuestion", "지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?")))),
                                     objectMap(
                                             "categoryId", 2,
                                             "categoryName", "Airport",
@@ -95,8 +95,8 @@ public class OpenApiResponseCustomizer {
                             "currentTurn", objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
-                                    "aiQuestion", "What is your favorite food? Why do you like it?",
-                                    "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?"),
+                                    "aiQuestion", "If you could travel anywhere for free right now, where would you go? And what draws you to that place?",
+                                    "translatedQuestion", "지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?"),
                             "progress", objectMap(
                                     "currentSequence", 1,
                                     "totalQuestionCount", 4,
@@ -112,8 +112,8 @@ public class OpenApiResponseCustomizer {
                             "nextTurn", objectMap(
                                     "turnId", 102,
                                     "sequence", 2,
-                                    "aiQuestion", "That sounds tasty. Do you cook often?",
-                                    "translatedQuestion", "맛있겠네요. 요리는 자주 하나요?"),
+                                    "aiQuestion", "That sounds exciting. Do you prefer traveling alone, or with other people?",
+                                    "translatedQuestion", "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?"),
                             "progress", objectMap(
                                     "currentSequence", 2,
                                     "totalQuestionCount", 4,
@@ -131,13 +131,13 @@ public class OpenApiResponseCustomizer {
                             "turnFeedbacks", List.of(objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
-                                    "originalQuestion", "What is your favorite food? Why do you like it?",
-                                    "translatedQuestion", "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?",
-                                    "userUtterance", "I like pizza because it is spicy.",
+                                    "originalQuestion", "If you could travel anywhere for free right now, where would you go? And what draws you to that place?",
+                                    "translatedQuestion", "지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?",
+                                    "userUtterance", "I would go to Japan because I like the food and temples.",
                                     "feedbackType", "GOOD",
                                     "koreanAnalogy", "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
                                     "positiveFeedback", null,
-                                    "feedbackDetail", "좋아하는 음식과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
+                                    "feedbackDetail", "가고 싶은 장소와 끌리는 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
                                     "benchmarkMessage", "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."))
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_NOT_COMPLETED), error(ErrorCode.FEEDBACK_NOT_READY), error(ErrorCode.FEEDBACK_GENERATION_FAILED))),

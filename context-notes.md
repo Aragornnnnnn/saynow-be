@@ -835,3 +835,21 @@
 - 새 상세 smoke 원격 원본은 `/tmp/saynow-3mvp-detail-all-scenarios-20260602T140450Z-user13.json`이다. 로컬에는 `/private/tmp/saynow-3mvp-detail-doc-20260602T140450Z-user13-meta.json`과 scenario별 detail JSON 3개를 저장했다.
 - 새 상세 smoke의 세션은 `sessionId=33`, `sessionId=34`, `sessionId=35`다. 실패 step은 0이고, 세 시나리오 모두 `nativeScore=82`, `nativeLevelLabel=유학생 수준`, 턴별 타입 `GOOD`, `GOOD`, `GOOD`, `GOOD`이었다.
 - 새 문서에는 각 턴의 사용자에게 보여준 질문, 사용자 발화, 다음 꼬리 질문, `turnFeedbackStatus`, 최종 턴별 피드백의 `koreanAnalogy`, `correctionPoint`, `correctionReason`, `plusOneExpression`, `praiseSummary`, `praiseReason`, 세션 총평을 모두 남겼다.
+
+---
+
+# 3차 MVP Free Talk 시나리오 데이터 변경 컨텍스트 노트
+
+## 2026-06-06
+
+- 사용자가 Free Talk 시나리오 1~3의 주제와 4개 고정 질문을 새 데이터로 확정했다.
+- 해석은 `scenario.id`와 `display_order` 모두 1번 여행, 2번 음식, 3번 음악으로 맞추는 것이다.
+- 기존 dev DB에는 `V10__third_mvp_free_talk_schema.sql`이 이미 적용돼 있으므로, V10 수정만으로는 배포 환경에 반영되지 않는다.
+- 이번 구현은 새 migration `V13`으로 현재 DB의 `scenarios`와 `scenario_questions` 데이터를 갱신한다.
+- API path, response DTO, 잠금 정책, 총 질문 수는 그대로 유지한다. 변경 대상은 seed 데이터, OpenAPI 예시, 테스트 기대값이다.
+- 기존 `user_scenario_progress`와 과거 `session_turns` snapshot은 이번 migration에서 건드리지 않는다. 기존 세션 히스토리는 당시 사용자에게 실제 노출된 질문을 보존해야 하기 때문이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 이전 음식 1번 시나리오 기대값 때문에 5개 테스트가 실패했다.
+- 구현은 `V13__update_free_talk_scenario_questions.sql`로 scenario 1을 여행, 2를 음식, 3을 음악으로 갱신하고 각 4개 질문을 업데이트했다.
+- OpenAPI 예시는 새 1번 여행 시나리오의 첫 질문과 응답 예시 기준으로 갱신했다.
+- GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.

@@ -66,16 +66,16 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.categories[0].categoryName").value("Free Talk"))
                 .andExpect(jsonPath("$.data.categories[0].categoryLocked").value(false))
                 .andExpect(jsonPath("$.data.categories[0].categoryLockReason").value(nullValue()))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioTitle").value("음식 취향 이야기하기"))
+                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioTitle").value("여행 취향 이야기하기"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].briefing").isString())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].conversationGoal").isString())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].completed").value(false))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].locked").value(false))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.questionId").isNumber())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.aiQuestion")
-                        .value("What is your favorite food? Why do you like it?"))
+                        .value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.translatedQuestion")
-                        .value("가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?"))
+                        .value("지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(true))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[1].lockReason").value("PREVIOUS_SCENARIO_NOT_COMPLETED"))
                 .andExpect(jsonPath("$.data.categories[1].categoryName").value("Airport"))
@@ -87,33 +87,33 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I like pizza because it is spicy.",
+                "I would go to Japan because I like the food and temples.",
                 1,
                 2,
-                "That sounds tasty. Do you cook often?",
-                "맛있겠네요. 요리는 자주 하나요?");
+                "That sounds exciting. Do you prefer traveling alone, or with other people?",
+                "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I cook pasta on weekends.",
+                "I prefer traveling with my friends because we can share memories.",
                 2,
                 3,
-                "Nice, weekends are a good time to cook. What food did you eat recently?",
-                "좋아요, 주말은 요리하기 좋죠. 최근에 먹은 음식은 뭐였나요?");
+                "Got it. Do you plan everything before a trip, or just go and figure it out?",
+                "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I ate ramen yesterday.",
+                "I plan important things, but I also leave some free time.",
                 3,
                 4,
-                "Ramen is a familiar comfort food. Is there a food you want to try next?",
-                "라면은 익숙한 편안한 음식이죠. 다음에 먹어보고 싶은 음식이 있나요?");
+                "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
+                "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?");
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I want to try tacos because they look fresh."}
+                                {"userUtterance":"I want to live abroad someday because I want to experience a different culture."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.submittedTurn.sequence").value(4))
@@ -128,7 +128,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         assertThat(aiConversationClient.nextQuestionTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.turnFeedbackTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().currentTurn().userUtterance())
-                .isEqualTo("I like pizza because it is spicy.");
+                .isEqualTo("I would go to Japan because I like the food and temples.");
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().nextQuestion().sequence())
                 .isEqualTo(2);
 
@@ -150,7 +150,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].originalQuestion")
-                        .value("What is your favorite food? Why do you like it?"))
+                        .value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackType").value("GOOD"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].koreanAnalogy").isString())
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].positiveFeedback").value(nullValue()))
@@ -265,8 +265,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.currentTurn.turnId").isNumber())
                 .andExpect(jsonPath("$.data.currentTurn.sequence").value(1))
-                .andExpect(jsonPath("$.data.currentTurn.aiQuestion").value("What is your favorite food? Why do you like it?"))
-                .andExpect(jsonPath("$.data.currentTurn.translatedQuestion").value("가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?"))
+                .andExpect(jsonPath("$.data.currentTurn.aiQuestion").value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
+                .andExpect(jsonPath("$.data.currentTurn.translatedQuestion").value("지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?"))
                 .andExpect(jsonPath("$.data.progress.currentSequence").value(1))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.progress.completed").value(false))
@@ -331,14 +331,14 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             nextQuestionTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return switch (request.nextQuestion().sequence()) {
                 case 2 -> new AiNextQuestionResponse(
-                        "That sounds tasty. Do you cook often?",
-                        "맛있겠네요. 요리는 자주 하나요?");
+                        "That sounds exciting. Do you prefer traveling alone, or with other people?",
+                        "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?");
                 case 3 -> new AiNextQuestionResponse(
-                        "Nice, weekends are a good time to cook. What food did you eat recently?",
-                        "좋아요, 주말은 요리하기 좋죠. 최근에 먹은 음식은 뭐였나요?");
+                        "Got it. Do you plan everything before a trip, or just go and figure it out?",
+                        "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?");
                 case 4 -> new AiNextQuestionResponse(
-                        "Ramen is a familiar comfort food. Is there a food you want to try next?",
-                        "라면은 익숙한 편안한 음식이죠. 다음에 먹어보고 싶은 음식이 있나요?");
+                        "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
+                        "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?");
                 default -> throw new IllegalArgumentException("unexpected next sequence");
             };
         }
@@ -382,7 +382,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     FeedbackType.NEEDS_IMPROVEMENT,
                     "한국어로 비유하자면 조금 단어만 놓고 말한 느낌이에요.",
                     "어려운 표현에 도전한 점은 좋아요. 틀리는 것보다 시도한 게 더 중요해요.",
-                    "I cook pasta on weekends. → 습관을 말할 때는 usually 같은 부사를 쓰면 더 자연스럽게 들려요. I usually cook pasta on weekends.처럼 말할 수 있어요.",
+                    "I prefer go alone. → prefer 뒤에는 동명사나 명사를 쓰면 더 자연스러워요. I prefer traveling alone.처럼 말할 수 있어요.",
                     null);
         }
     }
