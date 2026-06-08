@@ -8,6 +8,11 @@
 - [x] OpenAPI 예시와 경로 검증을 추가한다.
 - [x] focused 테스트와 전체 `./gradlew test`를 실행한다.
 - [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+- [x] 앱 버전 응답과 DB 스키마에서 `storeUrl` / `store_url` 제거 RED 테스트를 작성한다.
+- [x] `storeUrl` 응답 필드, 엔티티 필드, OpenAPI 예시를 제거한다.
+- [x] 새 Flyway migration으로 최종 스키마에서 `store_url` 컬럼을 제거한다.
+- [x] focused 테스트와 전체 `./gradlew test`를 재실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
 
 ---
 

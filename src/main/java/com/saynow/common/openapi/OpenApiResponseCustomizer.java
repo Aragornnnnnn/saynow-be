@@ -66,7 +66,6 @@ public class OpenApiResponseCustomizer {
                             "latestBuildNumber", 18,
                             "minimumSupportedBuildNumber", 15,
                             "reason", "새로운 대화 품질 개선이 포함되어 있습니다.",
-                            "storeUrl", "https://apps.apple.com/app/saynow",
                             "releasedAt", "2026-06-09T12:00:00"
                     )),
                     errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.INTERNAL_SERVER_ERROR))),

@@ -17,6 +17,12 @@
 - GREEN focused 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
 - 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 `storeUrl`은 불필요하다고 판단해 제거하기로 했다.
+- `V14__create_app_versions.sql`은 이미 커밋된 migration이므로 직접 수정하지 않고, 최종 스키마에서 제거되도록 새 migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `store_url` NOT NULL 제약과 `storeUrl` OpenAPI 예시가 남아 있어 실패했다.
+- `V15__drop_app_version_store_url.sql`로 최종 스키마에서 `store_url`을 제거하고, JPA 엔티티와 응답 DTO, OpenAPI 예시에서 `storeUrl`을 제거한다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 
 ---
 

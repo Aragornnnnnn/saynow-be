@@ -40,7 +40,7 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.latestBuildNumber").value(18))
                 .andExpect(jsonPath("$.data.minimumSupportedBuildNumber").value(15))
                 .andExpect(jsonPath("$.data.reason").value("이전 버전에서 로그인 안정성 문제가 있어 업데이트가 필요합니다."))
-                .andExpect(jsonPath("$.data.storeUrl").value("https://apps.apple.com/app/saynow"))
+                .andExpect(jsonPath("$.data.storeUrl").doesNotExist())
                 .andExpect(jsonPath("$.data.releasedAt").isString());
     }
 
@@ -57,7 +57,7 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.latestBuildNumber").value(18))
                 .andExpect(jsonPath("$.data.minimumSupportedBuildNumber").value(15))
                 .andExpect(jsonPath("$.data.reason").value("새로운 대화 품질 개선이 포함되어 있습니다."))
-                .andExpect(jsonPath("$.data.storeUrl").value("https://apps.apple.com/app/saynow"));
+                .andExpect(jsonPath("$.data.storeUrl").doesNotExist());
     }
 
     @Test
@@ -73,7 +73,7 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.latestBuildNumber").value(18))
                 .andExpect(jsonPath("$.data.minimumSupportedBuildNumber").value(15))
                 .andExpect(jsonPath("$.data.reason").value(nullValue()))
-                .andExpect(jsonPath("$.data.storeUrl").value("https://apps.apple.com/app/saynow"));
+                .andExpect(jsonPath("$.data.storeUrl").doesNotExist());
     }
 
     @Test
@@ -88,7 +88,7 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.latestBuildNumber").value(3))
                 .andExpect(jsonPath("$.data.minimumSupportedBuildNumber").value(3))
                 .andExpect(jsonPath("$.data.reason").value(nullValue()))
-                .andExpect(jsonPath("$.data.storeUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.storeUrl").doesNotExist())
                 .andExpect(jsonPath("$.data.releasedAt").value(nullValue()));
     }
 
@@ -111,7 +111,6 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                     force_update_reason,
                     soft_update_reason,
                     release_note,
-                    store_url,
                     active,
                     released_at,
                     created_at,
@@ -125,7 +124,6 @@ class AppVersionApiIntegrationTest extends IntegrationTestSupport {
                     '이전 버전에서 로그인 안정성 문제가 있어 업데이트가 필요합니다.',
                     '새로운 대화 품질 개선이 포함되어 있습니다.',
                     '로그인 안정성과 대화 품질을 개선했습니다.',
-                    'https://apps.apple.com/app/saynow',
                     TRUE,
                     TIMESTAMP '2026-06-09 12:00:00',
                     CURRENT_TIMESTAMP,

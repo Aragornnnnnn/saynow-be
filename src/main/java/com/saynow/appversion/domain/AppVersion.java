@@ -48,9 +48,6 @@ public class AppVersion extends BaseTimeEntity {
     @Column(name = "release_note", columnDefinition = "text")
     private String releaseNote;
 
-    @Column(name = "store_url", nullable = false, length = 500)
-    private String storeUrl;
-
     @Column(nullable = false)
     private boolean active;
 

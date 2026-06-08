@@ -62,6 +62,7 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.updateType").value("SOFT"))
                 .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.latestVersionName").value("1.4.0"))
+                .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.storeUrl").doesNotExist())
                 .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.400.content['application/json'].examples.VALIDATION_FAILED.value.error.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.success").value(true))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))

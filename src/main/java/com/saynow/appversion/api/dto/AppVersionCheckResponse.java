@@ -24,9 +24,6 @@ public record AppVersionCheckResponse(
         @Schema(description = "업데이트 안내 사유. 업데이트가 필요 없으면 null입니다.")
         String reason,
 
-        @Schema(description = "플랫폼별 스토어 URL. 정책이 없으면 null입니다.")
-        String storeUrl,
-
         @Schema(description = "최신 버전 릴리스 시각. 정책이 없으면 null입니다.")
         LocalDateTime releasedAt
 ) {
@@ -38,7 +35,6 @@ public record AppVersionCheckResponse(
                 appVersion.getBuildNumber(),
                 appVersion.getMinimumSupportedBuildNumber(),
                 reason,
-                appVersion.getStoreUrl(),
                 appVersion.getReleasedAt());
     }
 
@@ -48,7 +44,6 @@ public record AppVersionCheckResponse(
                 versionName,
                 buildNumber,
                 buildNumber,
-                null,
                 null,
                 null);
     }

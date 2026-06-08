@@ -23,7 +23,7 @@ class AppVersionSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(columnExists("app_versions", "force_update_reason")).isTrue();
         assertThat(columnExists("app_versions", "soft_update_reason")).isTrue();
         assertThat(columnExists("app_versions", "release_note")).isTrue();
-        assertThat(columnExists("app_versions", "store_url")).isTrue();
+        assertThat(columnExists("app_versions", "store_url")).isFalse();
         assertThat(columnExists("app_versions", "active")).isTrue();
         assertThat(columnExists("app_versions", "released_at")).isTrue();
         assertThat(columnExists("app_versions", "created_at")).isTrue();
