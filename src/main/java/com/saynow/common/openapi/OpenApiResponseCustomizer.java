@@ -1,6 +1,7 @@
 // 공통 ApiResponse 래퍼 기준으로 3차 MVP 주요 API 응답 예시를 주입하는 OpenAPI 설정
 package com.saynow.common.openapi;
 
+import com.saynow.appversion.api.AppVersionController;
 import com.saynow.auth.api.AuthController;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.feedback.api.FeedbackController;
@@ -57,6 +58,17 @@ public class OpenApiResponseCustomizer {
                     errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.REFRESH_TOKEN_INVALID), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(AuthController.class, "logout",
                     success(HttpStatus.OK, "로그아웃 성공", null),
+                    errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
+            endpoint(AppVersionController.class, "checkAppVersion",
+                    success(HttpStatus.OK, "앱 버전 업데이트 확인 성공", objectMap(
+                            "updateType", "SOFT",
+                            "latestVersionName", "1.4.0",
+                            "latestBuildNumber", 18,
+                            "minimumSupportedBuildNumber", 15,
+                            "reason", "새로운 대화 품질 개선이 포함되어 있습니다.",
+                            "storeUrl", "https://apps.apple.com/app/saynow",
+                            "releasedAt", "2026-06-09T12:00:00"
+                    )),
                     errors(error(ErrorCode.VALIDATION_FAILED), error(ErrorCode.INTERNAL_SERVER_ERROR))),
             endpoint(ScenarioController.class, "getScenarios",
                     success(HttpStatus.OK, "시나리오 전체 조회 성공", objectMap(

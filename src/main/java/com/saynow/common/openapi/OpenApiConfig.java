@@ -1,5 +1,6 @@
 package com.saynow.common.openapi;
 
+import com.saynow.appversion.api.AppVersionController;
 import com.saynow.auth.api.AuthController;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
@@ -23,7 +24,11 @@ public class OpenApiConfig {
     private static final String BEARER_AUTH = "bearerAuth";
     private static final String DEV_SERVER_URL = "https://saynow.p-e.kr";
     private static final String LEGACY_DEV_SERVER_URL = "https://dev-saynow.p-e.kr";
-    private static final Set<String> PUBLIC_AUTH_METHODS = Set.of("socialLogin", "refresh");
+    private static final Set<String> PUBLIC_METHODS = Set.of(
+            key(AuthController.class, "socialLogin"),
+            key(AuthController.class, "refresh"),
+            key(AppVersionController.class, "checkAppVersion")
+    );
 
     private final String serverUrl;
 
@@ -53,12 +58,15 @@ public class OpenApiConfig {
     @Bean
     public OperationCustomizer publicAuthOperationCustomizer() {
         return (operation, handlerMethod) -> {
-            if (handlerMethod.getBeanType().equals(AuthController.class)
-                    && PUBLIC_AUTH_METHODS.contains(handlerMethod.getMethod().getName())) {
+            if (PUBLIC_METHODS.contains(key(handlerMethod.getBeanType(), handlerMethod.getMethod().getName()))) {
                 operation.setSecurity(List.of());
             }
             return operation;
         };
+    }
+
+    private static String key(Class<?> controllerType, String methodName) {
+        return controllerType.getName() + "#" + methodName;
     }
 
     private String resolveServerUrl(String configuredServerUrl, Environment environment) {

@@ -1,3 +1,25 @@
+# 앱 버전 관리 컨텍스트 노트
+
+## 2026-06-09
+
+- 사용자는 앱 버전 관리를 DB에서 하되, 강제 업데이트와 소프트 업데이트를 나누고 업데이트 이유도 포함하고 싶다고 요청했다.
+- 설계는 한 테이블 `app_versions`로 시작한다. 최신 active row의 `build_number`와 `minimum_supported_build_number`를 기준으로 `FORCE`, `SOFT`, `NONE`을 계산한다.
+- 문자열 버전명은 비교 기준으로 쓰지 않는다. `version_name`은 화면 표시용이고, 서버 판단 기준은 `build_number`다.
+- 플랫폼은 `IOS`, `ANDROID`로 제한한다.
+- 강제 업데이트는 `currentBuildNumber < minimumSupportedBuildNumber`, 소프트 업데이트는 `minimumSupportedBuildNumber <= currentBuildNumber < latestBuildNumber`다.
+- `force_update_reason`, `soft_update_reason`을 분리해 상황에 맞는 이유를 내려준다.
+- active row가 없으면 앱 실행을 막지 않기 위해 요청한 현재 버전 기준 `NONE` 응답을 반환한다.
+- 새 API는 앱 실행 초기에 인증 없이 호출되어야 하므로 `GET /api/v1/app-versions/check` 공개 API로 둔다.
+- RED 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, OpenAPI에 새 경로가 없고 `app_versions` 테이블이 없어 실패했다.
+- `V14__create_app_versions.sql`로 앱 버전 정책 테이블을 추가했다. 플랫폼과 빌드 번호 제약, `(platform, build_number)` unique, active latest 조회 index를 둔다.
+- `appversion` 패키지에 플랫폼 enum, 업데이트 타입 enum, JPA 엔티티, 저장소, 서비스, 컨트롤러, 응답 DTO를 추가했다.
+- OpenAPI에서는 `GET /api/v1/app-versions/check`를 공개 API로 표시하고, 성공 예시와 `VALIDATION_FAILED` 예시를 추가했다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 세션 최종 피드백 점수/후킹 계약 변경 컨텍스트 노트
 
 ## 2026-06-06

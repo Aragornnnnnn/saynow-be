@@ -29,9 +29,11 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.security[0].bearerAuth").isArray())
                 .andExpect(jsonPath("$.paths['/api/v1/auth/social-login'].post.security.length()").value(0))
                 .andExpect(jsonPath("$.paths['/api/v1/auth/token/refresh'].post.security.length()").value(0))
+                .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.security.length()").value(0))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/social-login")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/token/refresh")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/auth/logout")))
+                .andExpect(jsonPath("$.paths", hasKey("/api/v1/app-versions/check")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/scenarios/{scenarioId}/sessions")))
                 .andExpect(jsonPath("$.paths", hasKey("/api/v1/sessions/{sessionId}/utterances")))
@@ -44,7 +46,8 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/api/v1/sessions/{sessionId}']").doesNotExist())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Scenario')]").exists())
                 .andExpect(jsonPath("$.tags[?(@.name == 'Session')]").exists())
-                .andExpect(jsonPath("$.tags[?(@.name == 'Feedback')]").exists());
+                .andExpect(jsonPath("$.tags[?(@.name == 'Feedback')]").exists())
+                .andExpect(jsonPath("$.tags[?(@.name == 'App Version')]").exists());
     }
 
     @Test
@@ -57,6 +60,9 @@ class OpenApiIntegrationTest extends IntegrationTestSupport {
     void separatesSuccessAndErrorResponsesPerApi() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.updateType").value("SOFT"))
+                .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.latestVersionName").value("1.4.0"))
+                .andExpect(jsonPath("$.paths['/api/v1/app-versions/check'].get.responses.400.content['application/json'].examples.VALIDATION_FAILED.value.error.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.success").value(true))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.error").value(nullValue()))
                 .andExpect(jsonPath("$.paths['/api/v1/scenarios'].get.responses.200.content['application/json'].examples.SUCCESS.value.data.categories[0].categoryName").value("Free Talk"))
