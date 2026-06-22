@@ -38,7 +38,7 @@ public class SessionController {
     }
 
     @PostMapping("/sessions/{sessionId}/utterances")
-    @Operation(summary = "세션 사용자 발화 제출", description = "사용자가 AI 질문에 대한 발화를 제출합니다.")
+    @Operation(summary = "세션 사용자 발화 제출", description = "사용자의 발화를 저장하고, AI 서버에 다음 질문 생성과 턴별 피드백 생성을 요청합니다.")
     public ResponseEntity<ApiResponse<UserUtteranceResponse>> submitUtterance(
             @AuthenticationPrincipal AuthUserPrincipal principal,
             @PathVariable Long sessionId,

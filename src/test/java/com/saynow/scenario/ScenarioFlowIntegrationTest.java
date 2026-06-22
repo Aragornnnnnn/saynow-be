@@ -12,6 +12,7 @@ import com.saynow.session.infrastructure.ai.AiSessionFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiSessionTurnFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackStatusResponse;
+import com.saynow.session.domain.InnerThoughtType;
 import com.saynow.session.infrastructure.ai.FeedbackType;
 import com.saynow.session.infrastructure.ai.TurnFeedbackStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +84,13 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.categories[1].categoryLockReason").value("COMING_SOON"));
 
         long sessionId = startSession(accessToken, 1);
+        String openingInnerThoughtType = jdbcTemplate.queryForObject("""
+                SELECT inner_thought_type
+                FROM session_turns
+                WHERE session_id = ?
+                  AND sequence = 1
+                """, String.class, sessionId);
+        assertThat(openingInnerThoughtType).isEqualTo("NORMAL");
 
         submitAndExpectNext(
                 accessToken,
@@ -91,7 +99,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 1,
                 2,
                 "That sounds exciting. Do you prefer traveling alone, or with other people?",
-                "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?");
+                "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?",
+                "여행지와 이유를 바로 말해줘서 대화가 자연스럽게 이어지겠다.",
+                "GOOD");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
@@ -99,7 +109,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 2,
                 3,
                 "Got it. Do you plan everything before a trip, or just go and figure it out?",
-                "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?");
+                "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?",
+                "친구와 추억을 나누고 싶다는 답이 따뜻하게 느껴진다.",
+                "GOOD");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
@@ -107,7 +119,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 3,
                 4,
                 "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
-                "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?");
+                "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?",
+                "계획과 즉흥 사이의 균형을 설명해서 생각을 더 듣고 싶다.",
+                "NORMAL");
 
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -118,6 +132,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.submittedTurn.sequence").value(4))
                 .andExpect(jsonPath("$.data.submittedTurn.turnFeedbackStatus").value("PREPARING"))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value(nullValue()))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThoughtType").value(nullValue()))
                 .andExpect(jsonPath("$.data.nextTurn").value(nullValue()))
                 .andExpect(jsonPath("$.data.progress.currentSequence").value(4))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
@@ -131,6 +147,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo("I would go to Japan because I like the food and temples.");
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().nextQuestion().sequence())
                 .isEqualTo(2);
+        assertThat(aiConversationClient.nextQuestionRequests.getFirst().scenario().counterpartRole())
+                .isEqualTo("friend");
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -155,11 +173,15 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].koreanAnalogy").isString())
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].positiveFeedback").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackDetail").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].correctionExpression").value(nullValue()))
+                .andExpect(jsonPath("$.data.turnFeedbacks[0].correctionReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].benchmarkMessage").isString())
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].betterExpression").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackType").value("NEEDS_IMPROVEMENT"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].positiveFeedback").isString())
-                .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackDetail").isString())
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].feedbackDetail").value(nullValue()))
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].correctionExpression").value("I prefer traveling alone."))
+                .andExpect(jsonPath("$.data.turnFeedbacks[1].correctionReason").value("prefer 뒤에는 동명사나 명사를 쓰면 더 자연스러워요."))
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].benchmarkMessage").value(nullValue()))
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].correctionPoint").doesNotExist())
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].plusOneExpression").doesNotExist())
@@ -237,7 +259,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             int submittedSequence,
             int nextSequence,
             String nextQuestion,
-            String translatedQuestion
+            String translatedQuestion,
+            String innerThought,
+            String innerThoughtType
     ) throws Exception {
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
@@ -248,12 +272,21 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.submittedTurn.sequence").value(submittedSequence))
                 .andExpect(jsonPath("$.data.submittedTurn.turnFeedbackStatus").value("PREPARING"))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value(innerThought))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThoughtType").value(innerThoughtType))
                 .andExpect(jsonPath("$.data.nextTurn.sequence").value(nextSequence))
                 .andExpect(jsonPath("$.data.nextTurn.aiQuestion").value(nextQuestion))
                 .andExpect(jsonPath("$.data.nextTurn.translatedQuestion").value(translatedQuestion))
                 .andExpect(jsonPath("$.data.progress.currentSequence").value(nextSequence))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.progress.completed").value(false));
+        String storedInnerThought = jdbcTemplate.queryForObject("""
+                SELECT inner_thought
+                FROM session_turns
+                WHERE session_id = ?
+                  AND sequence = ?
+                """, String.class, sessionId, submittedSequence);
+        assertThat(storedInnerThought).isEqualTo(innerThought);
     }
 
     private long startSession(String accessToken, long scenarioId) throws Exception {
@@ -332,13 +365,19 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             return switch (request.nextQuestion().sequence()) {
                 case 2 -> new AiNextQuestionResponse(
                         "That sounds exciting. Do you prefer traveling alone, or with other people?",
-                        "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?");
+                        "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?",
+                        "여행지와 이유를 바로 말해줘서 대화가 자연스럽게 이어지겠다.",
+                        InnerThoughtType.GOOD);
                 case 3 -> new AiNextQuestionResponse(
                         "Got it. Do you plan everything before a trip, or just go and figure it out?",
-                        "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?");
+                        "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?",
+                        "친구와 추억을 나누고 싶다는 답이 따뜻하게 느껴진다.",
+                        InnerThoughtType.GOOD);
                 case 4 -> new AiNextQuestionResponse(
                         "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
-                        "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?");
+                        "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?",
+                        "계획과 즉흥 사이의 균형을 설명해서 생각을 더 듣고 싶다.",
+                        InnerThoughtType.NORMAL);
                 default -> throw new IllegalArgumentException("unexpected next sequence");
             };
         }
@@ -373,6 +412,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
                     null,
                     "좋아하는 것과 이유를 한 문장 안에서 분명하게 연결했기 때문이에요.",
+                    null,
+                    null,
                     "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요.");
         }
 
@@ -382,7 +423,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                     FeedbackType.NEEDS_IMPROVEMENT,
                     "한국어로 비유하자면 조금 단어만 놓고 말한 느낌이에요.",
                     "어려운 표현에 도전한 점은 좋아요. 틀리는 것보다 시도한 게 더 중요해요.",
-                    "I prefer go alone. → prefer 뒤에는 동명사나 명사를 쓰면 더 자연스러워요. I prefer traveling alone.처럼 말할 수 있어요.",
+                    null,
+                    "I prefer traveling alone.",
+                    "prefer 뒤에는 동명사나 명사를 쓰면 더 자연스러워요.",
                     null);
         }
     }

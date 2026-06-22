@@ -12,6 +12,7 @@ import com.saynow.session.infrastructure.ai.AiSessionFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiSessionTurnFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackStatusResponse;
+import com.saynow.session.domain.InnerThoughtType;
 import com.saynow.session.infrastructure.ai.FeedbackType;
 import com.saynow.session.infrastructure.ai.TurnFeedbackStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -228,7 +229,9 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
         public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
             return new AiNextQuestionResponse(
                     request.nextQuestion().questionEn(),
-                    request.nextQuestion().questionKo());
+                    request.nextQuestion().questionKo(),
+                    "답변을 이어줘서 다음 질문으로 자연스럽게 넘어가면 좋겠다.",
+                    InnerThoughtType.NORMAL);
         }
 
         @Override
@@ -249,6 +252,8 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
                                     "한국어로 비유하자면 자연스럽게 들려요.",
                                     null,
                                     "답변 의도가 분명했기 때문이에요.",
+                                    null,
+                                    null,
                                     "한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."))
                             .toList());
         }

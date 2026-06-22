@@ -22,10 +22,12 @@ import com.saynow.session.api.dto.UserUtteranceResponse;
 import com.saynow.session.domain.Session;
 import com.saynow.session.domain.SessionStatus;
 import com.saynow.session.domain.SessionTurn;
+import com.saynow.session.domain.InnerThoughtType;
 import com.saynow.session.infrastructure.SessionRepository;
 import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiFixedQuestion;
+import com.saynow.session.infrastructure.ai.AiNextQuestionScenarioContext;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
 import com.saynow.session.infrastructure.ai.AiScenarioContext;
@@ -52,6 +54,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class SessionService {
+
+    private static final String OPENING_INNER_THOUGHT = "첫 질문으로 대화를 시작했으니 편하게 답해주면 좋겠다.";
+    private static final InnerThoughtType OPENING_INNER_THOUGHT_TYPE = InnerThoughtType.NORMAL;
 
     private final ScenarioRepository scenarioRepository;
     private final ScenarioQuestionRepository scenarioQuestionRepository;
@@ -91,7 +96,9 @@ public class SessionService {
                 firstQuestion,
                 firstQuestion.getSequence(),
                 firstQuestion.getQuestionEn(),
-                firstQuestion.getQuestionKo()));
+                firstQuestion.getQuestionKo(),
+                OPENING_INNER_THOUGHT,
+                OPENING_INNER_THOUGHT_TYPE));
         logStageLatency("session_start", "save_initial_turn", userId, session.getId(), stageStartedAt);
 
         log.info("세션을 시작했습니다. userId={} scenarioId={} sessionId={}", userId, scenarioId, session.getId());
@@ -118,7 +125,7 @@ public class SessionService {
                     context.sessionId(),
                     context.currentTurnId(),
                     context.currentSequence(),
-                    toScenarioContext(context),
+                    toNextQuestionScenarioContext(context),
                     new AiTurnContext(context.currentAiQuestion(), context.currentTranslatedQuestion(), userUtterance),
                     toFixedQuestion(context.nextQuestion())));
             validateNextQuestionResponse(nextQuestionResponse);
@@ -172,6 +179,7 @@ public class SessionService {
                 scenario.getTitle(),
                 scenario.getBriefing(),
                 scenario.getConversationGoal(),
+                scenario.getCounterpartRole(),
                 scenario.getTotalQuestionCount(),
                 currentTurn.getId(),
                 currentTurn.getSequence(),
@@ -193,7 +201,9 @@ public class SessionService {
                 sessionId,
                 userId,
                 SessionStatus.IN_PROGRESS,
-                userUtterance);
+                userUtterance,
+                nextQuestionResponse == null ? null : nextQuestionResponse.innerThought(),
+                nextQuestionResponse == null ? null : nextQuestionResponse.innerThoughtType());
         if (updatedRows == 0) {
             throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
         }
@@ -212,7 +222,12 @@ public class SessionService {
         boolean completed = nextTurn == null;
         int currentSequence = completed ? context.currentSequence() : nextTurn.getSequence();
         return new UserUtteranceResponse(
-                new SubmittedTurnResponse(context.currentTurnId(), context.currentSequence(), turnFeedback.feedbackStatus()),
+                new SubmittedTurnResponse(
+                        context.currentTurnId(),
+                        context.currentSequence(),
+                        turnFeedback.feedbackStatus(),
+                        nextQuestionResponse == null ? null : nextQuestionResponse.innerThought(),
+                        nextQuestionResponse == null ? null : nextQuestionResponse.innerThoughtType()),
                 nextTurn == null ? null : toTurnResponse(nextTurn),
                 new SessionProgressResponse(currentSequence, context.totalQuestionCount(), completed));
     }
@@ -281,7 +296,10 @@ public class SessionService {
                 || response.aiQuestion() == null
                 || response.aiQuestion().isBlank()
                 || response.translatedQuestion() == null
-                || response.translatedQuestion().isBlank()) {
+                || response.translatedQuestion().isBlank()
+                || response.innerThought() == null
+                || response.innerThought().isBlank()
+                || response.innerThoughtType() == null) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
     }
@@ -315,6 +333,15 @@ public class SessionService {
                 context.scenarioTitle(),
                 context.scenarioBriefing(),
                 context.scenarioConversationGoal());
+    }
+
+    private AiNextQuestionScenarioContext toNextQuestionScenarioContext(SubmitUtteranceContext context) {
+        return new AiNextQuestionScenarioContext(
+                context.scenarioId(),
+                context.scenarioTitle(),
+                context.scenarioBriefing(),
+                context.scenarioConversationGoal(),
+                context.scenarioCounterpartRole());
     }
 
     private AiFixedQuestion toFixedQuestion(ScenarioQuestion question) {
@@ -377,6 +404,7 @@ public class SessionService {
             String scenarioTitle,
             String scenarioBriefing,
             String scenarioConversationGoal,
+            String scenarioCounterpartRole,
             int totalQuestionCount,
             Long currentTurnId,
             int currentSequence,
