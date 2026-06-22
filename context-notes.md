@@ -24,6 +24,8 @@
 - 사용자 요청에 맞춰 기존 2개 로컬 커밋을 5개 커밋으로 재분할했다. 커밋 메시지에는 `LAN-28` prefix를 붙이지 않는다.
 - 재분할 후 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 최종 공백 검증으로 `git diff --check origin/develop...HEAD`를 실행했고 통과했다.
+- live 재테스트에서 AI `next-question`은 성공했지만 같은 발화 제출의 `turn-feedback`가 `400 INVALID_REQUEST`를 반환했다.
+- AI OpenAPI 기준 `turn-feedback`와 `session-feedback`도 공통 `ScenarioContext.counterpartRole`을 required로 요구하므로, 공통 `AiScenarioContext`에도 `counterpartRole`을 추가해 모든 AI 요청에 전달한다.
 
 ---
 

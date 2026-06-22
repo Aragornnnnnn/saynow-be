@@ -324,7 +324,8 @@ public class SessionService {
                 scenario.getId(),
                 scenario.getTitle(),
                 scenario.getBriefing(),
-                scenario.getConversationGoal());
+                scenario.getConversationGoal(),
+                scenario.getCounterpartRole());
     }
 
     private AiScenarioContext toScenarioContext(SubmitUtteranceContext context) {
@@ -332,7 +333,8 @@ public class SessionService {
                 context.scenarioId(),
                 context.scenarioTitle(),
                 context.scenarioBriefing(),
-                context.scenarioConversationGoal());
+                context.scenarioConversationGoal(),
+                context.scenarioCounterpartRole());
     }
 
     private AiNextQuestionScenarioContext toNextQuestionScenarioContext(SubmitUtteranceContext context) {

@@ -68,7 +68,8 @@ public class FeedbackService {
                         loadResult.context().scenarioId(),
                         loadResult.context().scenarioTitle(),
                         loadResult.context().scenarioBriefing(),
-                        loadResult.context().scenarioConversationGoal()),
+                        loadResult.context().scenarioConversationGoal(),
+                        loadResult.context().scenarioCounterpartRole()),
                 loadResult.context().turnIds()));
         validateAiFeedback(aiFeedback, sessionId, loadResult.context().turnIds());
         logStageLatency("feedback", "generate_session_feedback", userId, sessionId, stageStartedAt);
@@ -270,6 +271,7 @@ public class FeedbackService {
                 session.getScenario().getTitle(),
                 session.getScenario().getBriefing(),
                 session.getScenario().getConversationGoal(),
+                session.getScenario().getCounterpartRole(),
                 turns.stream().map(SessionTurn::getId).toList());
     }
 
@@ -295,6 +297,7 @@ public class FeedbackService {
             String scenarioTitle,
             String scenarioBriefing,
             String scenarioConversationGoal,
+            String scenarioCounterpartRole,
             List<Long> turnIds
     ) {
     }
