@@ -65,11 +65,27 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(columnExists("turn_feedbacks", "benchmark_message")).isTrue();
         assertThat(columnExists("turn_feedbacks", "better_expression")).isFalse();
         assertThat(columnExists("turn_feedbacks", "correction_point")).isFalse();
-        assertThat(columnExists("turn_feedbacks", "correction_reason")).isFalse();
         assertThat(columnExists("turn_feedbacks", "plus_one_expression")).isFalse();
         assertThat(columnExists("turn_feedbacks", "praise_summary")).isFalse();
         assertThat(columnExists("turn_feedbacks", "praise_reason")).isFalse();
         assertThat(columnExists("turn_feedbacks", "feedback_required")).isFalse();
+    }
+
+    @Test
+    void aiInnerThoughtAndCorrectionSplitColumnsExist() {
+        assertThat(columnExists("scenarios", "counterpart_role")).isTrue();
+        assertThat(isNullable("scenarios", "counterpart_role")).isFalse();
+
+        assertThat(columnExists("session_turns", "inner_thought")).isTrue();
+        assertThat(columnExists("session_turns", "inner_thought_type")).isTrue();
+        assertThat(isNullable("session_turns", "inner_thought")).isTrue();
+        assertThat(isNullable("session_turns", "inner_thought_type")).isTrue();
+
+        assertThat(columnExists("turn_feedbacks", "correction_expression")).isTrue();
+        assertThat(columnExists("turn_feedbacks", "correction_reason")).isTrue();
+        assertThat(isNullable("turn_feedbacks", "correction_expression")).isTrue();
+        assertThat(isNullable("turn_feedbacks", "correction_reason")).isTrue();
+        assertThat(isNullable("turn_feedbacks", "feedback_detail")).isTrue();
     }
 
     @Test
@@ -152,5 +168,15 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                   AND column_name = ?
                 """, Integer.class, tableName, columnName);
         return count != null && count > 0;
+    }
+
+    private boolean isNullable(String tableName, String columnName) {
+        String nullable = jdbcTemplate.queryForObject("""
+                SELECT is_nullable
+                FROM information_schema.columns
+                WHERE table_name = ?
+                  AND column_name = ?
+                """, String.class, tableName, columnName);
+        return "YES".equals(nullable);
     }
 }

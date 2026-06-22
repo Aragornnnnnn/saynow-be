@@ -37,6 +37,9 @@ public class Scenario extends BaseTimeEntity {
     @Column(name = "conversation_goal", nullable = false, length = 255)
     private String conversationGoal;
 
+    @Column(name = "counterpart_role", nullable = false, length = 50)
+    private String counterpartRole;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 

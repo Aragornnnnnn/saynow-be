@@ -5,6 +5,8 @@ import com.saynow.common.domain.BaseTimeEntity;
 import com.saynow.scenario.domain.ScenarioQuestion;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -53,6 +55,15 @@ public class SessionTurn extends BaseTimeEntity {
     @Getter
     private String userUtterance;
 
+    @Column(name = "inner_thought", columnDefinition = "text")
+    @Getter
+    private String innerThought;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inner_thought_type", length = 20)
+    @Getter
+    private InnerThoughtType innerThoughtType;
+
     @Column(name = "answered_at")
     @Getter
     private LocalDateTime answeredAt;
@@ -64,11 +75,25 @@ public class SessionTurn extends BaseTimeEntity {
             String aiQuestion,
             String translatedQuestion
     ) {
+        this(session, scenarioQuestion, sequence, aiQuestion, translatedQuestion, null, null);
+    }
+
+    public SessionTurn(
+            Session session,
+            ScenarioQuestion scenarioQuestion,
+            int sequence,
+            String aiQuestion,
+            String translatedQuestion,
+            String innerThought,
+            InnerThoughtType innerThoughtType
+    ) {
         this.session = session;
         this.scenarioQuestion = scenarioQuestion;
         this.sequence = sequence;
         this.aiQuestion = aiQuestion;
         this.translatedQuestion = translatedQuestion;
+        this.innerThought = innerThought;
+        this.innerThoughtType = innerThoughtType;
     }
 
     public boolean isAnswered() {
