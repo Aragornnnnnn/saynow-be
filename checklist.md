@@ -1,3 +1,32 @@
+# AI 속마음 런타임 계약 반영 체크리스트
+
+- [x] 현재 `SessionService`, `FeedbackService`, AI DTO, OpenAPI 예시를 확인한다.
+- [x] `next-question` 요청의 `counterpartRole`과 응답 속마음 매핑 RED 테스트를 추가한다.
+- [x] 발화 제출 응답과 DB 저장 속마음 RED 테스트를 추가한다.
+- [x] 최종 피드백의 `correctionExpression`, `correctionReason` 분리 RED 테스트를 추가한다.
+- [x] OpenAPI 예시 RED 테스트를 추가한다.
+- [x] AI 요청/응답 DTO와 원격/로컬 AI client를 새 계약으로 수정한다.
+- [x] `SessionService`에서 제출 턴 속마음 저장과 응답 반환을 구현한다.
+- [x] `FeedbackService`에서 개선 표현/이유 분리 검증, 저장, 응답 반환을 구현한다.
+- [x] OpenAPI 예시를 새 FE-BE 명세로 갱신한다.
+- [x] 더블 체크에서 `InnerThoughtType`을 도메인 enum으로 이동해 계층 의존성을 정리한다.
+- [x] focused 테스트와 전체 테스트, `git diff --check`를 실행한다.
+
+---
+
+# AI next-question 속마음 DB 계약 체크리스트
+
+- [x] 현재 `session_turns`, `scenarios`, `turn_feedbacks` 스키마와 엔티티 매핑을 확인한다.
+- [x] DB 변경 계획과 컨텍스트 노트를 기록한다.
+- [x] 속마음, 상대 역할, 턴 피드백 분리 컬럼을 검증하는 RED 스키마 테스트를 추가한다.
+- [x] RED 테스트가 컬럼 부재로 실패하는 것을 확인한다.
+- [x] 새 Flyway migration으로 `session_turns.inner_thought`, `session_turns.inner_thought_type`, `scenarios.counterpart_role`, `turn_feedbacks.correction_expression`, `turn_feedbacks.correction_reason`을 추가한다.
+- [x] `turn_feedbacks.feedback_detail`은 개선 케이스 분리 저장을 위해 nullable로 전환한다.
+- [x] 관련 엔티티에 새 컬럼을 최소 매핑한다.
+- [x] focused 테스트와 `git diff --check`를 실행한다.
+
+---
+
 # 앱 버전 관리 체크리스트
 
 - [x] 앱 버전 관리 구현 계획과 컨텍스트 노트를 추가한다.

@@ -1,3 +1,53 @@
+# AI 속마음 런타임 계약 반영 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 수정된 명세서를 확인한 뒤 실제 로직 수정을 요청했다.
+- 런타임 변경 범위는 AI `next-question`의 `scenario.counterpartRole` 요청, AI `innerThought`/`innerThoughtType` 응답 수신, 제출된 `SessionTurn` 저장, `submittedTurn` FE 응답 반환이다.
+- 첫 질문 기본 속마음은 사용자가 임시값을 허용했으므로 `첫 질문으로 대화를 시작했으니 편하게 답해주면 좋겠다.`와 `NORMAL`로 저장한다.
+- `counterpartRole`은 `next-question` 명세에만 등장하므로, 기존 공통 `AiScenarioContext`에 필드를 추가해 모든 AI endpoint에 퍼뜨리지 않고 `AiNextQuestionScenarioContext`를 별도로 둔다.
+- 최종 피드백은 `NEEDS_IMPROVEMENT`에서 `positiveFeedback`, `correctionExpression`, `correctionReason`을 사용하고 `feedbackDetail`, `benchmarkMessage`는 null로 둔다.
+- `GOOD`은 `feedbackDetail`을 사용하고 `correctionExpression`, `correctionReason`은 null로 둔다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `InnerThoughtType` 부재로 `compileTestJava`에서 실패했다.
+- `AiNextQuestionScenarioContext`를 추가해 `next-question` 요청에만 `counterpartRole`을 포함시켰다.
+- `AiNextQuestionResponse`에 `innerThought`, `innerThoughtType`을 추가하고 원격/로컬 AI client 매핑을 갱신했다.
+- `SessionService`는 첫 턴에 임시 OPENING 속마음을 저장하고, 다음 질문 생성 응답의 속마음을 제출된 턴에 저장한 뒤 `SubmittedTurnResponse`로 반환한다.
+- `AiSessionTurnFeedbackResponse`, `TurnFeedback`, `TurnFeedbackResponse`에 `correctionExpression`, `correctionReason`을 추가했다.
+- `FeedbackService`와 원격 AI client는 `GOOD`과 `NEEDS_IMPROVEMENT`의 필드 조합을 분리 검증한다.
+- OpenAPI 예시는 발화 제출 속마음 필드와 최종 피드백 개선 표현/이유 분리 필드를 노출하도록 갱신했다.
+- focused GREEN 검증으로 같은 focused 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 더블 체크에서 `SessionTurn` 도메인 엔티티가 `session.infrastructure.ai.InnerThoughtType`에 의존하는 구조를 확인했다.
+- `InnerThoughtType`은 DB에 저장되는 도메인 값이므로 `session.domain.InnerThoughtType`으로 이동하고 AI DTO, 서비스, 테스트 import를 새 위치로 맞춘다.
+- enum 이동 후 focused 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 재실행했고 통과했다.
+- 사용자 요청에 맞춰 기존 2개 로컬 커밋을 5개 커밋으로 재분할했다. 커밋 메시지에는 `LAN-28` prefix를 붙이지 않는다.
+- 재분할 후 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 공백 검증으로 `git diff --check origin/develop...HEAD`를 실행했고 통과했다.
+
+---
+
+# AI next-question 속마음 DB 계약 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 `feat/LAN-28`에서 AI `next-question` 응답에 속마음 필드가 추가되고, `turn-feedback` 개선 표현과 개선 이유가 분리되는 명세를 공유했다.
+- 이번 단계는 전체 API/서비스 반영 전에 DB 구조를 먼저 수정하는 범위다.
+- 현재 브랜치에는 명세의 `session_message` 테이블이 없고, 세션 중 AI 질문과 사용자 발화는 `session_turns`가 row 단위로 저장한다. 따라서 `inner_thought`, `inner_thought_type` 저장 위치는 현 구조의 `session_turns`로 해석한다.
+- `scenario.counterpartRole`은 현재 `scenarios`에 대응 컬럼이 없으므로 `counterpart_role`을 추가한다. 기존 Free Talk seed는 우선 모두 `friend`로 backfill하고, 추후 시나리오 수정 시 사용자가 구체 역할로 바꿀 수 있게 한다.
+- `AI_FIRST` 첫 질문 기본 속마음 값은 이후 서비스 반영 단계에서 임시 고정 문구로 넣는다. 이번 DB 단계에서는 저장 가능한 nullable 컬럼만 추가한다.
+- `turn_feedbacks.feedback_detail`은 현재 NOT NULL이고 개선 표현이 한 필드에 섞이던 이력이 있다. 새 계약에서는 `correction_expression`, `correction_reason`을 분리 저장해야 하므로 새 컬럼을 추가하고, 개선 케이스에서 `feedback_detail`을 강제하지 않도록 nullable로 전환한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고, `scenarios.counterpart_role` 컬럼 부재로 실패했다.
+- `V16__add_ai_inner_thought_contract.sql`로 `scenarios.counterpart_role`, `session_turns.inner_thought`, `session_turns.inner_thought_type`, `turn_feedbacks.correction_expression`, `turn_feedbacks.correction_reason`을 추가했다.
+- 기존 시나리오의 `counterpart_role`은 임시 기본값 `friend`로 backfill하고 NOT NULL로 전환했다.
+- `turn_feedbacks.feedback_detail`은 `NEEDS_IMPROVEMENT`에서 개선 표현과 이유를 분리 저장할 수 있도록 nullable로 전환했다.
+- 관련 엔티티 `Scenario`, `SessionTurn`, `TurnFeedback`에 새 컬럼을 최소 매핑했다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 앱 버전 관리 컨텍스트 노트
 
 ## 2026-06-09
