@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.common.observability.RequestTraceContext;
+import com.saynow.session.domain.InnerThoughtType;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,9 @@ class RemoteAiConversationClientTest {
                 """
                         {
                           "aiQuestion":"That sounds tasty. Do you cook often?",
-                          "translatedQuestion":"맛있겠네요. 요리는 자주 하나요?"
+                          "translatedQuestion":"맛있겠네요. 요리는 자주 하나요?",
+                          "innerThought":"매운 피자를 좋아한다고 바로 이유까지 말해주네. 대화하기 편하다.",
+                          "innerThoughtType":"GOOD"
                         }
                         """);
         RequestTraceContext.start("trace-next-question-3rd");
@@ -61,6 +64,7 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("scenario").get("title").asText()).isEqualTo("음식 취향 이야기하기");
         assertThat(json.get("scenario").get("briefing").asText()).contains("좋아하는 음식");
         assertThat(json.get("scenario").get("conversationGoal").asText()).contains("음식 취향");
+        assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
         assertThat(json.get("currentTurn").get("aiQuestion").asText())
                 .isEqualTo("What is your favorite food? Why do you like it?");
         assertThat(json.get("currentTurn").get("translatedQuestion").asText())
@@ -72,6 +76,8 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("nextQuestion").get("questionEn").asText()).isEqualTo("Do you cook often?");
         assertThat(response.aiQuestion()).isEqualTo("That sounds tasty. Do you cook often?");
         assertThat(response.translatedQuestion()).isEqualTo("맛있겠네요. 요리는 자주 하나요?");
+        assertThat(response.innerThought()).isEqualTo("매운 피자를 좋아한다고 바로 이유까지 말해주네. 대화하기 편하다.");
+        assertThat(response.innerThoughtType()).isEqualTo(InnerThoughtType.GOOD);
     }
 
     @Test
@@ -119,7 +125,19 @@ class RemoteAiConversationClientTest {
                               "koreanAnalogy":"한국어로 비유하자면 담백하게 들려요.",
                               "positiveFeedback":null,
                               "feedbackDetail":"좋아하는 음식과 이유를 분명하게 연결했어요.",
+                              "correctionExpression":null,
+                              "correctionReason":null,
                               "benchmarkMessage":"한국인의 35%가 틀리는 표현인데 정확히 맞췄어요."
+                            },
+                            {
+                              "turnId":5001,
+                              "feedbackType":"NEEDS_IMPROVEMENT",
+                              "koreanAnalogy":"한국어로 비유하자면 조금 따지는 느낌이에요.",
+                              "positiveFeedback":"궁금한 이유를 물어보려는 의도는 좋아요.",
+                              "feedbackDetail":null,
+                              "correctionExpression":"I wonder why you are curious about it.",
+                              "correctionReason":"Why do you wanna know that?은 친한 사이가 아니면 따지는 느낌으로 들릴 수 있어요.",
+                              "benchmarkMessage":null
                             }
                           ]
                         }
@@ -133,11 +151,17 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("expectedTurnIds").get(0).asLong()).isEqualTo(5000L);
         assertThat(response.nativeScore()).isEqualTo(82);
         assertThat(response.highlightMessage()).isEqualTo("한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.");
-        assertThat(response.turnFeedbacks()).hasSize(1);
+        assertThat(response.turnFeedbacks()).hasSize(2);
         assertThat(response.turnFeedbacks().getFirst().feedbackType()).isEqualTo(FeedbackType.GOOD);
         assertThat(response.turnFeedbacks().getFirst().feedbackDetail()).isEqualTo("좋아하는 음식과 이유를 분명하게 연결했어요.");
+        assertThat(response.turnFeedbacks().getFirst().correctionExpression()).isNull();
+        assertThat(response.turnFeedbacks().getFirst().correctionReason()).isNull();
         assertThat(response.turnFeedbacks().getFirst().positiveFeedback()).isNull();
         assertThat(response.turnFeedbacks().getFirst().benchmarkMessage()).isEqualTo("한국인의 35%가 틀리는 표현인데 정확히 맞췄어요.");
+        assertThat(response.turnFeedbacks().get(1).feedbackType()).isEqualTo(FeedbackType.NEEDS_IMPROVEMENT);
+        assertThat(response.turnFeedbacks().get(1).feedbackDetail()).isNull();
+        assertThat(response.turnFeedbacks().get(1).correctionExpression()).isEqualTo("I wonder why you are curious about it.");
+        assertThat(response.turnFeedbacks().get(1).correctionReason()).contains("따지는 느낌");
     }
 
     @Test
@@ -224,7 +248,7 @@ class RemoteAiConversationClientTest {
                 1000L,
                 5000L,
                 1,
-                scenarioContext(),
+                nextQuestionScenarioContext(),
                 new AiTurnContext(
                         "What is your favorite food? Why do you like it?",
                         "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?",
@@ -248,7 +272,7 @@ class RemoteAiConversationClientTest {
         return new AiSessionFeedbackRequest(
                 1000L,
                 scenarioContext(),
-                List.of(5000L));
+                List.of(5000L, 5001L));
     }
 
     private AiScenarioContext scenarioContext() {
@@ -257,5 +281,14 @@ class RemoteAiConversationClientTest {
                 "음식 취향 이야기하기",
                 "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
                 "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.");
+    }
+
+    private AiNextQuestionScenarioContext nextQuestionScenarioContext() {
+        return new AiNextQuestionScenarioContext(
+                10L,
+                "음식 취향 이야기하기",
+                "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
+                "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.",
+                "friend");
     }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.common.exception.ApiException;
 import com.saynow.common.exception.ErrorCode;
 import com.saynow.common.observability.RequestTraceContext;
+import com.saynow.session.domain.InnerThoughtType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,7 +33,13 @@ public class RemoteAiConversationClient implements AiConversationClient {
 
     @Override
     public AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request) {
-        return post("next_question", nextQuestionUri(), request, RemoteNextQuestionResponse.class).toResponse();
+        return post(
+                "next_question",
+                nextQuestionUri(),
+                request,
+                RemoteNextQuestionResponse.class,
+                ErrorCode.AI_GENERATION_FAILED,
+                ErrorCode.AI_GENERATION_FAILED.getMessage()).toResponse();
     }
 
     @Override
@@ -122,15 +129,19 @@ public class RemoteAiConversationClient implements AiConversationClient {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record RemoteNextQuestionResponse(
             String aiQuestion,
-            String translatedQuestion
+            String translatedQuestion,
+            String innerThought,
+            InnerThoughtType innerThoughtType
     ) {
 
         private AiNextQuestionResponse toResponse() {
             if (aiQuestion == null || aiQuestion.isBlank()
-                    || translatedQuestion == null || translatedQuestion.isBlank()) {
+                    || translatedQuestion == null || translatedQuestion.isBlank()
+                    || innerThought == null || innerThought.isBlank()
+                    || innerThoughtType == null) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 다음 질문 응답이 올바르지 않습니다.");
             }
-            return new AiNextQuestionResponse(aiQuestion, translatedQuestion);
+            return new AiNextQuestionResponse(aiQuestion, translatedQuestion, innerThought, innerThoughtType);
         }
     }
 
@@ -184,6 +195,8 @@ public class RemoteAiConversationClient implements AiConversationClient {
             String koreanAnalogy,
             String positiveFeedback,
             String feedbackDetail,
+            String correctionExpression,
+            String correctionReason,
             String benchmarkMessage
     ) {
 
@@ -192,10 +205,7 @@ public class RemoteAiConversationClient implements AiConversationClient {
                     || feedbackType == null
                     || koreanAnalogy == null
                     || koreanAnalogy.isBlank()
-                    || (feedbackType == FeedbackType.NEEDS_IMPROVEMENT
-                    && (positiveFeedback == null || positiveFeedback.isBlank()))
-                    || feedbackDetail == null
-                    || feedbackDetail.isBlank()) {
+                    || !isValidFeedbackPayload()) {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 턴별 피드백 응답이 올바르지 않습니다.");
             }
             return new AiSessionTurnFeedbackResponse(
@@ -204,7 +214,27 @@ public class RemoteAiConversationClient implements AiConversationClient {
                     koreanAnalogy,
                     positiveFeedback,
                     feedbackDetail,
+                    correctionExpression,
+                    correctionReason,
                     benchmarkMessage);
         }
+
+        private boolean isValidFeedbackPayload() {
+            if (feedbackType == FeedbackType.GOOD) {
+                return isBlank(positiveFeedback)
+                        && !isBlank(feedbackDetail)
+                        && isBlank(correctionExpression)
+                        && isBlank(correctionReason);
+            }
+            return !isBlank(positiveFeedback)
+                    && isBlank(feedbackDetail)
+                    && !isBlank(correctionExpression)
+                    && !isBlank(correctionReason)
+                    && isBlank(benchmarkMessage);
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

@@ -5,7 +5,7 @@ public record AiNextQuestionRequest(
         Long sessionId,
         Long submittedTurnId,
         int submittedSequence,
-        AiScenarioContext scenario,
+        AiNextQuestionScenarioContext scenario,
         AiTurnContext currentTurn,
         AiFixedQuestion nextQuestion
 ) {
