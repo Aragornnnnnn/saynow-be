@@ -13,6 +13,8 @@ public record TurnFeedbackResponse(
         String koreanAnalogy,
         String positiveFeedback,
         String feedbackDetail,
+        String correctionExpression,
+        String correctionReason,
         String benchmarkMessage
 ) {
 }

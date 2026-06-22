@@ -174,13 +174,24 @@ public class FeedbackService {
                         && turnFeedback.feedbackType() != null
                         && turnFeedback.koreanAnalogy() != null
                         && !turnFeedback.koreanAnalogy().isBlank()
-                        && (turnFeedback.feedbackType() != FeedbackType.NEEDS_IMPROVEMENT
-                        || (turnFeedback.positiveFeedback() != null && !turnFeedback.positiveFeedback().isBlank()))
-                        && turnFeedback.feedbackDetail() != null
-                        && !turnFeedback.feedbackDetail().isBlank());
+                        && isValidTurnFeedbackPayload(turnFeedback));
         if (!allTurnsHaveFeedback || feedbackByTurnId.size() != turnIds.size() || feedback.turnFeedbacks().size() != turnIds.size() || !allFeedbacksAreValid) {
             throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
         }
+    }
+
+    private boolean isValidTurnFeedbackPayload(AiSessionTurnFeedbackResponse feedback) {
+        if (feedback.feedbackType() == FeedbackType.GOOD) {
+            return isBlank(feedback.positiveFeedback())
+                    && !isBlank(feedback.feedbackDetail())
+                    && isBlank(feedback.correctionExpression())
+                    && isBlank(feedback.correctionReason());
+        }
+        return !isBlank(feedback.positiveFeedback())
+                && isBlank(feedback.feedbackDetail())
+                && !isBlank(feedback.correctionExpression())
+                && !isBlank(feedback.correctionReason())
+                && isBlank(feedback.benchmarkMessage());
     }
 
     private TurnFeedback toTurnFeedback(
@@ -197,6 +208,8 @@ public class FeedbackService {
                 feedback.koreanAnalogy(),
                 feedback.positiveFeedback(),
                 feedback.feedbackDetail(),
+                feedback.correctionExpression(),
+                feedback.correctionReason(),
                 feedback.benchmarkMessage(),
                 generatedAt);
     }
@@ -229,7 +242,13 @@ public class FeedbackService {
                 feedback.getKoreanAnalogy(),
                 feedback.getPositiveFeedback(),
                 feedback.getFeedbackDetail(),
+                feedback.getCorrectionExpression(),
+                feedback.getCorrectionReason(),
                 feedback.getBenchmarkMessage());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private void logStageLatency(String workflow, String stage, Long userId, Long sessionId, long startedAtNanos) {

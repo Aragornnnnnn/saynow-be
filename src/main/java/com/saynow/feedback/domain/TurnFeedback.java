@@ -57,9 +57,17 @@ public class TurnFeedback extends BaseTimeEntity {
     @Getter
     private String positiveFeedback;
 
-    @Column(name = "feedback_detail", nullable = false, columnDefinition = "text")
+    @Column(name = "feedback_detail", columnDefinition = "text")
     @Getter
     private String feedbackDetail;
+
+    @Column(name = "correction_expression", length = 500)
+    @Getter
+    private String correctionExpression;
+
+    @Column(name = "correction_reason", columnDefinition = "text")
+    @Getter
+    private String correctionReason;
 
     @Column(name = "benchmark_message", columnDefinition = "text")
     @Getter
@@ -77,6 +85,8 @@ public class TurnFeedback extends BaseTimeEntity {
             String koreanAnalogy,
             String positiveFeedback,
             String feedbackDetail,
+            String correctionExpression,
+            String correctionReason,
             String benchmarkMessage,
             LocalDateTime generatedAt
     ) {
@@ -87,6 +97,8 @@ public class TurnFeedback extends BaseTimeEntity {
         this.koreanAnalogy = koreanAnalogy;
         this.positiveFeedback = positiveFeedback;
         this.feedbackDetail = feedbackDetail;
+        this.correctionExpression = correctionExpression;
+        this.correctionReason = correctionReason;
         this.benchmarkMessage = benchmarkMessage;
         this.generatedAt = generatedAt;
     }
