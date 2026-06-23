@@ -1,3 +1,27 @@
+# AI closing-message 종료 흐름 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 AI 서버 신규 `POST /api/v1/conversation/closing-message` 명세를 기준으로 마지막 사용자 발화 후 FE 하드코딩 종료 문구 대신 AI가 생성한 마지막 멘트를 보여주도록 BE 흐름을 수정하라고 요청했다.
+- 기존 BE-FE 응답 shape는 `submittedTurn`, `nextTurn`, `progress`를 유지해야 한다. 종료 케이스에서도 `nextTurn`은 `null`이 아니며, `nextTurn.aiQuestion`은 질문이 아니라 마지막 AI 멘트다.
+- 현재 `SessionService.submitUtterance`는 다음 고정 질문이 없으면 AI 호출 없이 `nextTurn=null`, `progress.completed=true`, `currentSequence=4`로 응답한다.
+- 현재 BE에는 목표 달성 여부를 별도 판정하는 도메인/AI classifier가 없다. 이번 구현의 종료 조건은 기존 완료 조건인 다음 고정 질문 없음으로 해석하고, AI 요청에는 `closingReason=MAX_TURNS_REACHED`, `goalCompletionStatus=COMPLETED`를 보낸다.
+- `session_turns.scenario_question_id`는 현재 엔티티와 DB에서 필수다. 종료 멘트 AI 턴은 별도 고정 질문이 없으므로 마지막 제출 턴의 `scenario_question_id`를 재사용하고 `sequence=totalQuestionCount + 1`, `user_utterance=null`로 저장한다.
+- 종료 멘트 AI 턴을 저장하면 기존 pending 턴 조회가 `user_utterance IS NULL`인 종료 AI row를 다시 잡을 수 있으므로, 사용자 입력 대상 pending 조회는 `sequence <= scenario.totalQuestionCount`로 제한해야 한다.
+- 최종 피드백은 마지막 AI 멘트가 아니라 사용자 발화가 있는 기존 질문 턴만 대상으로 유지한다. 따라서 `FeedbackService`는 answered turns만 readiness, expectedTurnIds, persistence, response assembly에 사용해야 한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`를 실행했고, `AiClosingMessageRequest` 부재로 `compileTestJava`에서 실패했다.
+- `AiClosingMessageRequest`, `AiClosingMessageResponse`, `ClosingReason`, `GoalCompletionStatus`와 `AiConversationClient.generateClosingMessage(...)`를 추가했다.
+- `RemoteAiConversationClient`는 `SAYNOW_AI_CLOSING_MESSAGE_PATH` 기본값 `/api/v1/conversation/closing-message`로 AI 서버를 호출하고, `aiMessage`, `translatedMessage`, `innerThought`, `innerThoughtType`을 필수 검증한다.
+- `SessionService`는 다음 고정 질문이 없으면 `closing-message`를 호출하고, 응답을 `submittedTurn.innerThought`, `submittedTurn.innerThoughtType`, `nextTurn.aiQuestion`, `nextTurn.translatedQuestion`에 매핑한다.
+- 종료 AI 멘트는 마지막 고정 질문의 `scenario_question_id`를 재사용해 `session_turns.sequence=5` row로 저장한다.
+- `FeedbackService`는 종료 AI row를 제외하고 `SessionTurn::isAnswered`인 4개 턴만 최종 피드백 readiness, AI request `expectedTurnIds`, DB 저장, FE 응답에 사용한다.
+- OpenAPI 발화 제출 200 응답에 기존 진행 중 `SUCCESS` 예시는 유지하고, 종료 케이스 `COMPLETED` 예시를 추가했다.
+- focused 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # AI 속마음 런타임 계약 반영 컨텍스트 노트
 
 ## 2026-06-23

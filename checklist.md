@@ -1,3 +1,19 @@
+# AI closing-message 종료 흐름 체크리스트
+
+- [x] 현재 발화 제출, AI client, 최종 피드백 저장 흐름을 확인한다.
+- [x] `closing-message` AI client 요청/응답 계약 RED 테스트를 추가하고 실패를 확인한다.
+- [x] 마지막 발화 제출 응답이 `nextTurn`을 유지하는 RED 통합 테스트를 추가하고 실패를 확인한다.
+- [x] 종료 멘트 AI 턴이 DB에 저장되는 RED 검증을 추가한다.
+- [x] 최종 피드백이 종료 멘트 AI 턴을 제외하고 사용자 발화 4개만 대상으로 삼는 RED 검증을 추가한다.
+- [x] AI closing DTO, enum, client method, local/remote client, 설정 path를 추가한다.
+- [x] `SessionService` 종료 분기에서 `closing-message`를 호출하고 응답을 기존 FE shape에 매핑한다.
+- [x] `SessionTurnRepository` pending 턴 조회가 종료 AI 턴을 다시 사용자 입력 대상으로 잡지 않도록 조정한다.
+- [x] `FeedbackService`가 사용자 발화가 있는 턴만 최종 피드백 대상으로 사용하도록 조정한다.
+- [x] OpenAPI 예시를 종료 케이스에서도 `nextTurn`이 있는 구조로 갱신한다.
+- [x] focused 테스트, 전체 테스트, `git diff --check`를 실행한다.
+
+---
+
 # AI 속마음 런타임 계약 반영 체크리스트
 
 - [x] 현재 `SessionService`, `FeedbackService`, AI DTO, OpenAPI 예시를 확인한다.
