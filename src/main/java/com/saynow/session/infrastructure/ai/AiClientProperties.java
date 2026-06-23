@@ -11,6 +11,7 @@ public record AiClientProperties(
         URI baseUrl,
         String clientMode,
         String nextQuestionPath,
+        String closingMessagePath,
         String turnFeedbackPath,
         String sessionFeedbackPath,
         Duration requestTimeout
@@ -19,6 +20,9 @@ public record AiClientProperties(
     public AiClientProperties {
         if (nextQuestionPath == null || nextQuestionPath.isBlank()) {
             nextQuestionPath = "/api/v1/conversation/next-question";
+        }
+        if (closingMessagePath == null || closingMessagePath.isBlank()) {
+            closingMessagePath = "/api/v1/conversation/closing-message";
         }
         if (turnFeedbackPath == null || turnFeedbackPath.isBlank()) {
             turnFeedbackPath = "/api/v1/conversation/turn-feedback";

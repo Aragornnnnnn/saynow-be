@@ -131,7 +131,23 @@ public class OpenApiResponseCustomizer {
                                     "currentSequence", 2,
                                     "totalQuestionCount", 4,
                                     "completed", false)
-                    )),
+                    ), Map.of(
+                            "COMPLETED", objectMap(
+                                    "submittedTurn", objectMap(
+                                            "turnId", 104,
+                                            "sequence", 4,
+                                            "turnFeedbackStatus", "PREPARING",
+                                            "innerThought", "마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다.",
+                                            "innerThoughtType", "GOOD"),
+                                    "nextTurn", objectMap(
+                                            "turnId", 105,
+                                            "sequence", 5,
+                                            "aiQuestion", "Thanks for sharing. I hope you get to experience that someday.",
+                                            "translatedQuestion", "이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다."),
+                                    "progress", objectMap(
+                                            "currentSequence", 5,
+                                            "totalQuestionCount", 4,
+                                            "completed", true)))),
                     errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_GENERATION_FAILED))),
             endpoint(SessionController.class, "abandonSession",
                     success(HttpStatus.OK, "세션 중도 종료 성공", null),
@@ -186,7 +202,12 @@ public class OpenApiResponseCustomizer {
             ApiResponses responses = new ApiResponses();
             responses.addApiResponse(
                     String.valueOf(endpointDoc.success().status().value()),
-                    jsonResponse(endpointDoc.success().description(), "SUCCESS", endpointDoc.success().description(), successBody(endpointDoc.success().data())));
+                    jsonResponse(
+                            endpointDoc.success().description(),
+                            "SUCCESS",
+                            endpointDoc.success().description(),
+                            successBody(endpointDoc.success().data()),
+                            endpointDoc.success().additionalExamples()));
 
             endpointDoc.errors().stream()
                     .collect(Collectors.groupingBy(error -> error.errorCode().getStatus(), LinkedHashMap::new, Collectors.toList()))
@@ -211,12 +232,22 @@ public class OpenApiResponseCustomizer {
                 .content(new Content().addMediaType(APPLICATION_JSON, mediaType));
     }
 
-    private static ApiResponse jsonResponse(String description, String exampleName, String exampleSummary, Object exampleValue) {
+    private static ApiResponse jsonResponse(
+            String description,
+            String exampleName,
+            String exampleSummary,
+            Object exampleValue,
+            Map<String, Object> additionalExamples
+    ) {
+        MediaType mediaType = new MediaType()
+                .schema(responseSchema())
+                .addExamples(exampleName, new Example().summary(exampleSummary).value(exampleValue));
+        additionalExamples.forEach((name, value) -> mediaType.addExamples(
+                name,
+                new Example().summary(name).value(successBody(value))));
         return new ApiResponse()
                 .description(description)
-                .content(new Content().addMediaType(APPLICATION_JSON, new MediaType()
-                        .schema(responseSchema())
-                        .addExamples(exampleName, new Example().summary(exampleSummary).value(exampleValue))));
+                .content(new Content().addMediaType(APPLICATION_JSON, mediaType));
     }
 
     private static Schema<?> responseSchema() {
@@ -231,7 +262,11 @@ public class OpenApiResponseCustomizer {
     }
 
     private static SuccessDoc success(HttpStatus status, String description, Object data) {
-        return new SuccessDoc(status, description, data);
+        return new SuccessDoc(status, description, data, Map.of());
+    }
+
+    private static SuccessDoc success(HttpStatus status, String description, Object data, Map<String, Object> additionalExamples) {
+        return new SuccessDoc(status, description, data, additionalExamples);
     }
 
     private static List<ErrorDoc> errors(ErrorDoc... errors) {
@@ -273,7 +308,7 @@ public class OpenApiResponseCustomizer {
     private record EndpointDoc(SuccessDoc success, List<ErrorDoc> errors) {
     }
 
-    private record SuccessDoc(HttpStatus status, String description, Object data) {
+    private record SuccessDoc(HttpStatus status, String description, Object data, Map<String, Object> additionalExamples) {
     }
 
     private record ErrorDoc(ErrorCode errorCode, String summary) {

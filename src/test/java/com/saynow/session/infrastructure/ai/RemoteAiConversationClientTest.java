@@ -81,6 +81,47 @@ class RemoteAiConversationClientTest {
     }
 
     @Test
+    void closingMessageRequestUsesEndingContractAndMapsResponse() throws Exception {
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        AtomicReference<String> requestIdHeader = new AtomicReference<>();
+        RemoteAiConversationClient client = clientWithResponse(
+                "/api/v1/conversation/closing-message",
+                requestBody,
+                requestIdHeader,
+                """
+                        {
+                          "aiMessage":"Sure, I’ll keep it down tonight. Good luck with your class tomorrow.",
+                          "translatedMessage":"물론이야, 오늘 밤은 조용히 할게. 내일 수업 잘 다녀와.",
+                          "innerThought":"정중하게 부탁했네. 상황도 분명해서 바로 맞춰주면 되겠다.",
+                          "innerThoughtType":"GOOD"
+                        }
+                        """);
+        RequestTraceContext.start("trace-closing-message");
+
+        AiClosingMessageResponse response = client.generateClosingMessage(closingMessageRequest());
+
+        JsonNode json = objectMapper.readTree(requestBody.get());
+        assertThat(requestIdHeader.get()).isEqualTo("trace-closing-message");
+        assertThat(json.get("sessionId").asLong()).isEqualTo(1000L);
+        assertThat(json.get("submittedTurnId").asLong()).isEqualTo(5000L);
+        assertThat(json.get("submittedSequence").asInt()).isEqualTo(4);
+        assertThat(json.get("scenario").get("scenarioId").asLong()).isEqualTo(10L);
+        assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
+        assertThat(json.get("currentTurn").get("aiQuestion").asText())
+                .isEqualTo("What do you want me to do?");
+        assertThat(json.get("currentTurn").get("translatedQuestion").asText())
+                .isEqualTo("내가 어떻게 해주면 좋겠어?");
+        assertThat(json.get("currentTurn").get("userUtterance").asText())
+                .isEqualTo("Could you keep it down at night? I have an early class tomorrow.");
+        assertThat(json.get("closingReason").asText()).isEqualTo("MAX_TURNS_REACHED");
+        assertThat(json.get("goalCompletionStatus").asText()).isEqualTo("COMPLETED");
+        assertThat(response.aiMessage()).isEqualTo("Sure, I’ll keep it down tonight. Good luck with your class tomorrow.");
+        assertThat(response.translatedMessage()).isEqualTo("물론이야, 오늘 밤은 조용히 할게. 내일 수업 잘 다녀와.");
+        assertThat(response.innerThought()).isEqualTo("정중하게 부탁했네. 상황도 분명해서 바로 맞춰주면 되겠다.");
+        assertThat(response.innerThoughtType()).isEqualTo(InnerThoughtType.GOOD);
+    }
+
+    @Test
     void turnFeedbackRequestUsesCacheContractAndMapsPreparingStatus() throws Exception {
         AtomicReference<String> requestBody = new AtomicReference<>();
         RemoteAiConversationClient client = clientWithResponse(
@@ -239,6 +280,7 @@ class RemoteAiConversationClientTest {
                 baseUrl,
                 "remote",
                 "/api/v1/conversation/next-question",
+                "/api/v1/conversation/closing-message",
                 "/api/v1/conversation/turn-feedback",
                 "/api/v1/conversation/session-feedback",
                 Duration.ofSeconds(180));
@@ -256,6 +298,20 @@ class RemoteAiConversationClientTest {
                         "가장 좋아하는 음식이 뭐예요? 왜 좋아하나요?",
                         "I like pizza because it is spicy."),
                 new AiFixedQuestion(101L, 2, "Do you cook often?", "요리는 자주 하나요?"));
+    }
+
+    private AiClosingMessageRequest closingMessageRequest() {
+        return new AiClosingMessageRequest(
+                1000L,
+                5000L,
+                4,
+                scenarioContext(),
+                new AiTurnContext(
+                        "What do you want me to do?",
+                        "내가 어떻게 해주면 좋겠어?",
+                        "Could you keep it down at night? I have an early class tomorrow."),
+                ClosingReason.MAX_TURNS_REACHED,
+                GoalCompletionStatus.COMPLETED);
     }
 
     private AiTurnFeedbackRequest turnFeedbackRequest() {

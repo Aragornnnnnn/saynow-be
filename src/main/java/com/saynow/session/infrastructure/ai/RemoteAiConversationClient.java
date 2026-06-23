@@ -43,6 +43,17 @@ public class RemoteAiConversationClient implements AiConversationClient {
     }
 
     @Override
+    public AiClosingMessageResponse generateClosingMessage(AiClosingMessageRequest request) {
+        return post(
+                "closing_message",
+                closingMessageUri(),
+                request,
+                RemoteClosingMessageResponse.class,
+                ErrorCode.AI_GENERATION_FAILED,
+                ErrorCode.AI_GENERATION_FAILED.getMessage()).toResponse();
+    }
+
+    @Override
     public AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request) {
         return post("turn_feedback", turnFeedbackUri(), request, RemoteTurnFeedbackStatusResponse.class).toResponse();
     }
@@ -118,6 +129,10 @@ public class RemoteAiConversationClient implements AiConversationClient {
         return properties.baseUrl().resolve(properties.nextQuestionPath());
     }
 
+    private URI closingMessageUri() {
+        return properties.baseUrl().resolve(properties.closingMessagePath());
+    }
+
     private URI turnFeedbackUri() {
         return properties.baseUrl().resolve(properties.turnFeedbackPath());
     }
@@ -142,6 +157,25 @@ public class RemoteAiConversationClient implements AiConversationClient {
                 throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 다음 질문 응답이 올바르지 않습니다.");
             }
             return new AiNextQuestionResponse(aiQuestion, translatedQuestion, innerThought, innerThoughtType);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record RemoteClosingMessageResponse(
+            String aiMessage,
+            String translatedMessage,
+            String innerThought,
+            InnerThoughtType innerThoughtType
+    ) {
+
+        private AiClosingMessageResponse toResponse() {
+            if (aiMessage == null || aiMessage.isBlank()
+                    || translatedMessage == null || translatedMessage.isBlank()
+                    || innerThought == null || innerThought.isBlank()
+                    || innerThoughtType == null) {
+                throw new ApiException(ErrorCode.AI_RESPONSE_INVALID, "AI 서버 종료 메시지 응답이 올바르지 않습니다.");
+            }
+            return new AiClosingMessageResponse(aiMessage, translatedMessage, innerThought, innerThoughtType);
         }
     }
 

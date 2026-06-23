@@ -18,7 +18,10 @@ public interface SessionTurnRepository extends JpaRepository<SessionTurn, Long> 
 
     List<SessionTurn> findBySessionOrderBySequenceAsc(Session session);
 
-    Optional<SessionTurn> findFirstBySessionAndUserUtteranceIsNullOrderBySequenceAsc(Session session);
+    Optional<SessionTurn> findFirstBySessionAndUserUtteranceIsNullAndSequenceLessThanEqualOrderBySequenceAsc(
+            Session session,
+            int sequence
+    );
 
     long countBySessionAndUserUtteranceIsNotNull(Session session);
 

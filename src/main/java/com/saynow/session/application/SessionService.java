@@ -26,6 +26,8 @@ import com.saynow.session.domain.InnerThoughtType;
 import com.saynow.session.infrastructure.SessionRepository;
 import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
+import com.saynow.session.infrastructure.ai.AiClosingMessageRequest;
+import com.saynow.session.infrastructure.ai.AiClosingMessageResponse;
 import com.saynow.session.infrastructure.ai.AiFixedQuestion;
 import com.saynow.session.infrastructure.ai.AiNextQuestionScenarioContext;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
@@ -34,6 +36,8 @@ import com.saynow.session.infrastructure.ai.AiScenarioContext;
 import com.saynow.session.infrastructure.ai.AiTurnContext;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackStatusResponse;
+import com.saynow.session.infrastructure.ai.ClosingReason;
+import com.saynow.session.infrastructure.ai.GoalCompletionStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -133,6 +137,21 @@ public class SessionService {
         logStageLatency("submit_utterance", "generate_next_question", userId, sessionId, stageStartedAt);
 
         stageStartedAt = System.nanoTime();
+        AiClosingMessageResponse closingMessageResponse = null;
+        if (context.nextQuestion() == null) {
+            closingMessageResponse = aiConversationClient.generateClosingMessage(new AiClosingMessageRequest(
+                    context.sessionId(),
+                    context.currentTurnId(),
+                    context.currentSequence(),
+                    toScenarioContext(context),
+                    new AiTurnContext(context.currentAiQuestion(), context.currentTranslatedQuestion(), userUtterance),
+                    ClosingReason.MAX_TURNS_REACHED,
+                    GoalCompletionStatus.COMPLETED));
+            validateClosingMessageResponse(closingMessageResponse);
+        }
+        logStageLatency("submit_utterance", "generate_closing_message", userId, sessionId, stageStartedAt);
+
+        stageStartedAt = System.nanoTime();
         AiTurnFeedbackStatusResponse turnFeedback = aiConversationClient.generateTurnFeedback(new AiTurnFeedbackRequest(
                 context.sessionId(),
                 context.currentTurnId(),
@@ -144,12 +163,14 @@ public class SessionService {
 
         stageStartedAt = System.nanoTime();
         AiNextQuestionResponse generatedNextQuestion = nextQuestionResponse;
+        AiClosingMessageResponse generatedClosingMessage = closingMessageResponse;
         UserUtteranceResponse response = executeInTransaction(() -> persistSubmittedUtterance(
                 userId,
                 sessionId,
                 context,
                 userUtterance,
                 generatedNextQuestion,
+                generatedClosingMessage,
                 turnFeedback));
         logStageLatency("submit_utterance", "persist_result_transaction", userId, sessionId, stageStartedAt);
 
@@ -167,7 +188,9 @@ public class SessionService {
     private SubmitUtteranceContext loadSubmitUtteranceContext(Long userId, Long sessionId) {
         Session session = findOwnedSession(userId, sessionId);
         assertInProgress(session);
-        SessionTurn currentTurn = turnRepository.findFirstBySessionAndUserUtteranceIsNullOrderBySequenceAsc(session)
+        SessionTurn currentTurn = turnRepository.findFirstBySessionAndUserUtteranceIsNullAndSequenceLessThanEqualOrderBySequenceAsc(
+                        session,
+                        session.getScenario().getTotalQuestionCount())
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED));
         ScenarioQuestion nextQuestion = scenarioQuestionRepository
                 .findByScenarioAndSequence(session.getScenario(), currentTurn.getSequence() + 1)
@@ -182,6 +205,7 @@ public class SessionService {
                 scenario.getCounterpartRole(),
                 scenario.getTotalQuestionCount(),
                 currentTurn.getId(),
+                currentTurn.getScenarioQuestion().getId(),
                 currentTurn.getSequence(),
                 currentTurn.getAiQuestion(),
                 currentTurn.getTranslatedQuestion(),
@@ -194,16 +218,19 @@ public class SessionService {
             SubmitUtteranceContext context,
             String userUtterance,
             AiNextQuestionResponse nextQuestionResponse,
+            AiClosingMessageResponse closingMessageResponse,
             AiTurnFeedbackStatusResponse turnFeedback
     ) {
+        String innerThought = nextQuestionResponse != null ? nextQuestionResponse.innerThought() : closingMessageResponse.innerThought();
+        InnerThoughtType innerThoughtType = nextQuestionResponse != null ? nextQuestionResponse.innerThoughtType() : closingMessageResponse.innerThoughtType();
         int updatedRows = turnRepository.updateUserUtteranceIfPending(
                 context.currentTurnId(),
                 sessionId,
                 userId,
                 SessionStatus.IN_PROGRESS,
                 userUtterance,
-                nextQuestionResponse == null ? null : nextQuestionResponse.innerThought(),
-                nextQuestionResponse == null ? null : nextQuestionResponse.innerThoughtType());
+                innerThought,
+                innerThoughtType);
         if (updatedRows == 0) {
             throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
         }
@@ -217,18 +244,27 @@ public class SessionService {
                     context.nextQuestion().sequence(),
                     nextQuestionResponse.aiQuestion(),
                     nextQuestionResponse.translatedQuestion()));
+        } else {
+            Session session = sessionRepository.getReferenceById(sessionId);
+            ScenarioQuestion currentQuestion = scenarioQuestionRepository.getReferenceById(context.currentQuestionId());
+            nextTurn = turnRepository.save(new SessionTurn(
+                    session,
+                    currentQuestion,
+                    context.currentSequence() + 1,
+                    closingMessageResponse.aiMessage(),
+                    closingMessageResponse.translatedMessage()));
         }
 
-        boolean completed = nextTurn == null;
-        int currentSequence = completed ? context.currentSequence() : nextTurn.getSequence();
+        boolean completed = context.nextQuestion() == null;
+        int currentSequence = nextTurn.getSequence();
         return new UserUtteranceResponse(
                 new SubmittedTurnResponse(
                         context.currentTurnId(),
                         context.currentSequence(),
                         turnFeedback.feedbackStatus(),
-                        nextQuestionResponse == null ? null : nextQuestionResponse.innerThought(),
-                        nextQuestionResponse == null ? null : nextQuestionResponse.innerThoughtType()),
-                nextTurn == null ? null : toTurnResponse(nextTurn),
+                        innerThought,
+                        innerThoughtType),
+                toTurnResponse(nextTurn),
                 new SessionProgressResponse(currentSequence, context.totalQuestionCount(), completed));
     }
 
@@ -297,6 +333,19 @@ public class SessionService {
                 || response.aiQuestion().isBlank()
                 || response.translatedQuestion() == null
                 || response.translatedQuestion().isBlank()
+                || response.innerThought() == null
+                || response.innerThought().isBlank()
+                || response.innerThoughtType() == null) {
+            throw new ApiException(ErrorCode.AI_RESPONSE_INVALID);
+        }
+    }
+
+    private void validateClosingMessageResponse(AiClosingMessageResponse response) {
+        if (response == null
+                || response.aiMessage() == null
+                || response.aiMessage().isBlank()
+                || response.translatedMessage() == null
+                || response.translatedMessage().isBlank()
                 || response.innerThought() == null
                 || response.innerThought().isBlank()
                 || response.innerThoughtType() == null) {
@@ -409,6 +458,7 @@ public class SessionService {
             String scenarioCounterpartRole,
             int totalQuestionCount,
             Long currentTurnId,
+            Long currentQuestionId,
             int currentSequence,
             String currentAiQuestion,
             String currentTranslatedQuestion,

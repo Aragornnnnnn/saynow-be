@@ -4,6 +4,8 @@ package com.saynow.nps;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.IntegrationTestSupport;
+import com.saynow.session.infrastructure.ai.AiClosingMessageRequest;
+import com.saynow.session.infrastructure.ai.AiClosingMessageResponse;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
@@ -231,6 +233,15 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
                     request.nextQuestion().questionEn(),
                     request.nextQuestion().questionKo(),
                     "답변을 이어줘서 다음 질문으로 자연스럽게 넘어가면 좋겠다.",
+                    InnerThoughtType.NORMAL);
+        }
+
+        @Override
+        public AiClosingMessageResponse generateClosingMessage(AiClosingMessageRequest request) {
+            return new AiClosingMessageResponse(
+                    "Thanks for sharing. That was a good conversation.",
+                    "이야기해줘서 고마워. 좋은 대화였어.",
+                    "마지막까지 답해줘서 대화를 자연스럽게 마무리하면 좋겠다.",
                     InnerThoughtType.NORMAL);
         }
 

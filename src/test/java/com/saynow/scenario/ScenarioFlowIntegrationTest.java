@@ -4,6 +4,8 @@ package com.saynow.scenario;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saynow.IntegrationTestSupport;
+import com.saynow.session.infrastructure.ai.AiClosingMessageRequest;
+import com.saynow.session.infrastructure.ai.AiClosingMessageResponse;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
 import com.saynow.session.infrastructure.ai.AiNextQuestionResponse;
@@ -12,8 +14,10 @@ import com.saynow.session.infrastructure.ai.AiSessionFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiSessionTurnFeedbackResponse;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiTurnFeedbackStatusResponse;
+import com.saynow.session.infrastructure.ai.ClosingReason;
 import com.saynow.session.domain.InnerThoughtType;
 import com.saynow.session.infrastructure.ai.FeedbackType;
+import com.saynow.session.infrastructure.ai.GoalCompletionStatus;
 import com.saynow.session.infrastructure.ai.TurnFeedbackStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,16 +136,20 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.submittedTurn.sequence").value(4))
                 .andExpect(jsonPath("$.data.submittedTurn.turnFeedbackStatus").value("PREPARING"))
-                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value(nullValue()))
-                .andExpect(jsonPath("$.data.submittedTurn.innerThoughtType").value(nullValue()))
-                .andExpect(jsonPath("$.data.nextTurn").value(nullValue()))
-                .andExpect(jsonPath("$.data.progress.currentSequence").value(4))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value("마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다."))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThoughtType").value("GOOD"))
+                .andExpect(jsonPath("$.data.nextTurn.sequence").value(5))
+                .andExpect(jsonPath("$.data.nextTurn.aiQuestion").value("Thanks for sharing. I hope you get to experience that someday."))
+                .andExpect(jsonPath("$.data.nextTurn.translatedQuestion").value("이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다."))
+                .andExpect(jsonPath("$.data.progress.currentSequence").value(5))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.progress.completed").value(true));
 
         assertThat(aiConversationClient.nextQuestionRequests).hasSize(3);
+        assertThat(aiConversationClient.closingMessageRequests).hasSize(1);
         assertThat(aiConversationClient.turnFeedbackRequests).hasSize(4);
         assertThat(aiConversationClient.nextQuestionTransactionActive).containsOnly(false);
+        assertThat(aiConversationClient.closingMessageTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.turnFeedbackTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().currentTurn().userUtterance())
                 .isEqualTo("I would go to Japan because I like the food and temples.");
@@ -149,6 +157,21 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo(2);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().scenario().counterpartRole())
                 .isEqualTo("friend");
+        assertThat(aiConversationClient.closingMessageRequests.getFirst().submittedSequence()).isEqualTo(4);
+        assertThat(aiConversationClient.closingMessageRequests.getFirst().closingReason()).isEqualTo(ClosingReason.MAX_TURNS_REACHED);
+        assertThat(aiConversationClient.closingMessageRequests.getFirst().goalCompletionStatus()).isEqualTo(GoalCompletionStatus.COMPLETED);
+        assertThat(aiConversationClient.closingMessageRequests.getFirst().currentTurn().userUtterance())
+                .isEqualTo("I want to live abroad someday because I want to experience a different culture.");
+
+        List<String> storedTurns = jdbcTemplate.queryForList("""
+                SELECT sequence || '|' || ai_question || '|' || translated_question || '|' || COALESCE(user_utterance, '<NULL>') || '|' || COALESCE(inner_thought, '<NULL>') || '|' || COALESCE(inner_thought_type, '<NULL>')
+                FROM session_turns
+                WHERE session_id = ?
+                ORDER BY sequence
+                """, String.class, sessionId);
+        assertThat(storedTurns).hasSize(5);
+        assertThat(storedTurns.get(3)).contains("4|", "I want to live abroad someday", "마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다.|GOOD");
+        assertThat(storedTurns.get(4)).isEqualTo("5|Thanks for sharing. I hope you get to experience that someday.|이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다.|<NULL>|<NULL>|<NULL>");
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -188,6 +211,13 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].praiseReason").doesNotExist());
 
         assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds()).hasSize(4);
+        assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds())
+                .doesNotContain(jdbcTemplate.queryForObject("""
+                        SELECT id
+                        FROM session_turns
+                        WHERE session_id = ?
+                          AND sequence = 5
+                        """, Long.class, sessionId));
         assertThat(aiConversationClient.sessionFeedbackTransactionActive).isFalse();
         assertThat(aiConversationClient.sessionFeedbackRequestCount).isEqualTo(1);
         Integer sessionFeedbackCount = jdbcTemplate.queryForObject("""
@@ -341,8 +371,10 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     static class TestAiConversationClient implements AiConversationClient {
 
         private final List<AiNextQuestionRequest> nextQuestionRequests = new ArrayList<>();
+        private final List<AiClosingMessageRequest> closingMessageRequests = new ArrayList<>();
         private final List<AiTurnFeedbackRequest> turnFeedbackRequests = new ArrayList<>();
         private final List<Boolean> nextQuestionTransactionActive = new ArrayList<>();
+        private final List<Boolean> closingMessageTransactionActive = new ArrayList<>();
         private final List<Boolean> turnFeedbackTransactionActive = new ArrayList<>();
         private AiSessionFeedbackRequest sessionFeedbackRequest;
         private int sessionFeedbackRequestCount;
@@ -350,8 +382,10 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
 
         void reset() {
             nextQuestionRequests.clear();
+            closingMessageRequests.clear();
             turnFeedbackRequests.clear();
             nextQuestionTransactionActive.clear();
+            closingMessageTransactionActive.clear();
             turnFeedbackTransactionActive.clear();
             sessionFeedbackRequest = null;
             sessionFeedbackRequestCount = 0;
@@ -380,6 +414,17 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                         InnerThoughtType.NORMAL);
                 default -> throw new IllegalArgumentException("unexpected next sequence");
             };
+        }
+
+        @Override
+        public AiClosingMessageResponse generateClosingMessage(AiClosingMessageRequest request) {
+            closingMessageRequests.add(request);
+            closingMessageTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
+            return new AiClosingMessageResponse(
+                    "Thanks for sharing. I hope you get to experience that someday.",
+                    "이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다.",
+                    "마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다.",
+                    InnerThoughtType.GOOD);
         }
 
         @Override

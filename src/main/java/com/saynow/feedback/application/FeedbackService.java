@@ -117,6 +117,7 @@ public class FeedbackService {
                     turnFeedbackRepository.findBySessionFeedbackWithTurnOrderByTurnSequenceAsc(existingFeedback));
         }
         validateFeedbackReady(session, turns);
+        List<SessionTurn> feedbackTurns = answeredTurns(turns);
 
         LocalDateTime now = LocalDateTime.now();
         SessionFeedback sessionFeedback = sessionFeedbackRepository.save(new SessionFeedback(
@@ -127,7 +128,7 @@ public class FeedbackService {
                 now));
         Map<Long, AiSessionTurnFeedbackResponse> aiFeedbackByTurnId = aiFeedback.turnFeedbacks().stream()
                 .collect(Collectors.toMap(AiSessionTurnFeedbackResponse::turnId, Function.identity()));
-        List<TurnFeedback> turnFeedbacks = turns.stream()
+        List<TurnFeedback> turnFeedbacks = feedbackTurns.stream()
                 .map(turn -> toTurnFeedback(sessionFeedback, turn, aiFeedbackByTurnId.get(turn.getId()), now))
                 .toList();
         turnFeedbackRepository.saveAll(turnFeedbacks);
@@ -135,7 +136,7 @@ public class FeedbackService {
         userScenarioProgressRepository.findByUserAndScenario(session.getUser(), session.getScenario())
                 .orElseGet(() -> userScenarioProgressRepository.save(new UserScenarioProgress(session.getUser(), session.getScenario())))
                 .markCompleted(now);
-        return toResponse(session, sessionFeedback, turns, turnFeedbacks);
+        return toResponse(session, sessionFeedback, feedbackTurns, turnFeedbacks);
     }
 
     private Session findOwnedSession(Long userId, Long sessionId) {
@@ -149,8 +150,8 @@ public class FeedbackService {
         if (session.getStatus() == SessionStatus.ABANDONED) {
             throw new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED);
         }
-        long answeredCount = turns.stream().filter(SessionTurn::isAnswered).count();
-        if (answeredCount != session.getScenario().getTotalQuestionCount() || turns.size() != session.getScenario().getTotalQuestionCount()) {
+        long answeredCount = answeredTurns(turns).size();
+        if (answeredCount != session.getScenario().getTotalQuestionCount()) {
             throw new ApiException(ErrorCode.SESSION_NOT_COMPLETED);
         }
     }
@@ -227,7 +228,7 @@ public class FeedbackService {
                 session.getId(),
                 sessionFeedback.getNativeScore(),
                 sessionFeedback.getHighlightMessage(),
-                turns.stream()
+                answeredTurns(turns).stream()
                         .map(turn -> toTurnFeedbackResponse(turn, feedbackByTurnId.get(turn.getId())))
                         .toList());
     }
@@ -272,7 +273,13 @@ public class FeedbackService {
                 session.getScenario().getBriefing(),
                 session.getScenario().getConversationGoal(),
                 session.getScenario().getCounterpartRole(),
-                turns.stream().map(SessionTurn::getId).toList());
+                answeredTurns(turns).stream().map(SessionTurn::getId).toList());
+    }
+
+    private List<SessionTurn> answeredTurns(List<SessionTurn> turns) {
+        return turns.stream()
+                .filter(SessionTurn::isAnswered)
+                .toList();
     }
 
     private <T> T executeReadOnly(Supplier<T> supplier) {

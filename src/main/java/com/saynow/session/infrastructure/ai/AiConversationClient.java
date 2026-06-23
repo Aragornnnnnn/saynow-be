@@ -5,6 +5,8 @@ public interface AiConversationClient {
 
     AiNextQuestionResponse generateNextQuestion(AiNextQuestionRequest request);
 
+    AiClosingMessageResponse generateClosingMessage(AiClosingMessageRequest request);
+
     AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request);
 
     AiSessionFeedbackResponse generateSessionFeedback(AiSessionFeedbackRequest request);

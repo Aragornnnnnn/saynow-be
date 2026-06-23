@@ -21,6 +21,15 @@ public class LocalAiConversationClient implements AiConversationClient {
     }
 
     @Override
+    public AiClosingMessageResponse generateClosingMessage(AiClosingMessageRequest request) {
+        return new AiClosingMessageResponse(
+                "Thanks for sharing. That was a good conversation.",
+                "이야기해줘서 고마워. 좋은 대화였어.",
+                "마지막까지 답해줘서 대화를 자연스럽게 마무리하면 좋겠다.",
+                InnerThoughtType.NORMAL);
+    }
+
+    @Override
     public AiTurnFeedbackStatusResponse generateTurnFeedback(AiTurnFeedbackRequest request) {
         return new AiTurnFeedbackStatusResponse(
                 request.sessionId(),
