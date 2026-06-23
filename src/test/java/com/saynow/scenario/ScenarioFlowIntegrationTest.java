@@ -62,28 +62,28 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void freeTalkScenarioCompletesAfterFourAnswersAndFinalFeedbackUnlocksNextScenario() throws Exception {
+    void roommateScenarioCompletesAfterFourAnswersAndFinalFeedbackUnlocksNextScenario() throws Exception {
         String accessToken = login("mvp3-sub-1|mvp3@example.com|MVP3 User");
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.categories[0].categoryName").value("Free Talk"))
+                .andExpect(jsonPath("$.data.categories[0].categoryName").value("룸메이트"))
                 .andExpect(jsonPath("$.data.categories[0].categoryLocked").value(false))
                 .andExpect(jsonPath("$.data.categories[0].categoryLockReason").value(nullValue()))
-                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioTitle").value("여행 취향 이야기하기"))
+                .andExpect(jsonPath("$.data.categories[0].scenarios[0].scenarioTitle").value("입주 첫날 — charlie와 첫 만남"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].briefing").isString())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].conversationGoal").isString())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].completed").value(false))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].locked").value(false))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.questionId").isNumber())
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.aiQuestion")
-                        .value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
+                        .value("Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[0].firstQuestionPreview.translatedQuestion")
-                        .value("지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?"))
+                        .value("야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?"))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[1].locked").value(true))
                 .andExpect(jsonPath("$.data.categories[0].scenarios[1].lockReason").value("PREVIOUS_SCENARIO_NOT_COMPLETED"))
-                .andExpect(jsonPath("$.data.categories[1].categoryName").value("Airport"))
+                .andExpect(jsonPath("$.data.categories[1].categoryName").value("수업"))
                 .andExpect(jsonPath("$.data.categories[1].categoryLocked").value(true))
                 .andExpect(jsonPath("$.data.categories[1].categoryLockReason").value("COMING_SOON"));
 
@@ -99,48 +99,47 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I would go to Japan because I like the food and temples.",
+                "I study business, and I like playing games after class.",
                 1,
                 2,
-                "That sounds exciting. Do you prefer traveling alone, or with other people?",
-                "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?",
-                "여행지와 이유를 바로 말해줘서 대화가 자연스럽게 이어지겠다.",
+                "Nice. What made you decide to come all the way here?",
+                "좋아. 너는 어쩌다 여기까지 오게 된 거야?",
+                "첫 만남인데 전공과 취미를 자연스럽게 알려줘서 말 걸기 편하겠다.",
                 "GOOD");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I prefer traveling with my friends because we can share memories.",
+                "I came here because I wanted to improve my English and live more independently.",
                 2,
                 3,
-                "Got it. Do you plan everything before a trip, or just go and figure it out?",
-                "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?",
-                "친구와 추억을 나누고 싶다는 답이 따뜻하게 느껴진다.",
+                "That makes sense. How should we split the cleaning and stuff?",
+                "그럴 만하네. 청소 같은 건 어떻게 나눌까?",
+                "혼자 살아보려는 이유가 분명해서 앞으로 룸메이트 생활도 잘 맞춰갈 수 있겠다.",
                 "GOOD");
         submitAndExpectNext(
                 accessToken,
                 sessionId,
-                "I plan important things, but I also leave some free time.",
+                "I think a simple schedule would be helpful, but we can change it if needed.",
                 3,
                 4,
-                "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
-                "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?",
-                "계획과 즉흥 사이의 균형을 설명해서 생각을 더 듣고 싶다.",
-                "NORMAL");
-
+                "Sounds fair. I'm making dinner tonight — is there anything you really can't eat?",
+                "좋아. 오늘 저녁 내가 하는데, 진짜 못 먹는 거 있어?",
+                "스케줄을 선호한다고 말하면서도 조정 가능하다고 해서 같이 살기 편하겠다.",
+                "GOOD");
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I want to live abroad someday because I want to experience a different culture."}
+                                {"userUtterance":"Thanks, I'd love to share. I can't really eat fish, but anything else is fine."}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.submittedTurn.sequence").value(4))
                 .andExpect(jsonPath("$.data.submittedTurn.turnFeedbackStatus").value("PREPARING"))
-                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value("마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다."))
+                .andExpect(jsonPath("$.data.submittedTurn.innerThought").value("못 먹는 음식을 부드럽게 말해줘서 저녁 메뉴를 맞추기 쉽겠다."))
                 .andExpect(jsonPath("$.data.submittedTurn.innerThoughtType").value("GOOD"))
                 .andExpect(jsonPath("$.data.nextTurn.sequence").value(5))
-                .andExpect(jsonPath("$.data.nextTurn.aiQuestion").value("Thanks for sharing. I hope you get to experience that someday."))
-                .andExpect(jsonPath("$.data.nextTurn.translatedQuestion").value("이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다."))
+                .andExpect(jsonPath("$.data.nextTurn.aiQuestion").value("Got it. I'll avoid fish, and we can share dinner tonight."))
+                .andExpect(jsonPath("$.data.nextTurn.translatedQuestion").value("알겠어. 생선은 피해서 오늘 저녁 같이 먹자."))
                 .andExpect(jsonPath("$.data.progress.currentSequence").value(5))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.progress.completed").value(true));
@@ -152,16 +151,16 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
         assertThat(aiConversationClient.closingMessageTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.turnFeedbackTransactionActive).containsOnly(false);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().currentTurn().userUtterance())
-                .isEqualTo("I would go to Japan because I like the food and temples.");
+                .isEqualTo("I study business, and I like playing games after class.");
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().nextQuestion().sequence())
                 .isEqualTo(2);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().scenario().counterpartRole())
-                .isEqualTo("friend");
+                .isEqualTo("roommate");
         assertThat(aiConversationClient.closingMessageRequests.getFirst().submittedSequence()).isEqualTo(4);
         assertThat(aiConversationClient.closingMessageRequests.getFirst().closingReason()).isEqualTo(ClosingReason.MAX_TURNS_REACHED);
         assertThat(aiConversationClient.closingMessageRequests.getFirst().goalCompletionStatus()).isEqualTo(GoalCompletionStatus.COMPLETED);
         assertThat(aiConversationClient.closingMessageRequests.getFirst().currentTurn().userUtterance())
-                .isEqualTo("I want to live abroad someday because I want to experience a different culture.");
+                .isEqualTo("Thanks, I'd love to share. I can't really eat fish, but anything else is fine.");
 
         List<String> storedTurns = jdbcTemplate.queryForList("""
                 SELECT sequence || '|' || ai_question || '|' || translated_question || '|' || COALESCE(user_utterance, '<NULL>') || '|' || COALESCE(inner_thought, '<NULL>') || '|' || COALESCE(inner_thought_type, '<NULL>')
@@ -170,8 +169,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 ORDER BY sequence
                 """, String.class, sessionId);
         assertThat(storedTurns).hasSize(5);
-        assertThat(storedTurns.get(3)).contains("4|", "I want to live abroad someday", "마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다.|GOOD");
-        assertThat(storedTurns.get(4)).isEqualTo("5|Thanks for sharing. I hope you get to experience that someday.|이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다.|<NULL>|<NULL>|<NULL>");
+        assertThat(storedTurns.get(3)).contains("4|", "Thanks, I'd love to share", "못 먹는 음식을 부드럽게 말해줘서 저녁 메뉴를 맞추기 쉽겠다.|GOOD");
+        assertThat(storedTurns.get(4)).isEqualTo("5|Got it. I'll avoid fish, and we can share dinner tonight.|알겠어. 생선은 피해서 오늘 저녁 같이 먹자.|<NULL>|<NULL>|<NULL>");
 
         mockMvc.perform(get("/api/v1/scenarios")
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
@@ -191,7 +190,7 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks.length()").value(4))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].sequence").value(1))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].originalQuestion")
-                        .value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
+                        .value("Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].feedbackType").value("GOOD"))
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].koreanAnalogy").isString())
                 .andExpect(jsonPath("$.data.turnFeedbacks[0].positiveFeedback").value(nullValue()))
@@ -328,8 +327,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.currentTurn.turnId").isNumber())
                 .andExpect(jsonPath("$.data.currentTurn.sequence").value(1))
-                .andExpect(jsonPath("$.data.currentTurn.aiQuestion").value("If you could travel anywhere for free right now, where would you go? And what draws you to that place?"))
-                .andExpect(jsonPath("$.data.currentTurn.translatedQuestion").value("지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?"))
+                .andExpect(jsonPath("$.data.currentTurn.aiQuestion").value("Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?"))
+                .andExpect(jsonPath("$.data.currentTurn.translatedQuestion").value("야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?"))
                 .andExpect(jsonPath("$.data.progress.currentSequence").value(1))
                 .andExpect(jsonPath("$.data.progress.totalQuestionCount").value(4))
                 .andExpect(jsonPath("$.data.progress.completed").value(false))
@@ -398,20 +397,20 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             nextQuestionTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return switch (request.nextQuestion().sequence()) {
                 case 2 -> new AiNextQuestionResponse(
-                        "That sounds exciting. Do you prefer traveling alone, or with other people?",
-                        "흥미롭네요. 혼자 여행이 더 좋아, 같이 가는 게 더 좋아요?",
-                        "여행지와 이유를 바로 말해줘서 대화가 자연스럽게 이어지겠다.",
+                        "Nice. What made you decide to come all the way here?",
+                        "좋아. 너는 어쩌다 여기까지 오게 된 거야?",
+                        "첫 만남인데 전공과 취미를 자연스럽게 알려줘서 말 걸기 편하겠다.",
                         InnerThoughtType.GOOD);
                 case 3 -> new AiNextQuestionResponse(
-                        "Got it. Do you plan everything before a trip, or just go and figure it out?",
-                        "그렇군요. 여행 전에 다 계획해요, 아니면 가서 해결해요?",
-                        "친구와 추억을 나누고 싶다는 답이 따뜻하게 느껴진다.",
+                        "That makes sense. How should we split the cleaning and stuff?",
+                        "그럴 만하네. 청소 같은 건 어떻게 나눌까?",
+                        "혼자 살아보려는 이유가 분명해서 앞으로 룸메이트 생활도 잘 맞춰갈 수 있겠다.",
                         InnerThoughtType.GOOD);
                 case 4 -> new AiNextQuestionResponse(
-                        "Interesting. Do you dream of living abroad someday, or would you rather stay in Korea?",
-                        "흥미롭네요. 언젠가 해외에서 살고 싶어요, 아니면 한국에 머물고 싶어요?",
-                        "계획과 즉흥 사이의 균형을 설명해서 생각을 더 듣고 싶다.",
-                        InnerThoughtType.NORMAL);
+                        "Sounds fair. I'm making dinner tonight — is there anything you really can't eat?",
+                        "좋아. 오늘 저녁 내가 하는데, 진짜 못 먹는 거 있어?",
+                        "스케줄을 선호한다고 말하면서도 조정 가능하다고 해서 같이 살기 편하겠다.",
+                        InnerThoughtType.GOOD);
                 default -> throw new IllegalArgumentException("unexpected next sequence");
             };
         }
@@ -421,9 +420,9 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
             closingMessageRequests.add(request);
             closingMessageTransactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
             return new AiClosingMessageResponse(
-                    "Thanks for sharing. I hope you get to experience that someday.",
-                    "이야기해줘서 고마워. 언젠가 꼭 경험해보면 좋겠다.",
-                    "마지막 답변이 분명해서 자연스럽게 마무리하면 좋겠다.",
+                    "Got it. I'll avoid fish, and we can share dinner tonight.",
+                    "알겠어. 생선은 피해서 오늘 저녁 같이 먹자.",
+                    "못 먹는 음식을 부드럽게 말해줘서 저녁 메뉴를 맞추기 쉽겠다.",
                     InnerThoughtType.GOOD);
         }
 

@@ -89,7 +89,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void freeTalkScenariosAreSeededWithFourFixedQuestionsEach() {
+    void roommateScenariosAreSeededWithRequestedCategoriesAndFixedQuestions() {
         List<String> categories = jdbcTemplate.queryForList("""
                 SELECT name || '|' || locked || '|' || COALESCE(lock_reason, '')
                 FROM categories
@@ -97,30 +97,29 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, String.class);
 
         assertThat(categories).containsExactly(
-                "Free Talk|FALSE|",
-                "Airport|TRUE|COMING_SOON",
-                "Hotel|TRUE|COMING_SOON",
-                "Restaurant|TRUE|COMING_SOON");
+                "룸메이트|FALSE|",
+                "수업|TRUE|COMING_SOON",
+                "여행|TRUE|COMING_SOON");
 
         List<String> scenarios = jdbcTemplate.queryForList("""
-                SELECT s.id || '|' || s.title || '|' || s.total_question_count || '|' || s.locked
+                SELECT s.id || '|' || s.title || '|' || s.total_question_count || '|' || s.locked || '|' || s.counterpart_role
                 FROM scenarios s
                 JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Free Talk'
+                WHERE c.name = '룸메이트'
                 ORDER BY s.display_order
                 """, String.class);
 
         assertThat(scenarios).containsExactly(
-                "1|여행 취향 이야기하기|4|FALSE",
-                "2|음식 취향 이야기하기|4|FALSE",
-                "3|음악 취향 이야기하기|4|FALSE");
+                "1|입주 첫날 — charlie와 첫 만남|4|FALSE|roommate",
+                "2|카페에서 수다떨면서 주말 약속 잡기|4|FALSE|roommate",
+                "3|서로 더 알아가는 밤 — 룸메 토크|4|FALSE|roommate");
 
         List<Integer> questionCounts = jdbcTemplate.queryForList("""
                 SELECT COUNT(*)
                 FROM scenario_questions q
                 JOIN scenarios s ON s.id = q.scenario_id
                 JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Free Talk'
+                WHERE c.name = '룸메이트'
                 GROUP BY s.id
                 ORDER BY s.display_order
                 """, Integer.class);
@@ -132,23 +131,23 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 FROM scenario_questions q
                 JOIN scenarios s ON s.id = q.scenario_id
                 JOIN categories c ON c.id = s.category_id
-                WHERE c.name = 'Free Talk'
+                WHERE c.name = '룸메이트'
                 ORDER BY s.display_order, q.sequence
                 """, String.class);
 
         assertThat(questions).containsExactly(
-                "1|1|If you could travel anywhere for free right now, where would you go? And what draws you to that place?|지금 당장 무료로 어디든 여행 갈 수 있다면 어디로 갈래? 그곳의 어떤 점이 끌려?",
-                "1|2|Do you prefer traveling alone, or with other people? Why?|혼자 여행이 더 좋아, 같이 가는 게 더 좋아? 왜?",
-                "1|3|Do you plan everything before a trip, or just go and figure it out? Has anything unexpected ever thrown you off?|여행 전에 다 계획해, 아니면 그냥 가서 해결해? 예상 못한 일이 생겨서 멘붕온 적 있어?",
-                "1|4|Do you dream of living abroad someday, or would you rather stay in Korea? Why?|언젠가 해외에서 사는 게 꿈이야, 아니면 한국이 좋아? 왜?",
-                "2|1|What food could you eat every week and never get tired of?|매주 먹어도 안 질릴 음식 뭐야?",
-                "2|2|What's your go-to comfort food?|스트레스 받을 때 찾는 음식 뭐야?",
-                "2|3|If you could eat only one food forever, what would you pick?|평생 한 가지만 먹을 수 있다면 뭐 고를래?",
-                "2|4|Never eat meat again, or never eat rice & bread again? Which would you pick? Why?|평생 고기 금지 vs 평생 밥·빵(탄수) 금지. 뭐 고를래? 왜?",
-                "3|1|What song have you been playing on repeat lately?|요즘 무한 반복하는 노래 뭐야?",
-                "3|2|What music app do you use, and what makes it your favorite?|음악 스트리밍 어플 뭐 써? 그거 쓰는 이유가 뭐야?",
-                "3|3|Have you ever seen an artist live in concert? How was it? If not, who would you most want to see?|실제로 콘서트 가본 적 있어? 어땠어? 만약 없다면 제일 보고 싶은 가수는 누구야?",
-                "3|4|What's your go-to karaoke song — the one you can always nail? Why that one?|노래방 18번 뭐야? 가면 무조건 부르는 곡. 왜 그거 불러?");
+                "1|1|Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?|야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?",
+                "1|2|Wait, I'm so curious — what made you decide to come all the way here? Like, why this country?|잠깐, 나 완전 궁금해 — 너 어쩌다 여기까지 오게 된 거야? 그러니까, 왜 이 나라야?",
+                "1|3|Okay, real talk — how should we split the cleaning and stuff? Wanna make a schedule, or just figure it out as we go? What works better for you?|자 진지하게 — 청소 같은 거 어떻게 나눌까? 스케줄 짤까, 그냥 그때그때 할까? 넌 어떻게 하는 게 좋아?",
+                "1|4|I'm making dinner tonight — wanna share? Oh wait, is there anything you really can't eat? I don't wanna make something you'll hate.|오늘 저녁 내가 하는데 — 같이 먹을래? 아 참, 너 진짜 못 먹는 거 있어? 싫어하는 거 만들기 싫어서.",
+                "2|1|We should totally hang out this weekend! Does Saturday or Sunday work better for you?|우리 이번 주말에 꼭 놀자! 토요일이랑 일요일 중에 언제가 더 좋아?",
+                "2|2|So what do you usually do for fun? Or is there anything you've been dying to try ever since you got here?|넌 보통 뭐하고 놀아? 아님 여기 와서 꼭 해보고 싶었던 거 있어?",
+                "2|3|Oh my god, I almost forgot to tell you — Dude, guess what — I finally got that internship I told you about! I'm freaking out, I'm so happy!|헐 너한테 말하는 거 까먹을 뻔 — 야, 있잖아 — 나 너한테 말했던 그 인턴십 드디어 됐어! 너무 신나, 진짜 행복해!",
+                "2|4|Oh shoot, is it already that late? I need to run to the store before it closes! Wanna come with? Or do you need me to grab you anything?|어 벌써 시간이 이렇게 됐네? 마트 문 닫기 전에 얼른 가야겠다! 같이 갈래? 아님 내가 뭐 사다 줄까?",
+                "3|1|Okay, let's play Truth or Dare — well, just the truth part. Ask me anything and I'll answer 100% honestly!|자 우리 진실게임하자 — 아니 벌칙은 빼고 진실만. 아무거나 물어봐, 100% 솔직하게 답할게!",
+                "3|2|Okay, my turn to ask! I'm curious about you — what's your big dream? And what made you pick your major?|좋아, 이제 내가 물어볼 차례! 나 궁금한 거 있어 — 너는 꿈이 뭐야? 그리고 왜 그 전공을 선택했어?",
+                "3|3|You've seemed kinda off lately — everything okay? You know you can talk to me, right? Come on, tell me everything!|너 요즘 좀 기운없어 보여 — 다 괜찮아? 나한테 얘기해도 되는 거 알지? 자, 나한테 다 털어놔봐!",
+                "3|4|Okay, let's get some sleep! Oh, but before we do... don't get mad, okay? You were snoring SO loud last night I genuinely thought there was a tiny monster under your bed, I swear, hahaha! Try not to snore tonight, okay~?|좋아 이제 자자! 아 근데 자기 전에.. 화내지 말고 들어, 아니 너 어젯밤에 코를 너무 크게 골아서 침대 밑에 뭔 애기 몬스터라도 있는 줄 알았잖아 진심ㅋㅋㅋ 오늘은 코 골지 마라~~?");
     }
 
     private boolean tableExists(String tableName) {

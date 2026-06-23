@@ -1,3 +1,16 @@
+# 룸메이트 시나리오 seed 교체 체크리스트
+
+- [x] 현재 scenario/category seed, API 예시, 통합 테스트 기대값을 확인한다.
+- [x] 새 룸메이트 카테고리와 시나리오 A/B/C 기대값으로 RED 테스트를 추가한다.
+- [x] RED 테스트가 기존 Free Talk seed 때문에 실패하는 것을 확인한다.
+- [x] 새 Flyway migration으로 카테고리 3개와 룸메이트 시나리오 질문을 갱신한다.
+- [x] OpenAPI 예시와 시나리오 플로우 테스트를 새 첫 질문과 총 질문 수에 맞춘다.
+- [x] focused 테스트를 실행한다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
 # AI closing-message 종료 흐름 체크리스트
 
 - [x] 현재 발화 제출, AI client, 최종 피드백 저장 흐름을 확인한다.

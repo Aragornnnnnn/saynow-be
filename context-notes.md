@@ -1,3 +1,29 @@
+# 룸메이트 시나리오 seed 교체 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 기존 시나리오 데이터를 새 카테고리 구조로 교체하라고 요청했다.
+- 요청한 카테고리는 `룸메이트`, `수업`, `여행`이다.
+- 제공된 실제 시나리오 데이터는 모두 룸메이트 카테고리용이다. 따라서 `룸메이트` 카테고리만 열고, `수업`과 `여행`은 기존 `COMING_SOON` 잠금 카테고리로 유지한다.
+- 현재 API는 카테고리 row를 모두 반환하므로 카테고리를 3개로 맞추려면 기존 4번째 카테고리는 새 migration에서 삭제한다.
+- 기존 시나리오 1~3은 룸메이트 카테고리의 A/B/C로 재사용한다. A/B/C 모두 4개 질문으로 구성한다.
+- 기존 `scenario_questions.question_en`과 `question_ko` 길이 제한은 500자이고, 제공된 질문은 이 제한 안에 들어간다.
+- 기존 배포 migration은 수정하지 않고 새 Flyway migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 기존 `Free Talk` seed와 기존 OpenAPI 예시 때문에 실패했다.
+- `V17__replace_free_talk_with_roommate_scenarios.sql`을 추가해 카테고리 1~3을 `룸메이트`, `수업`, `여행`으로 갱신하고, 4번째 카테고리는 연결 시나리오가 없을 때 삭제한다.
+- 시나리오 1~3은 모두 `counterpart_role=roommate`로 맞췄다. 시나리오 1은 4문항이므로 종료 AI 멘트 row는 세션 진행에서 `sequence=5`가 된다.
+- `수업`과 `여행`은 실제 시나리오 데이터가 아직 없어서 `COMING_SOON` 잠금 카테고리로 둔다.
+- focused GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증 첫 실행에서 observability와 NPS 테스트가 실패했다. 당시 시나리오 A가 5문항이었기 때문에 공통 테스트 helper가 4문항만 답변해 세션을 완료하지 못한 것이 원인이었다.
+- 이후 사용자가 시나리오 A 질문 1개 제거를 요청했고, A5 파티 초대 질문은 B의 주말 약속/동행 제안과 역할이 겹치며 문장 품질도 상대적으로 낮아 제거했다.
+- 시나리오 A를 4문항으로 되돌리면서 observability와 NPS helper도 4문항 기준으로 유지하고, 피드백 로그 기대값은 `turnCount=4`로 맞췄다.
+- 관련 재검증으로 `./gradlew test --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.nps.SessionNpsApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 변경 범위를 확인하고 `feat: 룸메이트 시나리오 seed 교체` 커밋으로 묶었다.
+
+---
+
 # AI closing-message 종료 흐름 컨텍스트 노트
 
 ## 2026-06-23
