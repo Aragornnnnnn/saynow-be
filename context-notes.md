@@ -21,6 +21,8 @@
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 공백 검증으로 `git diff --check`를 실행했고 통과했다.
 - 변경 범위를 확인하고 `feat: 룸메이트 시나리오 seed 교체` 커밋으로 묶었다.
+- dev DB 배포 후 직접 조회에서 Flyway `V17`은 성공했지만 카테고리 2, 3 row가 이미 없는 DB 상태라 `수업`, `여행`이 생성되지 않은 것을 확인했다.
+- `V18__ensure_roommate_class_travel_categories.sql`을 추가해 `룸메이트`, `수업`, `여행` 카테고리를 id 기준 upsert로 보정하고 categories identity를 4로 맞춘다.
 
 ---
 
