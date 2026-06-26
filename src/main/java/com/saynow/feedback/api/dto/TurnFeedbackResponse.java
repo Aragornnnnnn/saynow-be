@@ -1,5 +1,7 @@
-// 채팅형 피드백 화면의 턴별 응답 DTO
+// 최종 피드백 화면의 턴별 품질 피드백 응답 DTO
 package com.saynow.feedback.api.dto;
+
+import com.saynow.session.infrastructure.ai.FeedbackType;
 
 public record TurnFeedbackResponse(
         Long turnId,
@@ -7,9 +9,12 @@ public record TurnFeedbackResponse(
         String originalQuestion,
         String translatedQuestion,
         String userUtterance,
-        boolean feedbackRequired,
-        String nativeUnderstanding,
-        String nativeLanguageInterpretation,
-        String betterExpression
+        FeedbackType feedbackType,
+        String koreanAnalogy,
+        String positiveFeedback,
+        String feedbackDetail,
+        String correctionExpression,
+        String correctionReason,
+        String benchmarkMessage
 ) {
 }

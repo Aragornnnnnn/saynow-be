@@ -5,11 +5,11 @@ public record ScenarioResponse(
         Long scenarioId,
         int displayOrder,
         String scenarioTitle,
-        String scenarioGoal,
-        String scenarioSituation,
-        String scenarioEmoji,
-        boolean cleared,
+        String briefing,
+        String conversationGoal,
+        boolean completed,
         boolean locked,
-        String lockReason
+        String lockReason,
+        FirstQuestionPreviewResponse firstQuestionPreview
 ) {
 }

@@ -2,8 +2,11 @@
 package com.saynow.session.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
+import com.saynow.scenario.domain.ScenarioQuestion;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -14,6 +17,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "session_turns")
@@ -28,6 +33,11 @@ public class SessionTurn extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "scenario_question_id", nullable = false)
+    @Getter
+    private ScenarioQuestion scenarioQuestion;
 
     @Column(nullable = false)
     @Getter
@@ -45,39 +55,49 @@ public class SessionTurn extends BaseTimeEntity {
     @Getter
     private String userUtterance;
 
-    @Column(name = "next_question_target_slot_name", length = 80)
+    @Column(name = "inner_thought", columnDefinition = "text")
     @Getter
-    private String nextQuestionTargetSlotName;
+    private String innerThought;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inner_thought_type", length = 20)
+    @Getter
+    private InnerThoughtType innerThoughtType;
+
+    @Column(name = "answered_at")
+    @Getter
+    private LocalDateTime answeredAt;
 
     public SessionTurn(
             Session session,
+            ScenarioQuestion scenarioQuestion,
             int sequence,
             String aiQuestion,
             String translatedQuestion
     ) {
-        this(session, sequence, aiQuestion, translatedQuestion, null);
+        this(session, scenarioQuestion, sequence, aiQuestion, translatedQuestion, null, null);
     }
 
     public SessionTurn(
             Session session,
+            ScenarioQuestion scenarioQuestion,
             int sequence,
             String aiQuestion,
             String translatedQuestion,
-            String nextQuestionTargetSlotName
+            String innerThought,
+            InnerThoughtType innerThoughtType
     ) {
         this.session = session;
+        this.scenarioQuestion = scenarioQuestion;
         this.sequence = sequence;
         this.aiQuestion = aiQuestion;
         this.translatedQuestion = translatedQuestion;
-        this.nextQuestionTargetSlotName = nextQuestionTargetSlotName;
+        this.innerThought = innerThought;
+        this.innerThoughtType = innerThoughtType;
     }
 
     public boolean isAnswered() {
         return userUtterance != null && !userUtterance.isBlank();
-    }
-
-    public void submitUserUtterance(String userUtterance) {
-        this.userUtterance = userUtterance;
     }
 
 }

@@ -31,10 +31,10 @@ saynow:
     base-url: ${SAYNOW_AI_BASE_URL:http://15.164.34.102:8080}
     client-mode: ${SAYNOW_AI_CLIENT_MODE:local}
     next-question-path: ${SAYNOW_AI_NEXT_QUESTION_PATH:/api/v1/conversation/next-question}
-    feedback-path: ${SAYNOW_AI_FEEDBACK_PATH:/api/v1/conversation/feedback}
-    feedback-stream-path: ${SAYNOW_AI_FEEDBACK_STREAM_PATH:/api/v1/conversation/feedback/stream}
-    guide-path: ${SAYNOW_AI_GUIDE_PATH:/api/v1/conversation/guide}
-    feedback-stream-timeout: ${SAYNOW_AI_FEEDBACK_STREAM_TIMEOUT:180s}
+    closing-message-path: ${SAYNOW_AI_CLOSING_MESSAGE_PATH:/api/v1/conversation/closing-message}
+    turn-feedback-path: ${SAYNOW_AI_TURN_FEEDBACK_PATH:/api/v1/conversation/turn-feedback}
+    session-feedback-path: ${SAYNOW_AI_SESSION_FEEDBACK_PATH:/api/v1/conversation/session-feedback}
+    request-timeout: ${SAYNOW_AI_REQUEST_TIMEOUT:180s}
 
 sentry:
   enabled: ${SENTRY_ENABLED:false}

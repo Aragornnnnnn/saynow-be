@@ -113,12 +113,12 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
         ListAppender<ILoggingEvent> sessionLogs = attachListAppender(SessionService.class);
         String accessToken = login("observability-session-sub|observability-session@example.com|Observability Session");
 
-        long sessionId = startSession(accessToken, 4);
+        long sessionId = startSession(accessToken, 1);
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I'm here for sightseeing."}
+                                {"userUtterance":"I like pizza because it is spicy."}
                                 """))
                 .andExpect(status().isOk());
 
@@ -126,7 +126,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                 .anySatisfy(event -> {
                     assertThat(event.getFormattedMessage())
                             .contains("세션을 시작했습니다.")
-                            .contains("scenarioId=4")
+                            .contains("scenarioId=1")
                             .containsPattern("sessionId=\\d+")
                             .containsPattern("userId=\\d+");
                     assertThat(event.getMDCPropertyMap()).containsKeys("requestId", "userId");
@@ -135,10 +135,9 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                 .anySatisfy(event -> assertThat(event.getFormattedMessage())
                         .contains("세션 발화를 처리했습니다.")
                         .contains("sessionId=" + sessionId)
-                        .contains("turnClassification=ANSWER")
-                        .contains("heartDeducted=false")
-                        .contains("remainingHearts=3")
-                        .doesNotContain("I'm here for sightseeing."));
+                        .contains("submittedSequence=1")
+                        .contains("turnFeedbackStatus=PREPARING")
+                        .doesNotContain("I like pizza because it is spicy."));
     }
 
     @Test
@@ -155,8 +154,8 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                 .anySatisfy(event -> assertThat(event.getFormattedMessage())
                         .contains("세션 피드백 생성을 완료했습니다.")
                         .contains("sessionId=" + sessionId)
-                        .contains("cleared=true")
-                        .contains("turnCount=3"));
+                        .contains("nativeScore=82")
+                        .contains("turnCount=4"));
     }
 
     @Test
@@ -166,7 +165,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
         String startRequestId = "stage-session-start-123";
         String utteranceRequestId = "stage-utterance-123";
 
-        MvcResult startResult = mockMvc.perform(post("/api/v1/scenarios/{scenarioId}/sessions", 4)
+        MvcResult startResult = mockMvc.perform(post("/api/v1/scenarios/{scenarioId}/sessions", 1)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .header("X-Request-Id", startRequestId))
                 .andExpect(status().isCreated())
@@ -190,7 +189,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         event,
                         startRequestId,
                         "session_start",
-                        "save_slot_statuses",
+                        "save_initial_turn",
                         String.valueOf(sessionId)));
         assertThat(sessionLogs.list)
                 .anySatisfy(event -> assertStageLog(
@@ -204,7 +203,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         event,
                         utteranceRequestId,
                         "submit_utterance",
-                        "save_next_turn",
+                        "request_turn_feedback",
                         String.valueOf(sessionId)));
         assertThat(sessionLogs.list)
                 .anySatisfy(event -> assertStageLog(
@@ -216,7 +215,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void feedbackStageLogsSplitContextLoadAndPersistence() throws Exception {
+    void feedbackStageLogsSplitContextGenerationAndPersistence() throws Exception {
         ListAppender<ILoggingEvent> feedbackLogs = attachListAppender(FeedbackService.class);
         String accessToken = login("observability-stage-feedback-sub|observability-stage-feedback@example.com|Observability Stage Feedback");
         long sessionId = completeSession(accessToken);
@@ -239,21 +238,14 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         event,
                         requestId,
                         "feedback",
-                        "prepare_ai_request",
+                        "generate_session_feedback",
                         String.valueOf(sessionId)));
         assertThat(feedbackLogs.list)
                 .anySatisfy(event -> assertStageLog(
                         event,
                         requestId,
                         "feedback",
-                        "save_turn_feedbacks",
-                        String.valueOf(sessionId)));
-        assertThat(feedbackLogs.list)
-                .anySatisfy(event -> assertStageLog(
-                        event,
-                        requestId,
-                        "feedback",
-                        "persist_feedback_transaction",
+                        "save_session_feedback",
                         String.valueOf(sessionId)));
     }
 
@@ -289,10 +281,11 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
     }
 
     private long completeSession(String accessToken) throws Exception {
-        long sessionId = startSession(accessToken, 4);
-        submitUtterance(accessToken, sessionId, "I'm here for sightseeing.");
-        submitUtterance(accessToken, sessionId, "I'll stay for five days.");
-        submitUtterance(accessToken, sessionId, "I'll stay at the Midtown Hotel.");
+        long sessionId = startSession(accessToken, 1);
+        submitUtterance(accessToken, sessionId, "I like pizza because it is spicy.");
+        submitUtterance(accessToken, sessionId, "I cook pasta on weekends.");
+        submitUtterance(accessToken, sessionId, "I ate ramen yesterday.");
+        submitUtterance(accessToken, sessionId, "I want to try tacos because they look fresh.");
         return sessionId;
     }
 

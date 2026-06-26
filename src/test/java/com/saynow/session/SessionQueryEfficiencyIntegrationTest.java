@@ -40,14 +40,14 @@ class SessionQueryEfficiencyIntegrationTest extends IntegrationTestSupport {
     @Test
     void submitUtteranceUsesBoundedDatabaseStatements() throws Exception {
         String accessToken = login("query-budget-sub|query-budget@example.com|Query Budget User");
-        long sessionId = startSession(accessToken, 4);
+        long sessionId = startSession(accessToken, 1);
 
         statistics.clear();
         mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"userUtterance":"I'm here for sightseeing."}
+                                {"userUtterance":"I like pizza because it is spicy."}
                                 """))
                 .andExpect(status().isOk());
 

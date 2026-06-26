@@ -31,31 +31,25 @@ public class Scenario extends BaseTimeEntity {
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "original_question", nullable = false, length = 500)
-    private String originalQuestion;
+    @Column(nullable = false, columnDefinition = "text")
+    private String briefing;
 
-    @Column(name = "translated_question", nullable = false, length = 500)
-    private String translatedQuestion;
+    @Column(name = "conversation_goal", nullable = false, length = 255)
+    private String conversationGoal;
 
-    @Column(nullable = false, length = 255)
-    private String goal;
-
-    @Column(nullable = false, length = 255)
-    private String situation;
-
-    @Column(name = "ai_role", nullable = false, length = 100)
-    private String aiRole;
-
-    @Column(length = 20)
-    private String emoji;
-
-    @Column(name = "background_image", nullable = false, length = 500)
-    private String backgroundImage;
-
-    @Column(nullable = false)
-    private int heart;
+    @Column(name = "counterpart_role", nullable = false, length = 50)
+    private String counterpartRole;
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
+
+    @Column(name = "total_question_count", nullable = false)
+    private int totalQuestionCount;
+
+    @Column(nullable = false)
+    private boolean locked;
+
+    @Column(name = "lock_reason", length = 50)
+    private String lockReason;
 
 }

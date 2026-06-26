@@ -1,3 +1,161 @@
+# 룸메이트 시나리오 seed 교체 체크리스트
+
+- [x] 현재 scenario/category seed, API 예시, 통합 테스트 기대값을 확인한다.
+- [x] 새 룸메이트 카테고리와 시나리오 A/B/C 기대값으로 RED 테스트를 추가한다.
+- [x] RED 테스트가 기존 Free Talk seed 때문에 실패하는 것을 확인한다.
+- [x] 새 Flyway migration으로 카테고리 3개와 룸메이트 시나리오 질문을 갱신한다.
+- [x] OpenAPI 예시와 시나리오 플로우 테스트를 새 첫 질문과 총 질문 수에 맞춘다.
+- [x] focused 테스트를 실행한다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# AI closing-message 종료 흐름 체크리스트
+
+- [x] 현재 발화 제출, AI client, 최종 피드백 저장 흐름을 확인한다.
+- [x] `closing-message` AI client 요청/응답 계약 RED 테스트를 추가하고 실패를 확인한다.
+- [x] 마지막 발화 제출 응답이 `nextTurn`을 유지하는 RED 통합 테스트를 추가하고 실패를 확인한다.
+- [x] 종료 멘트 AI 턴이 DB에 저장되는 RED 검증을 추가한다.
+- [x] 최종 피드백이 종료 멘트 AI 턴을 제외하고 사용자 발화 4개만 대상으로 삼는 RED 검증을 추가한다.
+- [x] AI closing DTO, enum, client method, local/remote client, 설정 path를 추가한다.
+- [x] `SessionService` 종료 분기에서 `closing-message`를 호출하고 응답을 기존 FE shape에 매핑한다.
+- [x] `SessionTurnRepository` pending 턴 조회가 종료 AI 턴을 다시 사용자 입력 대상으로 잡지 않도록 조정한다.
+- [x] `FeedbackService`가 사용자 발화가 있는 턴만 최종 피드백 대상으로 사용하도록 조정한다.
+- [x] OpenAPI 예시를 종료 케이스에서도 `nextTurn`이 있는 구조로 갱신한다.
+- [x] focused 테스트, 전체 테스트, `git diff --check`를 실행한다.
+
+---
+
+# AI 속마음 런타임 계약 반영 체크리스트
+
+- [x] 현재 `SessionService`, `FeedbackService`, AI DTO, OpenAPI 예시를 확인한다.
+- [x] `next-question` 요청의 `counterpartRole`과 응답 속마음 매핑 RED 테스트를 추가한다.
+- [x] 발화 제출 응답과 DB 저장 속마음 RED 테스트를 추가한다.
+- [x] 최종 피드백의 `correctionExpression`, `correctionReason` 분리 RED 테스트를 추가한다.
+- [x] OpenAPI 예시 RED 테스트를 추가한다.
+- [x] AI 요청/응답 DTO와 원격/로컬 AI client를 새 계약으로 수정한다.
+- [x] `SessionService`에서 제출 턴 속마음 저장과 응답 반환을 구현한다.
+- [x] `FeedbackService`에서 개선 표현/이유 분리 검증, 저장, 응답 반환을 구현한다.
+- [x] OpenAPI 예시를 새 FE-BE 명세로 갱신한다.
+- [x] 더블 체크에서 `InnerThoughtType`을 도메인 enum으로 이동해 계층 의존성을 정리한다.
+- [x] focused 테스트와 전체 테스트, `git diff --check`를 실행한다.
+
+---
+
+# AI next-question 속마음 DB 계약 체크리스트
+
+- [x] 현재 `session_turns`, `scenarios`, `turn_feedbacks` 스키마와 엔티티 매핑을 확인한다.
+- [x] DB 변경 계획과 컨텍스트 노트를 기록한다.
+- [x] 속마음, 상대 역할, 턴 피드백 분리 컬럼을 검증하는 RED 스키마 테스트를 추가한다.
+- [x] RED 테스트가 컬럼 부재로 실패하는 것을 확인한다.
+- [x] 새 Flyway migration으로 `session_turns.inner_thought`, `session_turns.inner_thought_type`, `scenarios.counterpart_role`, `turn_feedbacks.correction_expression`, `turn_feedbacks.correction_reason`을 추가한다.
+- [x] `turn_feedbacks.feedback_detail`은 개선 케이스 분리 저장을 위해 nullable로 전환한다.
+- [x] 관련 엔티티에 새 컬럼을 최소 매핑한다.
+- [x] focused 테스트와 `git diff --check`를 실행한다.
+
+---
+
+# 앱 버전 관리 체크리스트
+
+- [x] 앱 버전 관리 구현 계획과 컨텍스트 노트를 추가한다.
+- [x] `app_versions` 스키마와 API 동작을 고정하는 RED 통합 테스트를 작성한다.
+- [x] RED 테스트가 새 타입/테이블 부재로 실패하는 것을 확인한다.
+- [x] Flyway migration으로 앱 버전 테이블과 제약 조건을 추가한다.
+- [x] `appversion` 도메인, 저장소, 서비스, 컨트롤러, 응답 DTO를 추가한다.
+- [x] OpenAPI 예시와 경로 검증을 추가한다.
+- [x] focused 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+- [x] 앱 버전 응답과 DB 스키마에서 `storeUrl` / `store_url` 제거 RED 테스트를 작성한다.
+- [x] `storeUrl` 응답 필드, 엔티티 필드, OpenAPI 예시를 제거한다.
+- [x] 새 Flyway migration으로 최종 스키마에서 `store_url` 컬럼을 제거한다.
+- [x] focused 테스트와 전체 `./gradlew test`를 재실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 세션 최종 피드백 점수/후킹 계약 변경 체크리스트
+
+- [x] 현재 최신 `develop`의 3차 MVP 피드백 계약과 새 명세 차이를 확인한다.
+- [x] AI `session-feedback` 응답의 `nativeScoreBreakdown`, `highlightMessage`, `positiveFeedback`, `benchmarkMessage` 매핑 RED 테스트를 추가한다.
+- [x] FE 응답에서 `nativeLevelLabel`, `summary`, `betterExpression`이 제거되는 RED 테스트를 추가한다.
+- [x] DB 스키마가 새 저장 필드와 구 제거 필드를 반영하는 RED 테스트를 추가한다.
+- [x] AI DTO, 원격/로컬 AI client, 피드백 응답 DTO를 새 계약으로 수정한다.
+- [x] `session_feedbacks`, `turn_feedbacks` Flyway migration과 엔티티 매핑을 수정한다.
+- [x] OpenAPI 예시와 통합 테스트를 새 BE-FE 명세로 갱신한다.
+- [x] 관련 focused 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
+# 3차 MVP BE 성능 안정화 체크리스트
+
+- [x] 성능 안정화 sub-issue #39, #40, #41, #42를 생성하고 상위 이슈 #20에 연결한다.
+- [x] `submitUtterance`의 context 조회, AI 호출, DB 반영 단계를 분리한다.
+- [x] `createFeedback`의 context 조회, AI 호출, DB 저장 단계를 분리한다.
+- [x] 시나리오 목록 조회에서 첫 질문 조회 범위를 1번 질문으로 좁힌다.
+- [x] 미응답 턴 조회를 첫 건 조회 방식으로 변경한다.
+- [x] 최종 피드백 재조회 경로에서 턴별 피드백과 턴 조회를 줄인다.
+- [x] 턴별 피드백 저장을 일괄 저장 방식으로 정리한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] 완료된 GitHub sub-issue 체크리스트를 체크하고 이슈를 close한다.
+- [x] 변경 범위를 점검하고 의미 단위로 커밋한다.
+
+---
+
+# 피드백 API 새 명세 반영 체크리스트
+
+- [x] 현재 `POST /api/v1/sessions/{sessionId}/feedback` 구현, AI 응답 DTO, 저장 컬럼, OpenAPI 예시를 확인한다.
+- [x] 새 명세의 턴별 응답 필드 `originalQuestion`, `feedbackDetail`, `betterExpression`을 고정하는 RED 테스트를 추가한다.
+- [x] AI 최종 피드백 409 응답이 `FEEDBACK_NOT_READY` 409로 전달되는 RED 테스트를 추가한다.
+- [x] `FEEDBACK_GENERATION_FAILED` HTTP 상태를 명세의 503으로 맞춘다.
+- [x] BE 응답 DTO와 저장 매핑을 새 명세에 맞춘다.
+- [x] 원격 AI `session-feedback` 응답 매핑을 새 명세에 맞춘다.
+- [x] OpenAPI 예시와 통합 테스트를 새 명세에 맞춘다.
+- [x] 관련 테스트를 통과시킨다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+
+---
+
+# develop Swagger 서버 URL 분리 체크리스트
+
+- [x] 실제 dev `/v3/api-docs`가 prod server URL을 반환하는지 확인한다.
+- [x] 현재 `application-dev.yml`, OpenAPI 설정, dev 배포 workflow의 환경변수 생성 경로를 확인한다.
+- [x] dev 프로필에 prod OpenAPI URL이 주입되어도 dev URL을 반환하는 RED 테스트를 추가한다.
+- [x] OpenAPI 서버 URL 결정 로직에서 dev 프로필의 prod URL 유입을 보정한다.
+- [x] dev 배포 workflow 권한 제약을 확인하고 코드 보정으로 prod URL 유입을 방어한다.
+- [x] README의 develop Swagger URL 관리 설명을 갱신한다.
+- [x] 관련 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+- [x] 의미 있는 단위로 커밋한다.
+- [x] 배포 후 active dev 도메인 기준 Swagger server URL이 이전 `dev-saynow`로 되돌아간 것을 확인하고 `saynow.p-e.kr`로 재보정한다.
+
+---
+
+# SayNow 3차 MVP BE 구현 체크리스트
+
+- [x] 기준 문서 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/3차 MVP.md`를 다시 읽고 최우선 목표가 피드백 품질임을 확인한다.
+- [x] 현재 BE 스키마, 도메인, 서비스, API, AI 계약을 읽고 3차 MVP 문서와 충돌하는 지점을 확인한다.
+- [x] 시나리오 목록 응답이 `briefing`, `conversationGoal`, `firstQuestionPreview`, `completed`를 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 세션 시작 응답이 `currentTurn`과 `progress`를 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 발화 제출 응답이 `submittedTurn`, `nextTurn`, `progress`, `turnFeedbackStatus`를 반환하고 4번째 답변 뒤 대화 완료 상태가 되는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] 최종 피드백 API가 `nativeScore`, `nativeLevelLabel`, `summary`, 새 턴별 피드백 구조를 저장하고 반환하는 RED 테스트를 작성하고 실패를 확인한다.
+- [x] AI `next-question`, `turn-feedback`, `session-feedback` 요청과 응답 계약 RED 테스트를 작성하고 실패를 확인한다.
+- [x] Flyway migration으로 3차 MVP 스키마를 추가한다.
+- [x] `ScenarioQuestion`, 3차 MVP 시나리오/세션/피드백 도메인 매핑을 추가한다.
+- [x] 슬롯, 하트, 성공/실패 기반 세션 진행 코드를 제거하거나 3차 MVP 흐름에서 분리한다.
+- [x] `GET /api/v1/scenarios`, `POST /api/v1/scenarios/{scenarioId}/sessions`, `POST /api/v1/sessions/{sessionId}/utterances`, `POST /api/v1/sessions/{sessionId}/feedback`, `PATCH /api/v1/sessions/{sessionId}/abandon`, `POST /api/v1/sessions/{sessionId}/nps`를 문서 기준으로 맞춘다.
+- [x] 문서 범위 밖인 guide, result, feedback SSE 경로를 제거한다.
+- [x] OpenAPI 예시와 통합 테스트를 3차 MVP 계약으로 갱신한다.
+- [x] 관련 테스트를 통과시킨다.
+- [x] 전체 `./gradlew test`를 실행한다.
+- [x] 변경 사항, 결정 이유, 검증 결과를 Obsidian 3차 MVP 문서에 남긴다.
+- [x] `git diff --check`와 `git status --short`로 최종 변경 범위를 확인한다.
+- [x] 의미 있는 단위로 커밋한다.
+
+---
+
 # turnClassification 기반 하트/슬롯 정책 체크리스트
 
 - [x] 현재 `SessionService`, AI 응답 DTO, OpenAPI 테스트 구조를 확인한다.
@@ -583,3 +741,30 @@
 - [ ] 변경 범위 점검 후 커밋한다.
 - [ ] develop으로 push한다.
 - [ ] dev 배포 workflow를 실행하고 health를 확인한다.
+
+---
+
+# 3차 MVP 전체 시나리오 live smoke 체크리스트
+
+- [x] 현재 dev/prod 도메인 매핑을 DNS와 EC2 IP 기준으로 확인한다.
+- [x] 이전 원격 smoke 실패가 API 실패인지 스크립트 파싱 실패인지 확인한다.
+- [x] 새 임시 dev DB 사용자를 만든다.
+- [x] dev BE 도메인으로 전체 시나리오를 순서대로 실행한다.
+- [x] 각 시나리오의 4개 발화와 최종 피드백 결과를 JSON evidence로 남긴다.
+- [x] 실패가 있으면 requestId와 응답 body 기준으로 원인을 분리한다.
+- [x] humanizer 기준으로 Obsidian 하위 문서에 과정과 결과를 정리한다.
+- [x] 문서에 보존해야 할 수치, 경로, requestId가 빠지지 않았는지 확인한다.
+- [x] 사용자 요청에 맞춰 기존 요약형 smoke 문서를 삭제 수준으로 덮어쓰고, 꼬리 질문과 턴별 피드백 상세를 모두 남긴다.
+
+---
+
+# 3차 MVP Free Talk 시나리오 데이터 변경 체크리스트
+
+- [x] 현재 Free Talk seed, API 예시, 통합 테스트 기대값을 확인한다.
+- [x] 새 시나리오 제목과 12개 고정 질문 기대 테스트를 먼저 수정하고 실패를 확인한다.
+- [x] 새 Flyway migration으로 scenario 1~3의 주제와 질문을 갱신한다.
+- [x] OpenAPI 예시를 새 1번 여행 시나리오 기준으로 갱신한다.
+- [x] 관련 테스트와 전체 테스트를 실행한다.
+- [ ] 변경 범위 점검 후 의미 단위 커밋을 만든다.
+- [ ] develop으로 push한다.
+- [ ] dev 배포 workflow를 실행하고 health와 라이브 시나리오 목록을 확인한다.

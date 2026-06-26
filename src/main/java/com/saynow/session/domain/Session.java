@@ -43,30 +43,30 @@ public class Session extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private SessionStatus status;
 
-    @Column(name = "remaining_hearts", nullable = false)
-    private int remainingHearts;
+    @Column(name = "started_at", nullable = false)
+    private LocalDateTime startedAt;
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "abandoned_at")
+    private LocalDateTime abandonedAt;
 
     public Session(User user, Scenario scenario) {
         this.user = user;
         this.scenario = scenario;
         this.status = SessionStatus.IN_PROGRESS;
-        this.remainingHearts = scenario.getHeart();
+        this.startedAt = LocalDateTime.now();
     }
 
-    public void complete(SessionStatus status, LocalDateTime completedAt) {
-        if (status != SessionStatus.SUCCESS && status != SessionStatus.FAILURE) {
-            throw new IllegalArgumentException("status must be SUCCESS or FAILURE");
-        }
-        this.status = status;
+    public void complete(LocalDateTime completedAt) {
+        this.status = SessionStatus.COMPLETED;
         this.completedAt = completedAt;
     }
 
-    public void abandon(LocalDateTime completedAt) {
+    public void abandon(LocalDateTime abandonedAt) {
         this.status = SessionStatus.ABANDONED;
-        this.completedAt = completedAt;
+        this.abandonedAt = abandonedAt;
     }
 
     public boolean isInProgress() {
@@ -75,11 +75,5 @@ public class Session extends BaseTimeEntity {
 
     public boolean isOwnedBy(Long userId) {
         return user != null && user.getId().equals(userId);
-    }
-
-    public void decreaseHeart() {
-        if (remainingHearts > 0) {
-            remainingHearts--;
-        }
     }
 }

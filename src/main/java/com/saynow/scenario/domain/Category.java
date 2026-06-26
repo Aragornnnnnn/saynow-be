@@ -25,4 +25,13 @@ public class Category extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
+
+    @Column(nullable = false)
+    private boolean locked;
+
+    @Column(name = "lock_reason", length = 50)
+    private String lockReason;
+
 }

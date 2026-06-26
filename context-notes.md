@@ -1,3 +1,255 @@
+# 룸메이트 시나리오 seed 교체 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 기존 시나리오 데이터를 새 카테고리 구조로 교체하라고 요청했다.
+- 요청한 카테고리는 `룸메이트`, `수업`, `여행`이다.
+- 제공된 실제 시나리오 데이터는 모두 룸메이트 카테고리용이다. 따라서 `룸메이트` 카테고리만 열고, `수업`과 `여행`은 기존 `COMING_SOON` 잠금 카테고리로 유지한다.
+- 현재 API는 카테고리 row를 모두 반환하므로 카테고리를 3개로 맞추려면 기존 4번째 카테고리는 새 migration에서 삭제한다.
+- 기존 시나리오 1~3은 룸메이트 카테고리의 A/B/C로 재사용한다. A/B/C 모두 4개 질문으로 구성한다.
+- 기존 `scenario_questions.question_en`과 `question_ko` 길이 제한은 500자이고, 제공된 질문은 이 제한 안에 들어간다.
+- 기존 배포 migration은 수정하지 않고 새 Flyway migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 기존 `Free Talk` seed와 기존 OpenAPI 예시 때문에 실패했다.
+- `V17__replace_free_talk_with_roommate_scenarios.sql`을 추가해 카테고리 1~3을 `룸메이트`, `수업`, `여행`으로 갱신하고, 4번째 카테고리는 연결 시나리오가 없을 때 삭제한다.
+- 시나리오 1~3은 모두 `counterpart_role=roommate`로 맞췄다. 시나리오 1은 4문항이므로 종료 AI 멘트 row는 세션 진행에서 `sequence=5`가 된다.
+- `수업`과 `여행`은 실제 시나리오 데이터가 아직 없어서 `COMING_SOON` 잠금 카테고리로 둔다.
+- focused GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증 첫 실행에서 observability와 NPS 테스트가 실패했다. 당시 시나리오 A가 5문항이었기 때문에 공통 테스트 helper가 4문항만 답변해 세션을 완료하지 못한 것이 원인이었다.
+- 이후 사용자가 시나리오 A 질문 1개 제거를 요청했고, A5 파티 초대 질문은 B의 주말 약속/동행 제안과 역할이 겹치며 문장 품질도 상대적으로 낮아 제거했다.
+- 시나리오 A를 4문항으로 되돌리면서 observability와 NPS helper도 4문항 기준으로 유지하고, 피드백 로그 기대값은 `turnCount=4`로 맞췄다.
+- 관련 재검증으로 `./gradlew test --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.nps.SessionNpsApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 변경 범위를 확인하고 `feat: 룸메이트 시나리오 seed 교체` 커밋으로 묶었다.
+- dev DB 배포 후 직접 조회에서 Flyway `V17`은 성공했지만 카테고리 2, 3 row가 이미 없는 DB 상태라 `수업`, `여행`이 생성되지 않은 것을 확인했다.
+- `V18__ensure_roommate_class_travel_categories.sql`을 추가해 `룸메이트`, `수업`, `여행` 카테고리를 id 기준 upsert로 보정하고 categories identity를 4로 맞춘다.
+
+---
+
+# AI closing-message 종료 흐름 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 AI 서버 신규 `POST /api/v1/conversation/closing-message` 명세를 기준으로 마지막 사용자 발화 후 FE 하드코딩 종료 문구 대신 AI가 생성한 마지막 멘트를 보여주도록 BE 흐름을 수정하라고 요청했다.
+- 기존 BE-FE 응답 shape는 `submittedTurn`, `nextTurn`, `progress`를 유지해야 한다. 종료 케이스에서도 `nextTurn`은 `null`이 아니며, `nextTurn.aiQuestion`은 질문이 아니라 마지막 AI 멘트다.
+- 현재 `SessionService.submitUtterance`는 다음 고정 질문이 없으면 AI 호출 없이 `nextTurn=null`, `progress.completed=true`, `currentSequence=4`로 응답한다.
+- 현재 BE에는 목표 달성 여부를 별도 판정하는 도메인/AI classifier가 없다. 이번 구현의 종료 조건은 기존 완료 조건인 다음 고정 질문 없음으로 해석하고, AI 요청에는 `closingReason=MAX_TURNS_REACHED`, `goalCompletionStatus=COMPLETED`를 보낸다.
+- `session_turns.scenario_question_id`는 현재 엔티티와 DB에서 필수다. 종료 멘트 AI 턴은 별도 고정 질문이 없으므로 마지막 제출 턴의 `scenario_question_id`를 재사용하고 `sequence=totalQuestionCount + 1`, `user_utterance=null`로 저장한다.
+- 종료 멘트 AI 턴을 저장하면 기존 pending 턴 조회가 `user_utterance IS NULL`인 종료 AI row를 다시 잡을 수 있으므로, 사용자 입력 대상 pending 조회는 `sequence <= scenario.totalQuestionCount`로 제한해야 한다.
+- 최종 피드백은 마지막 AI 멘트가 아니라 사용자 발화가 있는 기존 질문 턴만 대상으로 유지한다. 따라서 `FeedbackService`는 answered turns만 readiness, expectedTurnIds, persistence, response assembly에 사용해야 한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest`를 실행했고, `AiClosingMessageRequest` 부재로 `compileTestJava`에서 실패했다.
+- `AiClosingMessageRequest`, `AiClosingMessageResponse`, `ClosingReason`, `GoalCompletionStatus`와 `AiConversationClient.generateClosingMessage(...)`를 추가했다.
+- `RemoteAiConversationClient`는 `SAYNOW_AI_CLOSING_MESSAGE_PATH` 기본값 `/api/v1/conversation/closing-message`로 AI 서버를 호출하고, `aiMessage`, `translatedMessage`, `innerThought`, `innerThoughtType`을 필수 검증한다.
+- `SessionService`는 다음 고정 질문이 없으면 `closing-message`를 호출하고, 응답을 `submittedTurn.innerThought`, `submittedTurn.innerThoughtType`, `nextTurn.aiQuestion`, `nextTurn.translatedQuestion`에 매핑한다.
+- 종료 AI 멘트는 마지막 고정 질문의 `scenario_question_id`를 재사용해 `session_turns.sequence=5` row로 저장한다.
+- `FeedbackService`는 종료 AI row를 제외하고 `SessionTurn::isAnswered`인 4개 턴만 최종 피드백 readiness, AI request `expectedTurnIds`, DB 저장, FE 응답에 사용한다.
+- OpenAPI 발화 제출 200 응답에 기존 진행 중 `SUCCESS` 예시는 유지하고, 종료 케이스 `COMPLETED` 예시를 추가했다.
+- focused 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# AI 속마음 런타임 계약 반영 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 수정된 명세서를 확인한 뒤 실제 로직 수정을 요청했다.
+- 런타임 변경 범위는 AI `next-question`의 `scenario.counterpartRole` 요청, AI `innerThought`/`innerThoughtType` 응답 수신, 제출된 `SessionTurn` 저장, `submittedTurn` FE 응답 반환이다.
+- 첫 질문 기본 속마음은 사용자가 임시값을 허용했으므로 `첫 질문으로 대화를 시작했으니 편하게 답해주면 좋겠다.`와 `NORMAL`로 저장한다.
+- `counterpartRole`은 `next-question` 명세에만 등장하므로, 기존 공통 `AiScenarioContext`에 필드를 추가해 모든 AI endpoint에 퍼뜨리지 않고 `AiNextQuestionScenarioContext`를 별도로 둔다.
+- 최종 피드백은 `NEEDS_IMPROVEMENT`에서 `positiveFeedback`, `correctionExpression`, `correctionReason`을 사용하고 `feedbackDetail`, `benchmarkMessage`는 null로 둔다.
+- `GOOD`은 `feedbackDetail`을 사용하고 `correctionExpression`, `correctionReason`은 null로 둔다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `InnerThoughtType` 부재로 `compileTestJava`에서 실패했다.
+- `AiNextQuestionScenarioContext`를 추가해 `next-question` 요청에만 `counterpartRole`을 포함시켰다.
+- `AiNextQuestionResponse`에 `innerThought`, `innerThoughtType`을 추가하고 원격/로컬 AI client 매핑을 갱신했다.
+- `SessionService`는 첫 턴에 임시 OPENING 속마음을 저장하고, 다음 질문 생성 응답의 속마음을 제출된 턴에 저장한 뒤 `SubmittedTurnResponse`로 반환한다.
+- `AiSessionTurnFeedbackResponse`, `TurnFeedback`, `TurnFeedbackResponse`에 `correctionExpression`, `correctionReason`을 추가했다.
+- `FeedbackService`와 원격 AI client는 `GOOD`과 `NEEDS_IMPROVEMENT`의 필드 조합을 분리 검증한다.
+- OpenAPI 예시는 발화 제출 속마음 필드와 최종 피드백 개선 표현/이유 분리 필드를 노출하도록 갱신했다.
+- focused GREEN 검증으로 같은 focused 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 더블 체크에서 `SessionTurn` 도메인 엔티티가 `session.infrastructure.ai.InnerThoughtType`에 의존하는 구조를 확인했다.
+- `InnerThoughtType`은 DB에 저장되는 도메인 값이므로 `session.domain.InnerThoughtType`으로 이동하고 AI DTO, 서비스, 테스트 import를 새 위치로 맞춘다.
+- enum 이동 후 focused 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 재실행했고 통과했다.
+- 사용자 요청에 맞춰 기존 2개 로컬 커밋을 5개 커밋으로 재분할했다. 커밋 메시지에는 `LAN-28` prefix를 붙이지 않는다.
+- 재분할 후 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 공백 검증으로 `git diff --check origin/develop...HEAD`를 실행했고 통과했다.
+- live 재테스트에서 AI `next-question`은 성공했지만 같은 발화 제출의 `turn-feedback`가 `400 INVALID_REQUEST`를 반환했다.
+- AI OpenAPI 기준 `turn-feedback`와 `session-feedback`도 공통 `ScenarioContext.counterpartRole`을 required로 요구하므로, 공통 `AiScenarioContext`에도 `counterpartRole`을 추가해 모든 AI 요청에 전달한다.
+
+---
+
+# AI next-question 속마음 DB 계약 컨텍스트 노트
+
+## 2026-06-23
+
+- 사용자는 `feat/LAN-28`에서 AI `next-question` 응답에 속마음 필드가 추가되고, `turn-feedback` 개선 표현과 개선 이유가 분리되는 명세를 공유했다.
+- 이번 단계는 전체 API/서비스 반영 전에 DB 구조를 먼저 수정하는 범위다.
+- 현재 브랜치에는 명세의 `session_message` 테이블이 없고, 세션 중 AI 질문과 사용자 발화는 `session_turns`가 row 단위로 저장한다. 따라서 `inner_thought`, `inner_thought_type` 저장 위치는 현 구조의 `session_turns`로 해석한다.
+- `scenario.counterpartRole`은 현재 `scenarios`에 대응 컬럼이 없으므로 `counterpart_role`을 추가한다. 기존 Free Talk seed는 우선 모두 `friend`로 backfill하고, 추후 시나리오 수정 시 사용자가 구체 역할로 바꿀 수 있게 한다.
+- `AI_FIRST` 첫 질문 기본 속마음 값은 이후 서비스 반영 단계에서 임시 고정 문구로 넣는다. 이번 DB 단계에서는 저장 가능한 nullable 컬럼만 추가한다.
+- `turn_feedbacks.feedback_detail`은 현재 NOT NULL이고 개선 표현이 한 필드에 섞이던 이력이 있다. 새 계약에서는 `correction_expression`, `correction_reason`을 분리 저장해야 하므로 새 컬럼을 추가하고, 개선 케이스에서 `feedback_detail`을 강제하지 않도록 nullable로 전환한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고, `scenarios.counterpart_role` 컬럼 부재로 실패했다.
+- `V16__add_ai_inner_thought_contract.sql`로 `scenarios.counterpart_role`, `session_turns.inner_thought`, `session_turns.inner_thought_type`, `turn_feedbacks.correction_expression`, `turn_feedbacks.correction_reason`을 추가했다.
+- 기존 시나리오의 `counterpart_role`은 임시 기본값 `friend`로 backfill하고 NOT NULL로 전환했다.
+- `turn_feedbacks.feedback_detail`은 `NEEDS_IMPROVEMENT`에서 개선 표현과 이유를 분리 저장할 수 있도록 nullable로 전환했다.
+- 관련 엔티티 `Scenario`, `SessionTurn`, `TurnFeedback`에 새 컬럼을 최소 매핑했다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# 앱 버전 관리 컨텍스트 노트
+
+## 2026-06-09
+
+- 사용자는 앱 버전 관리를 DB에서 하되, 강제 업데이트와 소프트 업데이트를 나누고 업데이트 이유도 포함하고 싶다고 요청했다.
+- 설계는 한 테이블 `app_versions`로 시작한다. 최신 active row의 `build_number`와 `minimum_supported_build_number`를 기준으로 `FORCE`, `SOFT`, `NONE`을 계산한다.
+- 문자열 버전명은 비교 기준으로 쓰지 않는다. `version_name`은 화면 표시용이고, 서버 판단 기준은 `build_number`다.
+- 플랫폼은 `IOS`, `ANDROID`로 제한한다.
+- 강제 업데이트는 `currentBuildNumber < minimumSupportedBuildNumber`, 소프트 업데이트는 `minimumSupportedBuildNumber <= currentBuildNumber < latestBuildNumber`다.
+- `force_update_reason`, `soft_update_reason`을 분리해 상황에 맞는 이유를 내려준다.
+- active row가 없으면 앱 실행을 막지 않기 위해 요청한 현재 버전 기준 `NONE` 응답을 반환한다.
+- 새 API는 앱 실행 초기에 인증 없이 호출되어야 하므로 `GET /api/v1/app-versions/check` 공개 API로 둔다.
+- RED 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, OpenAPI에 새 경로가 없고 `app_versions` 테이블이 없어 실패했다.
+- `V14__create_app_versions.sql`로 앱 버전 정책 테이블을 추가했다. 플랫폼과 빌드 번호 제약, `(platform, build_number)` unique, active latest 조회 index를 둔다.
+- `appversion` 패키지에 플랫폼 enum, 업데이트 타입 enum, JPA 엔티티, 저장소, 서비스, 컨트롤러, 응답 DTO를 추가했다.
+- OpenAPI에서는 `GET /api/v1/app-versions/check`를 공개 API로 표시하고, 성공 예시와 `VALIDATION_FAILED` 예시를 추가했다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 최종 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 사용자가 `storeUrl`은 불필요하다고 판단해 제거하기로 했다.
+- `V14__create_app_versions.sql`은 이미 커밋된 migration이므로 직접 수정하지 않고, 최종 스키마에서 제거되도록 새 migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `store_url` NOT NULL 제약과 `storeUrl` OpenAPI 예시가 남아 있어 실패했다.
+- `V15__drop_app_version_store_url.sql`로 최종 스키마에서 `store_url`을 제거하고, JPA 엔티티와 응답 DTO, OpenAPI 예시에서 `storeUrl`을 제거한다.
+- GREEN focused 검증으로 `./gradlew test --tests com.saynow.appversion.AppVersionApiIntegrationTest --tests com.saynow.appversion.AppVersionSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# 세션 최종 피드백 점수/후킹 계약 변경 컨텍스트 노트
+
+## 2026-06-06
+
+- 사용자는 AI 쪽 변경 명세에 맞춰 BE-FE 최종 피드백 명세를 바꾼 뒤, 그 명세대로 개발을 진행하라고 요청했다.
+- 현재 최신 `develop`은 이미 3차 MVP 구조이며, 최종 피드백은 AI `session-feedback` 응답을 받아 `session_feedbacks`와 `turn_feedbacks`에 저장한다.
+- 현재 BE에는 구 계약인 `nativeLevelLabel`, `summary`, `betterExpression`이 남아 있다.
+- 새 계약은 `nativeLevelLabel`을 제거하고, `summary` 대신 후킹 메시지인 `highlightMessage`를 사용한다.
+- `nativeScore`는 유지하고 `nativeScoreBreakdown.attemptedWordScore`, `sentenceComplexityScore`, `comprehensibilityScore`를 추가한다.
+- 턴별 피드백은 `betterExpression`을 제거하고, `feedbackDetail` 안에 개선 표현까지 합쳐서 받는다.
+- `NEEDS_IMPROVEMENT`는 `positiveFeedback`이 필요하고, `GOOD`은 제공 가능한 경우 `benchmarkMessage`를 내려준다.
+- 저장 구조도 새 응답과 재조회가 일치하도록 변경한다. 기존 배포 migration은 수정하지 않고 새 migration을 추가한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, `AiNativeScoreBreakdown`이 없어 `compileTestJava`에서 실패했다.
+- `AiNativeScoreBreakdown`, `NativeScoreBreakdownResponse`를 추가하고 AI/FE 응답 DTO를 새 계약으로 바꿨다.
+- `V12__update_session_feedback_score_breakdown_contract.sql`로 `session_feedbacks`에 점수 세부 항목과 `highlight_message`를 추가하고 `native_level_label`, `summary`를 제거한다. `turn_feedbacks`에는 `positive_feedback`, `benchmark_message`를 추가하고 `better_expression`을 제거한다.
+- 원격 AI 응답 매핑은 `nativeScoreBreakdown`, `highlightMessage`를 필수로 검증하고, `NEEDS_IMPROVEMENT`의 `positiveFeedback`도 필수로 검증한다.
+- GREEN 검증으로 RED와 같은 focused 테스트 명령을 재실행했고 통과했다.
+- 추가 관련 검증으로 `./gradlew test --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.session.SessionQueryEfficiencyIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+- 코드, migration, 테스트, OpenAPI 예시 변경은 `feat: 세션 최종 피드백 점수 계약 변경` 커밋으로 묶었다.
+
+---
+
+# 3차 MVP BE 성능 안정화 컨텍스트 노트
+
+## 2026-06-03
+
+- 사용자는 3차 MVP BE 기능 작업이 끝난 상태에서 캐시, custom query, DB I/O 감소 같은 추가 작업이 있는지 물었다.
+- 코드 확인 결과, 지금 가장 큰 운영 리스크는 단순 쿼리 수보다 AI 원격 호출이 `@Transactional` 메서드 안에서 수행되는 구조다.
+- Redis 같은 외부 캐시 인프라는 현재 시나리오 수와 턴 수가 작아 이번 범위에서 제외한다.
+- 캐시를 적용한다면 사용자 진행도까지 캐시하지 않고 정적 시나리오 마스터 데이터만 짧게 캐시하는 것이 맞지만, 이번 작업은 repository 조회 범위 축소로 충분하다고 판단했다.
+- GitHub sub-issue #39 `AI 원격 호출 트랜잭션 분리`, #40 `시나리오 목록 조회 최적화`, #41 `최종 피드백 재조회 경로 최적화`, #42 `턴 조회와 피드백 저장 경량화`를 생성하고 상위 이슈 #20에 연결했다.
+- #20은 GitHub Project item이 없어서, 사용자가 말한 Done 변경은 기존 하위 이슈와 동일하게 issue close로 처리한다.
+- `SessionService.submitUtterance`는 read-only context 조회, AI `next-question`/`turn-feedback` 호출, 조건부 DB update와 다음 턴 저장 단계로 분리했다.
+- 발화 저장은 `SessionTurnRepository.updateUserUtteranceIfPending`에서 `turnId`, `sessionId`, `userId`, `SessionStatus.IN_PROGRESS`, 미응답 조건을 함께 확인한다.
+- 다음 턴 저장은 `Session`과 `ScenarioQuestion`을 재조회하지 않고 JPA reference로 연결해 write 단계 DB 왕복을 줄였다.
+- `FeedbackService.createFeedback`는 read-only context 조회, AI `session-feedback` 호출, DB 저장 단계로 분리했다.
+- 이미 생성된 피드백 재조회는 AI를 다시 호출하지 않고 저장된 `session_feedbacks`, `turn_feedbacks`, `session_turns` 기준으로 응답한다.
+- 시나리오 목록 조회는 모든 질문을 가져온 뒤 필터링하지 않고, `sequence=1` 질문만 조회하도록 좁혔다.
+- 검증 중 `SessionQueryEfficiencyIntegrationTest`가 statement count 9로 실패했다. 원인은 트랜잭션 분리 후 write 단계에서 세션, 턴, 다음 질문을 다시 조회한 것이다.
+- 조건부 update와 reference 저장으로 조정한 뒤 `SessionQueryEfficiencyIntegrationTest`가 통과했고, `ScenarioFlowIntegrationTest`에는 AI 호출 시점에 실제 트랜잭션이 열려 있지 않음을 확인하는 검증을 추가했다.
+- 관련 검증 `./gradlew test --tests com.saynow.session.SessionQueryEfficiencyIntegrationTest --tests com.saynow.common.observability.ObservabilityIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`는 통과했다.
+- 전체 검증 `./gradlew test`도 통과했다.
+
+---
+
+# 피드백 API 새 명세 반영 컨텍스트 노트
+
+## 2026-06-03
+
+- 사용자는 `POST /api/v1/sessions/{sessionId}/feedback`의 새 API 명세를 공유했다.
+- endpoint와 요청 body 없음, 인증 방식은 기존과 같다.
+- 응답의 턴별 필드는 기존 `aiQuestion`, `correctionPoint`, `correctionReason`, `plusOneExpression`, `praiseSummary`, `praiseReason` 대신 `originalQuestion`, `feedbackDetail`, `betterExpression`을 사용한다.
+- `feedbackDetail`은 `NEEDS_IMPROVEMENT`와 `GOOD` 모두에서 필수 설명 필드다.
+- `betterExpression`은 `NEEDS_IMPROVEMENT`일 때 제공되는 선택 필드다.
+- DB는 `V11__simplify_turn_feedback_contract.sql`에서 `feedback_detail`, `better_expression`으로 정리한다. 기존 `correction_reason`, `plus_one_expression`, `praise_reason` 계열 컬럼은 backfill 뒤 제거한다.
+- 명세상 `FEEDBACK_GENERATION_FAILED`는 503이어야 하지만 현재 `ErrorCode`는 502로 정의되어 있다.
+- 명세상 AI 캐시가 아직 준비되지 않은 경우 `FEEDBACK_NOT_READY` 409를 반환해야 한다. 현재 원격 `session-feedback` 호출은 AI의 모든 non-2xx 응답을 `FEEDBACK_GENERATION_FAILED`로 감싼다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 새 `AiSessionTurnFeedbackResponse` 생성자와 `feedbackDetail`, `betterExpression` 접근자가 없어 `compileTestJava`에서 실패했다.
+- `TurnFeedbackResponse`는 `aiQuestion` 대신 `originalQuestion`을 반환한다. 값은 세션 턴에 저장된 실제 노출 질문 `session_turns.ai_question`을 사용한다.
+- `AiSessionTurnFeedbackResponse`와 원격 AI 응답 매핑은 `feedbackDetail`, `betterExpression`만 받도록 단순화했다.
+- AI `session-feedback`가 409를 반환하면 BE는 `FEEDBACK_NOT_READY` 409를 반환한다. 그 외 최종 피드백 생성 실패는 명세대로 `FEEDBACK_GENERATION_FAILED` 503이다.
+- 관련 GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
+# develop Swagger 서버 URL 분리 컨텍스트 노트
+
+## 2026-06-02
+
+- 사용자는 develop Swagger가 운영 주소를 찌르고 있다고 보고했다.
+- 실제 확인으로 `curl -fsS https://dev-saynow.p-e.kr/v3/api-docs`를 실행했고, 응답의 `servers[0].url`이 `https://saynow.p-e.kr`인 것을 확인했다.
+- 현재 코드에는 `application-dev.yml`의 기본값 `https://dev-saynow.p-e.kr`와 `DevOpenApiIntegrationTest`가 있다.
+- dev 배포 workflow는 `/saynow/develop` SSM에서 `SAYNOW_OPENAPI_SERVER_URL`을 읽어 `.env`에 그대로 쓴다.
+- 따라서 develop SSM 값이 prod 주소로 오염되면 코드 기본값보다 환경변수가 우선 적용되어 Swagger가 운영 주소를 노출한다.
+- 이번 수정은 dev 프로필에서 prod URL 유입을 보정하는 방향으로 진행한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, prod URL 주입 시 `servers[0].url`이 `https://saynow.p-e.kr`로 나와 실패했다.
+- `OpenApiConfig`에서 active profile이 `dev`이고 설정된 OpenAPI server URL이 운영 주소이면 `https://dev-saynow.p-e.kr`로 보정한다.
+- README에서는 `/saynow/develop/SAYNOW_OPENAPI_SERVER_URL`을 develop 선택 SSM 목록에서 제거하고, dev 프로필이 운영 URL 유입을 보정한다고 정리했다.
+- GREEN 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고 통과했다.
+- 운영 기본 URL 회귀 검증으로 `./gradlew test --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+- `AWS_PROFILE=prod-saynow AWS_REGION=ap-northeast-2 aws ssm get-parameter --name /saynow/develop/SAYNOW_OPENAPI_SERVER_URL --with-decryption --query Parameter.Value --output text`로 SSM 현재값을 확인했고 `https://dev-saynow.p-e.kr`였다.
+- 따라서 현재 live dev Swagger가 prod 주소를 반환하는 것은 최신 SSM 값 자체보다는 이전 배포 산출물이나 이전 `.env`가 남아 있는 상태로 본다.
+- workflow 파일 변경은 현재 GitHub OAuth 권한에 `workflow` scope가 없어 push가 거부되므로 이번 커밋에서 제외했다.
+- 2026-06-03 재배포 후 `https://saynow.p-e.kr/v3/api-docs`는 새 피드백 계약을 노출했지만 `servers[0].url`이 `https://dev-saynow.p-e.kr`로 되돌아간 것을 확인했다.
+- 사용자가 현재 dev 도메인을 `https://saynow.p-e.kr`로 변경했다고 알려준 상태이므로, dev profile의 canonical OpenAPI URL은 `https://saynow.p-e.kr`로 다시 보정한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.DevOpenApiIntegrationTest`를 실행했고, 기대값 `https://saynow.p-e.kr` 대신 `https://dev-saynow.p-e.kr`가 반환되어 실패했다.
+
+---
+
+# SayNow 3차 MVP BE 구현 컨텍스트 노트
+
+## 2026-06-02
+
+- 기준 문서는 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/3차 MVP.md`다.
+- 이 작업의 최우선 목표는 응답 속도나 토큰 절감이 아니라 피드백 품질이다. BE는 이 기준을 해치지 않는 방향으로 AI 요청 계약과 저장 구조를 맞춘다.
+- 현재 BE는 2차 MVP 구조다. 핵심 충돌 지점은 슬롯 기반 완료, 하트 차감, `SUCCESS`/`FAILURE` 세션 상태, `scenario_slots`, `session_slot_statuses`, 단일 `original_question`, 기존 `feedbackRequired` 기반 피드백이다.
+- 3차 MVP에서는 시나리오가 주제형 프리톡이며, 각 시나리오는 `scenario_questions`에 저장된 고정 질문 4개를 가진다.
+- `firstQuestionPreview`는 목록 빠른 렌더링용이고, 실제 세션과 턴은 세션 시작 API에서 생성한다.
+- 사용자 발화 제출은 현재 턴의 발화를 저장하고, 다음 고정 질문이 있으면 AI가 맞장구와 다음 질문을 합친 `aiQuestion`을 만들게 한다.
+- 턴별 피드백은 발화 직후 AI `turn-feedback` API에 요청하고, AI 캐시에 저장된다는 계약만 BE가 추적한다. BE DB 저장은 최종 피드백 생성 시점에 한다.
+- 최종 피드백은 AI `session-feedback` API가 캐시된 턴별 피드백을 모아 반환하며, BE가 `session_feedbacks`와 `turn_feedbacks`에 저장한다.
+- 세션 완료 기준은 제품 문서의 열린 판단을 반영해, 4개 질문에 모두 답하면 피드백 생성 가능 상태가 되고, 최종 피드백 저장 후 `sessions.status=COMPLETED`와 `user_scenario_progress.completed=true`로 확정한다.
+- 문서 범위 밖인 guide, session result, feedback SSE, 슬롯/하트 정책은 3차 MVP 핵심 흐름에서 제거한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 새 AI DTO와 enum이 없어 `compileTestJava`에서 실패했다.
+- `V10__third_mvp_free_talk_schema.sql`로 Free Talk 카테고리와 3개 시나리오, 시나리오별 고정 질문 4개를 seed한다.
+- 3차 MVP 스키마에서는 `scenario_questions`, `sessions.started_at`, `sessions.abandoned_at`, `session_turns.scenario_question_id`, `session_turns.answered_at`, 새 피드백 컬럼을 추가한다.
+- 2차 MVP 전용 `scenario_slots`, `session_slot_statuses`, 하트, 성공/실패 결과, guide, session result, feedback SSE 코드는 제거했다.
+- AI 계약은 `next-question`, `turn-feedback`, `session-feedback` 세 경로로 나눴다. BE는 턴별 피드백 상태만 제출 응답에 반영하고, DB 저장은 최종 피드백 생성 시 한 번에 한다.
+- 관련 GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.nps.SessionNpsApiIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 검증 첫 실행에서 `ObservabilityIntegrationTest` 2개가 실패했다. 원인은 기존 테스트가 이전 시드의 `scenarioId=4`와 삭제된 `persist_feedback_transaction` 단계를 기대한 것이다.
+- 관측성 테스트는 Free Talk 첫 시나리오 `scenarioId=1`, `generate_session_feedback`, `save_session_feedback` 단계 기준으로 갱신했다.
+- 관측성 단일 검증으로 `./gradlew test --tests com.saynow.common.observability.ObservabilityIntegrationTest`를 실행했고 통과했다.
+- 전체 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # turnClassification 기반 하트/슬롯 정책 컨텍스트 노트
 
 ## 2026-05-30
@@ -688,3 +940,48 @@
 - GREEN 검증으로 같은 테스트 명령을 재실행했고 통과했다.
 - 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
 - 패치 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
+# 3차 MVP 전체 시나리오 live smoke 컨텍스트 노트
+
+## 2026-06-02
+
+- 목표는 dev DB에 현재 존재하는 3차 MVP 시나리오를 임시 사용자 하나로 처음부터 끝까지 실행하고, 각 세션의 최종 피드백까지 실제 AI 서버 연동으로 받는 것이다.
+- 사용자가 `dev.saynow -> saynow` 도메인 변경을 언급했으므로 먼저 DNS와 EC2 매핑을 확인했다.
+- `saynow.p-e.kr`은 `13.209.216.213`으로 해석됐고, 이 IP는 `prod-saynow-backend` 인스턴스다.
+- `dev-saynow.p-e.kr`은 `43.202.167.164`로 해석됐고, 이 IP는 `dev-saynow-backend` 인스턴스다.
+- `https://saynow.p-e.kr/v3/api-docs`의 `servers[0].url`은 `https://saynow.p-e.kr`였다. 다만 이 응답은 prod BE에서 온 것이다.
+- dev DB에 만든 임시 사용자 `USER_ID=12`로 `https://saynow.p-e.kr/api/v1/scenarios`를 호출하면 401 `AUTH_REQUIRED`가 났다. 같은 requestId가 dev BE 로그에 없어서 dev BE가 아니라 prod BE로 간 요청으로 확인했다.
+- `https://dev-saynow.p-e.kr`로 다시 호출하면 인증은 통과했지만 3차 MVP 응답이 아니었다. 세션 시작 응답이 `currentTurn`가 아니라 `originalQuestion`, `remainingHearts`, `feedbackAvailable`를 반환했다.
+- `dev-saynow-backend` 인스턴스의 `/opt/saynow/app.jar`를 확인하니 `originalQuestion`, `remainingHearts`, `save_slot_statuses` 문자열이 있었다. 즉 이 인스턴스는 구버전 JAR를 실행 중이다.
+- 반대로 `prod-saynow-backend` 인스턴스의 `/opt/saynow/app.jar`에는 `totalQuestionCount`, `currentTurn`가 있고 service 설명도 `SayNow Backend Dev`다.
+- 런타임 env fingerprint 기준으로 `prod-saynow-backend`는 `SPRING_PROFILES_ACTIVE=dev`, `SAYNOW_OPENAPI_SERVER_URL=https://saynow.p-e.kr`, `SAYNOW_AI_BASE_URL=http://43.202.146.182:8080`을 사용한다.
+- 런타임 env fingerprint 기준으로 `dev-saynow-backend`는 `SPRING_PROFILES_ACTIVE=prod`, `SAYNOW_OPENAPI_SERVER_URL=https://dev-saynow.p-e.kr`, `SAYNOW_AI_BASE_URL=http://15.164.34.102:8080`을 사용한다.
+- 따라서 도메인 변경 뒤 active dev는 `https://saynow.p-e.kr`이다. 전체 시나리오 smoke는 `prod-saynow-backend` 인스턴스의 런타임 secret으로 토큰을 만들고 `https://saynow.p-e.kr`로 실행한다.
+- active dev 기준 전체 시나리오 smoke는 성공했다. 원격 evidence는 `/tmp/saynow-3mvp-all-scenarios-smoke-20260602T134840Z-user12-active-dev.json`이고, 로컬 summary는 `/private/tmp/saynow-3mvp-all-scenarios-summary-20260602T134840Z.json`이다.
+- 임시 사용자 `USER_ID=12`로 세션 `30`, `31`, `32`를 만들었다. 세 시나리오 모두 4턴 제출과 최종 피드백 생성까지 끝났고 실패 step은 0이다.
+- 최종 피드백 결과는 세션별 `nativeScore=82`, `nativeLevelLabel=유학생 수준`으로 같았다. 턴별 최종 피드백 타입도 세 시나리오 모두 `GOOD`, `GOOD`, `GOOD`, `GOOD`이다.
+- Obsidian 하위 문서 `/Users/sangmin8817/기타 자료/Obsidian/SayNow/Backend/3차 MVP 전체 시나리오 live smoke.md`를 만들었고, 상위 `3차 MVP.md`와 `Backend/3차 MVP BE 구현 기록.md`에 링크를 추가했다.
+- 사용자가 기존 문서가 너무 요약형이라고 지적했다. 같은 하위 문서를 삭제 수준으로 덮어쓰고, 새 임시 사용자 `USER_ID=13`으로 상세 smoke를 다시 실행했다.
+- 새 상세 smoke 원격 원본은 `/tmp/saynow-3mvp-detail-all-scenarios-20260602T140450Z-user13.json`이다. 로컬에는 `/private/tmp/saynow-3mvp-detail-doc-20260602T140450Z-user13-meta.json`과 scenario별 detail JSON 3개를 저장했다.
+- 새 상세 smoke의 세션은 `sessionId=33`, `sessionId=34`, `sessionId=35`다. 실패 step은 0이고, 세 시나리오 모두 `nativeScore=82`, `nativeLevelLabel=유학생 수준`, 턴별 타입 `GOOD`, `GOOD`, `GOOD`, `GOOD`이었다.
+- 새 문서에는 각 턴의 사용자에게 보여준 질문, 사용자 발화, 다음 꼬리 질문, `turnFeedbackStatus`, 최종 턴별 피드백의 `koreanAnalogy`, `correctionPoint`, `correctionReason`, `plusOneExpression`, `praiseSummary`, `praiseReason`, 세션 총평을 모두 남겼다.
+
+---
+
+# 3차 MVP Free Talk 시나리오 데이터 변경 컨텍스트 노트
+
+## 2026-06-06
+
+- 사용자가 Free Talk 시나리오 1~3의 주제와 4개 고정 질문을 새 데이터로 확정했다.
+- 해석은 `scenario.id`와 `display_order` 모두 1번 여행, 2번 음식, 3번 음악으로 맞추는 것이다.
+- 기존 dev DB에는 `V10__third_mvp_free_talk_schema.sql`이 이미 적용돼 있으므로, V10 수정만으로는 배포 환경에 반영되지 않는다.
+- 이번 구현은 새 migration `V13`으로 현재 DB의 `scenarios`와 `scenario_questions` 데이터를 갱신한다.
+- API path, response DTO, 잠금 정책, 총 질문 수는 그대로 유지한다. 변경 대상은 seed 데이터, OpenAPI 예시, 테스트 기대값이다.
+- 기존 `user_scenario_progress`와 과거 `session_turns` snapshot은 이번 migration에서 건드리지 않는다. 기존 세션 히스토리는 당시 사용자에게 실제 노출된 질문을 보존해야 하기 때문이다.
+- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고, 이전 음식 1번 시나리오 기대값 때문에 5개 테스트가 실패했다.
+- 구현은 `V13__update_free_talk_scenario_questions.sql`로 scenario 1을 여행, 2를 음식, 3을 음악으로 갱신하고 각 4개 질문을 업데이트했다.
+- OpenAPI 예시는 새 1번 여행 시나리오의 첫 질문과 응답 예시 기준으로 갱신했다.
+- GREEN 검증으로 RED와 같은 테스트 명령을 재실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.

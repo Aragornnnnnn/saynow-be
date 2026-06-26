@@ -2,8 +2,11 @@ package com.saynow.feedback.domain;
 
 import com.saynow.common.domain.BaseTimeEntity;
 import com.saynow.session.domain.SessionTurn;
+import com.saynow.session.infrastructure.ai.FeedbackType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +18,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "turn_feedbacks")
@@ -34,36 +39,68 @@ public class TurnFeedback extends BaseTimeEntity {
     @Getter
     private SessionTurn turn;
 
-    @Column(name = "feedback_required", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     @Getter
-    private boolean feedbackRequired;
+    private FeedbackStatus status;
 
-    @Column(name = "native_understanding", columnDefinition = "text")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feedback_type", nullable = false, length = 30)
     @Getter
-    private String nativeUnderstanding;
+    private FeedbackType feedbackType;
 
-    @Column(name = "native_language_interpretation", columnDefinition = "text")
+    @Column(name = "korean_analogy", nullable = false, columnDefinition = "text")
     @Getter
-    private String nativeLanguageInterpretation;
+    private String koreanAnalogy;
 
-    @Column(name = "better_expression", length = 500)
+    @Column(name = "positive_feedback", columnDefinition = "text")
     @Getter
-    private String betterExpression;
+    private String positiveFeedback;
+
+    @Column(name = "feedback_detail", columnDefinition = "text")
+    @Getter
+    private String feedbackDetail;
+
+    @Column(name = "correction_expression", length = 500)
+    @Getter
+    private String correctionExpression;
+
+    @Column(name = "correction_reason", columnDefinition = "text")
+    @Getter
+    private String correctionReason;
+
+    @Column(name = "benchmark_message", columnDefinition = "text")
+    @Getter
+    private String benchmarkMessage;
+
+    @Column(name = "generated_at", nullable = false)
+    @Getter
+    private LocalDateTime generatedAt;
 
     public TurnFeedback(
             SessionFeedback sessionFeedback,
             SessionTurn turn,
-            boolean feedbackRequired,
-            String nativeUnderstanding,
-            String nativeLanguageInterpretation,
-            String betterExpression
+            FeedbackStatus status,
+            FeedbackType feedbackType,
+            String koreanAnalogy,
+            String positiveFeedback,
+            String feedbackDetail,
+            String correctionExpression,
+            String correctionReason,
+            String benchmarkMessage,
+            LocalDateTime generatedAt
     ) {
         this.sessionFeedback = sessionFeedback;
         this.turn = turn;
-        this.feedbackRequired = feedbackRequired;
-        this.nativeUnderstanding = nativeUnderstanding;
-        this.nativeLanguageInterpretation = nativeLanguageInterpretation;
-        this.betterExpression = betterExpression;
+        this.status = status;
+        this.feedbackType = feedbackType;
+        this.koreanAnalogy = koreanAnalogy;
+        this.positiveFeedback = positiveFeedback;
+        this.feedbackDetail = feedbackDetail;
+        this.correctionExpression = correctionExpression;
+        this.correctionReason = correctionReason;
+        this.benchmarkMessage = benchmarkMessage;
+        this.generatedAt = generatedAt;
     }
 
 }

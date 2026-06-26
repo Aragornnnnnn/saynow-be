@@ -34,16 +34,20 @@ public class UserScenarioProgress extends BaseTimeEntity {
     @JoinColumn(name = "scenario_id", nullable = false)
     private Scenario scenario;
 
-    @Column(name = "cleared", nullable = false)
-    private boolean cleared;
+    @Column(name = "completed", nullable = false)
+    private boolean completed;
+
+    @Column(name = "completed_at")
+    private java.time.LocalDateTime completedAt;
 
     public UserScenarioProgress(User user, Scenario scenario) {
         this.user = user;
         this.scenario = scenario;
-        this.cleared = false;
+        this.completed = false;
     }
 
-    public void markCleared() {
-        this.cleared = true;
+    public void markCompleted(java.time.LocalDateTime completedAt) {
+        this.completed = true;
+        this.completedAt = completedAt;
     }
 }
