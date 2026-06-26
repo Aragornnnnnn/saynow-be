@@ -1,3 +1,27 @@
+# DB 시간대 한국 기준 적용 컨텍스트 노트
+
+## 2026-06-26
+
+- 사용자는 DB 시간 필드를 한국 시간 기준으로 바꾸고 싶다고 요청했다.
+- 현재 DB 컬럼 타입은 대부분 `TIMESTAMP(6)`이고 Java 엔티티는 `LocalDateTime`을 사용한다.
+- 이번 변경은 컬럼 타입을 `TIMESTAMP WITH TIME ZONE`으로 바꾸는 방식이 아니라, 기존 naive timestamp 값을 생성할 때 `Asia/Seoul` 기준을 쓰도록 맞추는 범위로 해석한다.
+- JPA auditing의 `created_at`, `updated_at`은 `DateTimeProvider`를 지정하지 않아 기본 시스템 시간대를 따른다.
+- 서비스 코드의 `LocalDateTime.now()`도 시스템 기본 시간대를 따른다.
+- `SessionTurnRepository`의 JPQL `CURRENT_TIMESTAMP`와 Flyway seed의 `CURRENT_TIMESTAMP`는 DB 세션 시간대 영향을 받는다.
+- 따라서 Java 런타임 기본 시간대와 JPA auditing provider를 `Asia/Seoul`로 맞추고, PostgreSQL 커넥션 세션에도 `SET TIME ZONE`을 적용하는 방향으로 진행한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.common.config.ApplicationTimeZoneConfigTest`를 실행했고, `ApplicationTimeZoneProperties`와 `ApplicationTimeZoneConfig` 부재로 `compileTestJava`에서 실패했다.
+- `ApplicationTimeZoneProperties`는 `saynow.time.zone` 기본값을 `Asia/Seoul`로 둔다.
+- `ApplicationTimeZoneConfig`는 시작 시 JVM 기본 시간대를 설정하고 JPA auditing용 `DateTimeProvider`도 같은 zone 기준 `LocalDateTime`을 반환한다.
+- `@EnableJpaAuditing`은 새 `dateTimeProvider` bean을 명시적으로 사용한다.
+- dev, prod, local PostgreSQL datasource에는 Hikari `connection-init-sql`로 `SET TIME ZONE '${SAYNOW_TIME_ZONE:Asia/Seoul}'`을 적용했다.
+- Hibernate JDBC 시간대도 `${SAYNOW_TIME_ZONE:Asia/Seoul}`로 맞췄다.
+- focused GREEN 검증으로 `./gradlew test --tests com.saynow.common.config.ApplicationTimeZoneConfigTest`를 실행했고 통과했다.
+- H2 통합 테스트 호환성 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고 통과했다. 실행 로그 타임스탬프는 `+09:00`으로 출력됐다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
+
+---
+
 # 룸메이트 시나리오 seed 교체 컨텍스트 노트
 
 ## 2026-06-23

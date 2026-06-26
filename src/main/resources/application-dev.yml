@@ -7,10 +7,15 @@ spring:
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
+      connection-init-sql: SET TIME ZONE '${SAYNOW_TIME_ZONE:Asia/Seoul}'
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: ${SAYNOW_TIME_ZONE:Asia/Seoul}
   flyway:
     enabled: true
     locations: classpath:db/migration

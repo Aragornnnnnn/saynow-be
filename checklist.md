@@ -1,3 +1,15 @@
+# DB 시간대 한국 기준 적용 체크리스트
+
+- [x] 현재 시간 필드, JPA auditing, `LocalDateTime.now()`, DB `CURRENT_TIMESTAMP` 사용 지점을 확인한다.
+- [x] 앱 시간대 설정과 JPA auditing 시간 provider를 고정하는 RED 테스트를 추가한다.
+- [x] RED 테스트 실패를 확인한다.
+- [x] `saynow.time.zone` 기본값을 `Asia/Seoul`로 두고 앱 기본 시간대와 JPA auditing provider에 반영한다.
+- [x] PostgreSQL 커넥션 세션 시간대가 한국 기준으로 잡히도록 dev/prod/local 설정을 보정한다.
+- [x] focused 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위를 점검한다.
+
+---
+
 # 룸메이트 시나리오 seed 교체 체크리스트
 
 - [x] 현재 scenario/category seed, API 예시, 통합 테스트 기대값을 확인한다.
