@@ -2,6 +2,7 @@
 package com.saynow;
 
 import com.saynow.session.infrastructure.ai.AiConversationClient;
+import com.saynow.session.infrastructure.ai.AiClientProperties;
 import com.saynow.session.infrastructure.ai.RemoteAiConversationClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,14 @@ class DevAiClientModeTest {
     @Autowired
     private AiConversationClient aiConversationClient;
 
+    @Autowired
+    private AiClientProperties aiClientProperties;
+
     @Test
     void devProfileUsesRemoteAiClientByDefault() {
         assertThat(environment.getProperty("saynow.ai.client-mode")).isEqualTo("remote");
         assertThat(environment.getProperty("sentry.environment")).isEqualTo("dev");
         assertThat(aiConversationClient).isInstanceOf(RemoteAiConversationClient.class);
+        assertThat(aiClientProperties.serviceAudience().name()).isEqualTo("KOREAN_LEARNER");
     }
 }

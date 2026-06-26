@@ -65,6 +65,7 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("scenario").get("briefing").asText()).contains("좋아하는 음식");
         assertThat(json.get("scenario").get("conversationGoal").asText()).contains("음식 취향");
         assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
+        assertThat(json.get("scenario").get("serviceAudience").asText()).isEqualTo("AMERICAN_LEARNER");
         assertThat(json.get("currentTurn").get("aiQuestion").asText())
                 .isEqualTo("What is your favorite food? Why do you like it?");
         assertThat(json.get("currentTurn").get("translatedQuestion").asText())
@@ -107,6 +108,7 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("submittedSequence").asInt()).isEqualTo(4);
         assertThat(json.get("scenario").get("scenarioId").asLong()).isEqualTo(10L);
         assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
+        assertThat(json.get("scenario").get("serviceAudience").asText()).isEqualTo("AMERICAN_LEARNER");
         assertThat(json.get("currentTurn").get("aiQuestion").asText())
                 .isEqualTo("What do you want me to do?");
         assertThat(json.get("currentTurn").get("translatedQuestion").asText())
@@ -143,6 +145,7 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("turnId").asLong()).isEqualTo(5000L);
         assertThat(json.get("sequence").asInt()).isEqualTo(1);
         assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
+        assertThat(json.get("scenario").get("serviceAudience").asText()).isEqualTo("AMERICAN_LEARNER");
         assertThat(json.get("turn").get("userUtterance").asText())
                 .isEqualTo("I like pizza because it is spicy.");
         assertThat(response.feedbackStatus()).isEqualTo(TurnFeedbackStatus.PREPARING);
@@ -191,6 +194,7 @@ class RemoteAiConversationClientTest {
         assertThat(json.get("sessionId").asLong()).isEqualTo(1000L);
         assertThat(json.get("scenario").get("scenarioId").asLong()).isEqualTo(10L);
         assertThat(json.get("scenario").get("counterpartRole").asText()).isEqualTo("friend");
+        assertThat(json.get("scenario").get("serviceAudience").asText()).isEqualTo("AMERICAN_LEARNER");
         assertThat(json.get("expectedTurnIds").get(0).asLong()).isEqualTo(5000L);
         assertThat(response.nativeScore()).isEqualTo(82);
         assertThat(response.highlightMessage()).isEqualTo("한국인의 40%가 헷갈리는 간접의문문 어순을 피해 간 사람이에요.");
@@ -283,7 +287,8 @@ class RemoteAiConversationClientTest {
                 "/api/v1/conversation/closing-message",
                 "/api/v1/conversation/turn-feedback",
                 "/api/v1/conversation/session-feedback",
-                Duration.ofSeconds(180));
+                Duration.ofSeconds(180),
+                ServiceAudience.AMERICAN_LEARNER);
         return new RemoteAiConversationClient(objectMapper, properties);
     }
 
@@ -339,7 +344,8 @@ class RemoteAiConversationClientTest {
                 "음식 취향 이야기하기",
                 "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
                 "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.",
-                "friend");
+                "friend",
+                ServiceAudience.AMERICAN_LEARNER);
     }
 
     private AiNextQuestionScenarioContext nextQuestionScenarioContext() {
@@ -348,6 +354,7 @@ class RemoteAiConversationClientTest {
                 "음식 취향 이야기하기",
                 "좋아하는 음식과 최근 먹었던 음식에 대해 이야기합니다.",
                 "음식 취향과 경험을 영어로 자연스럽게 설명할 수 있다.",
-                "friend");
+                "friend",
+                ServiceAudience.AMERICAN_LEARNER);
     }
 }

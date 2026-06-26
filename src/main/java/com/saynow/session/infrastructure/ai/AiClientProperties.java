@@ -14,7 +14,8 @@ public record AiClientProperties(
         String closingMessagePath,
         String turnFeedbackPath,
         String sessionFeedbackPath,
-        Duration requestTimeout
+        Duration requestTimeout,
+        ServiceAudience serviceAudience
 ) {
 
     public AiClientProperties {
@@ -32,6 +33,9 @@ public record AiClientProperties(
         }
         if (requestTimeout == null || requestTimeout.isNegative() || requestTimeout.isZero()) {
             requestTimeout = Duration.ofSeconds(180);
+        }
+        if (serviceAudience == null) {
+            serviceAudience = ServiceAudience.KOREAN_LEARNER;
         }
     }
 }

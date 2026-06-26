@@ -156,11 +156,17 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo(2);
         assertThat(aiConversationClient.nextQuestionRequests.getFirst().scenario().counterpartRole())
                 .isEqualTo("roommate");
+        assertThat(aiConversationClient.nextQuestionRequests.getFirst().scenario().serviceAudience().name())
+                .isEqualTo("KOREAN_LEARNER");
         assertThat(aiConversationClient.closingMessageRequests.getFirst().submittedSequence()).isEqualTo(4);
         assertThat(aiConversationClient.closingMessageRequests.getFirst().closingReason()).isEqualTo(ClosingReason.MAX_TURNS_REACHED);
         assertThat(aiConversationClient.closingMessageRequests.getFirst().goalCompletionStatus()).isEqualTo(GoalCompletionStatus.COMPLETED);
+        assertThat(aiConversationClient.closingMessageRequests.getFirst().scenario().serviceAudience().name())
+                .isEqualTo("KOREAN_LEARNER");
         assertThat(aiConversationClient.closingMessageRequests.getFirst().currentTurn().userUtterance())
                 .isEqualTo("Thanks, I'd love to share. I can't really eat fish, but anything else is fine.");
+        assertThat(aiConversationClient.turnFeedbackRequests.getFirst().scenario().serviceAudience().name())
+                .isEqualTo("KOREAN_LEARNER");
 
         List<String> storedTurns = jdbcTemplate.queryForList("""
                 SELECT sequence || '|' || ai_question || '|' || translated_question || '|' || COALESCE(user_utterance, '<NULL>') || '|' || COALESCE(inner_thought, '<NULL>') || '|' || COALESCE(inner_thought_type, '<NULL>')
@@ -210,6 +216,8 @@ class ScenarioFlowIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.turnFeedbacks[1].praiseReason").doesNotExist());
 
         assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds()).hasSize(4);
+        assertThat(aiConversationClient.sessionFeedbackRequest.scenario().serviceAudience().name())
+                .isEqualTo("KOREAN_LEARNER");
         assertThat(aiConversationClient.sessionFeedbackRequest.expectedTurnIds())
                 .doesNotContain(jdbcTemplate.queryForObject("""
                         SELECT id

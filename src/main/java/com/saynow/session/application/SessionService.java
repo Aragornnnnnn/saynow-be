@@ -28,6 +28,7 @@ import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
 import com.saynow.session.infrastructure.ai.AiClosingMessageRequest;
 import com.saynow.session.infrastructure.ai.AiClosingMessageResponse;
+import com.saynow.session.infrastructure.ai.AiClientProperties;
 import com.saynow.session.infrastructure.ai.AiFixedQuestion;
 import com.saynow.session.infrastructure.ai.AiNextQuestionScenarioContext;
 import com.saynow.session.infrastructure.ai.AiNextQuestionRequest;
@@ -69,6 +70,7 @@ public class SessionService {
     private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final UserRepository userRepository;
     private final AiConversationClient aiConversationClient;
+    private final AiClientProperties aiClientProperties;
     private final PlatformTransactionManager transactionManager;
 
     @Transactional
@@ -374,7 +376,8 @@ public class SessionService {
                 scenario.getTitle(),
                 scenario.getBriefing(),
                 scenario.getConversationGoal(),
-                scenario.getCounterpartRole());
+                scenario.getCounterpartRole(),
+                aiClientProperties.serviceAudience());
     }
 
     private AiScenarioContext toScenarioContext(SubmitUtteranceContext context) {
@@ -383,7 +386,8 @@ public class SessionService {
                 context.scenarioTitle(),
                 context.scenarioBriefing(),
                 context.scenarioConversationGoal(),
-                context.scenarioCounterpartRole());
+                context.scenarioCounterpartRole(),
+                aiClientProperties.serviceAudience());
     }
 
     private AiNextQuestionScenarioContext toNextQuestionScenarioContext(SubmitUtteranceContext context) {
@@ -392,7 +396,8 @@ public class SessionService {
                 context.scenarioTitle(),
                 context.scenarioBriefing(),
                 context.scenarioConversationGoal(),
-                context.scenarioCounterpartRole());
+                context.scenarioCounterpartRole(),
+                aiClientProperties.serviceAudience());
     }
 
     private AiFixedQuestion toFixedQuestion(ScenarioQuestion question) {

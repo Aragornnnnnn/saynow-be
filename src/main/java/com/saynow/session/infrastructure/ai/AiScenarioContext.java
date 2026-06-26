@@ -6,6 +6,7 @@ public record AiScenarioContext(
         String title,
         String briefing,
         String conversationGoal,
-        String counterpartRole
+        String counterpartRole,
+        ServiceAudience serviceAudience
 ) {
 }

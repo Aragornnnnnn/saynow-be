@@ -1,3 +1,27 @@
+# AI serviceAudience 요청 매핑 컨텍스트 노트
+
+## 2026-06-26
+
+- 사용자는 AI 서버 요청에 서비스 대상 구분값 `serviceAudience`를 추가하라고 요청했다.
+- FE-BE API는 그대로 유지하고, BE가 AI 서버로 보내는 요청에만 값을 넣는 범위다.
+- 기존 한국인 대상 영어 회화는 `KOREAN_LEARNER`이며 필드를 생략해도 AI 서버가 이 값으로 처리한다.
+- 신규 미국인 대상 한국어 회화는 `AMERICAN_LEARNER`다.
+- 현재 main에서 배포되는 서비스는 무조건 미국인 대상이어야 하므로 prod 프로필 기본값은 `AMERICAN_LEARNER`로 둔다.
+- 기존 호환성을 위해 공통 기본값과 dev 기본값은 `KOREAN_LEARNER`로 유지한다.
+- 현재 활성 AI client interface에는 `next-question`, `closing-message`, `turn-feedback`, `session-feedback`만 있고, `guide` 요청 메서드는 없다.
+- 따라서 이번 코드 변경은 존재하는 네 요청의 `scenario.serviceAudience` 적용에 집중하고, `guide`는 현 코드에 적용 대상 경로가 없다고 보고한다.
+- RED 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.ProdAiClientModeTest --tests com.saynow.DevAiClientModeTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고, `serviceAudience()` 접근자 부재로 `compileTestJava`에서 실패했다.
+- `ServiceAudience` enum과 `saynow.ai.service-audience` 설정을 추가했다.
+- 공통 기본값은 `KOREAN_LEARNER`이며, prod 프로필은 main 배포 서비스 요구에 맞춰 `AMERICAN_LEARNER`를 명시한다.
+- `SessionService`와 `FeedbackService`가 AI 요청용 scenario context를 만들 때 `AiClientProperties.serviceAudience()`를 넣는다.
+- `rg -n "Guide|guide|AiGuide|generateGuide|/api/v1/conversation/guide" src/main/java src/test/java src/main/resources docs`로 확인한 결과, 현재 main 코드에는 guide AI client 요청 경로가 없다.
+- 남아 있는 `GuideQuestionRequest`, `GuideQuestionResponse`는 컨트롤러나 AI client에서 사용되지 않으며, `OpenApiIntegrationTest`는 `/api/v1/sessions/{sessionId}/guide` 부재를 검증한다.
+- 따라서 현 main 기준 guide top-level `serviceAudience`는 적용할 코드 경로가 없다.
+- focused GREEN 검증으로 `./gradlew test --tests com.saynow.session.infrastructure.ai.RemoteAiConversationClientTest --tests com.saynow.ProdAiClientModeTest --tests com.saynow.DevAiClientModeTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 # DB 시간대 한국 기준 적용 컨텍스트 노트
 
 ## 2026-06-26

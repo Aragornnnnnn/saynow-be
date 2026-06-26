@@ -1,3 +1,16 @@
+# AI serviceAudience 요청 매핑 체크리스트
+
+- [x] 현재 AI 요청 DTO, 서비스 조립부, prod/dev 설정을 확인한다.
+- [x] 원격 AI 요청 payload와 prod/dev audience 기본값 RED 테스트를 추가한다.
+- [x] RED 테스트 실패를 확인한다.
+- [x] `serviceAudience` 설정 기본값을 기존 호환 기준으로 추가하고 prod 기본값을 `AMERICAN_LEARNER`로 둔다.
+- [x] `next-question`, `closing-message`, `turn-feedback`, `session-feedback` 요청의 `scenario.serviceAudience`를 설정값으로 채운다.
+- [x] 현재 코드에 `guide` AI 요청 경로가 있는지 확인하고 적용 여부를 정리한다.
+- [x] focused 테스트와 전체 `./gradlew test`를 실행한다.
+- [x] `git diff --check`와 변경 범위 점검 후 의미 단위 커밋을 만든다.
+
+---
+
 # DB 시간대 한국 기준 적용 체크리스트
 
 - [x] 현재 시간 필드, JPA auditing, `LocalDateTime.now()`, DB `CURRENT_TIMESTAMP` 사용 지점을 확인한다.

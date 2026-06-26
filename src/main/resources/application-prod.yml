@@ -29,6 +29,7 @@ management:
 saynow:
   ai:
     client-mode: ${SAYNOW_AI_CLIENT_MODE:remote}
+    service-audience: AMERICAN_LEARNER
 
 sentry:
   enabled: ${SENTRY_ENABLED:true}

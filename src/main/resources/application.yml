@@ -37,6 +37,7 @@ saynow:
     turn-feedback-path: ${SAYNOW_AI_TURN_FEEDBACK_PATH:/api/v1/conversation/turn-feedback}
     session-feedback-path: ${SAYNOW_AI_SESSION_FEEDBACK_PATH:/api/v1/conversation/session-feedback}
     request-timeout: ${SAYNOW_AI_REQUEST_TIMEOUT:180s}
+    service-audience: ${SAYNOW_AI_SERVICE_AUDIENCE:KOREAN_LEARNER}
 
 sentry:
   enabled: ${SENTRY_ENABLED:false}

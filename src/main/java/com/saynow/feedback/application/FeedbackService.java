@@ -19,6 +19,7 @@ import com.saynow.session.domain.SessionTurn;
 import com.saynow.session.infrastructure.SessionRepository;
 import com.saynow.session.infrastructure.SessionTurnRepository;
 import com.saynow.session.infrastructure.ai.AiConversationClient;
+import com.saynow.session.infrastructure.ai.AiClientProperties;
 import com.saynow.session.infrastructure.ai.AiScenarioContext;
 import com.saynow.session.infrastructure.ai.AiSessionFeedbackRequest;
 import com.saynow.session.infrastructure.ai.AiSessionFeedbackResponse;
@@ -51,6 +52,7 @@ public class FeedbackService {
     private final TurnFeedbackRepository turnFeedbackRepository;
     private final UserScenarioProgressRepository userScenarioProgressRepository;
     private final AiConversationClient aiConversationClient;
+    private final AiClientProperties aiClientProperties;
     private final PlatformTransactionManager transactionManager;
 
     public FeedbackResponse createFeedback(Long userId, Long sessionId) {
@@ -69,7 +71,8 @@ public class FeedbackService {
                         loadResult.context().scenarioTitle(),
                         loadResult.context().scenarioBriefing(),
                         loadResult.context().scenarioConversationGoal(),
-                        loadResult.context().scenarioCounterpartRole()),
+                        loadResult.context().scenarioCounterpartRole(),
+                        aiClientProperties.serviceAudience()),
                 loadResult.context().turnIds()));
         validateAiFeedback(aiFeedback, sessionId, loadResult.context().turnIds());
         logStageLatency("feedback", "generate_session_feedback", userId, sessionId, stageStartedAt);
