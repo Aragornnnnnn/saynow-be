@@ -24,21 +24,6 @@
 
 # 룸메이트 시나리오 seed 교체 컨텍스트 노트
 
-## 2026-06-29
-
-- live DB 결과에서 Scenario A 4번 고정 질문이 `Oh, Do you like party? ...`로 노출된 것을 확인했다.
-- 현재 repo의 `V17__replace_free_talk_with_roommate_scenarios.sql`은 Scenario A 4번을 저녁/못 먹는 음식 질문으로 두고 있으므로, 배포 DB에는 과거 버전 migration 결과가 남아 있는 상태로 본다.
-- Scenario A에서 A5 파티 질문을 제거했지만 `scenarios.briefing`과 `conversation_goal`에는 아직 `파티 초대`, `초대 거절` 표현이 남아 있다. 이 메타데이터는 AI 요청 context로 전달되므로 4문항 흐름과 맞게 보정한다.
-- BE에서 직접 수정할 수 있는 품질 문제는 고정 질문 seed와 scenario metadata다. `closing-message`, `innerThought`, `benchmarkMessage` 문구 품질은 AI 서버 prompt/logic 영역이다.
-- RED 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest`를 실행했고, Scenario A metadata 기대값 불일치로 실패했다.
-- `V19__fix_roommate_first_day_context.sql`을 추가해 기존 배포 DB의 Scenario A `briefing`, `conversation_goal`, 4번 질문을 현재 4문항 흐름에 맞게 보정한다.
-- OpenAPI 시나리오 조회 예시의 Scenario A `briefing`, `conversationGoal`도 같은 문구로 보정한다.
-- focused GREEN 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
-- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
-- 공백 검증으로 `git diff --check`를 실행했고 통과했다.
-
----
-
 ## 2026-06-23
 
 - 사용자는 기존 시나리오 데이터를 새 카테고리 구조로 교체하라고 요청했다.

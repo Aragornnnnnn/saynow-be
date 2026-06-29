@@ -12,15 +12,6 @@
 
 # 룸메이트 시나리오 seed 교체 체크리스트
 
-- [x] Scenario A의 제거된 파티 질문 흔적을 DB metadata와 4번 질문에서 확인한다.
-- [x] Scenario A briefing/conversationGoal 보정 RED 테스트를 추가하고 실패를 확인한다.
-- [x] 새 Flyway migration으로 기존 배포 DB의 Scenario A 4번 질문과 metadata를 보정한다.
-- [x] OpenAPI 시나리오 예시 metadata를 보정한다.
-- [x] focused 테스트와 `git diff --check`를 실행한다.
-- [x] 변경 범위를 점검하고 의미 단위 커밋을 만든다.
-
----
-
 - [x] 현재 scenario/category seed, API 예시, 통합 테스트 기대값을 확인한다.
 - [x] 새 룸메이트 카테고리와 시나리오 A/B/C 기대값으로 RED 테스트를 추가한다.
 - [x] RED 테스트가 기존 Free Talk seed 때문에 실패하는 것을 확인한다.
