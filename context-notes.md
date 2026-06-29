@@ -1,3 +1,24 @@
+# 룸메이트 첫 만남 3문항 개편 컨텍스트 노트
+
+## 2026-06-29
+
+- 사용자는 Scenario 1 질문을 3문항으로 교체하고, `briefing`, `conversation_goal`, `total_question_count`도 질문에 맞게 자연스럽게 변경하라고 요청했다.
+- 새 질문은 첫 만남 자기소개, 취미와 매력, 한국 추천 관광지 이유 설명으로 구성된다.
+- `total_question_count`가 3으로 줄기 때문에 기존 `scenario_questions`의 Scenario 1 sequence 4 row는 삭제해야 한다.
+- 세션 종료 flow에서는 3번째 사용자 답변 뒤 `closing-message`를 호출하고, 마지막 AI 멘트 row는 sequence 4로 저장되는 것이 맞다.
+- 최종 피드백 대상은 사용자 발화가 있는 3개 턴만 포함되어야 한다.
+- 운영 DB에는 기존 세션 기록이 Scenario 1 sequence 4 질문 row를 FK로 참조할 수 있으므로 migration에서 4번 row는 참조가 없을 때만 삭제한다.
+- 참조 때문에 4번 row가 남아도 새 세션이 4번 질문으로 진행되지 않도록, BE는 `currentSequence + 1`이 `totalQuestionCount`를 넘으면 다음 고정 질문을 조회하지 않게 보정한다.
+- `V20__update_roommate_first_day_intro_questions.sql`을 추가해 Scenario 1 질문 1~3과 metadata를 새 문구로 갱신했다.
+- `ScenarioFlowIntegrationTest`는 3번째 답변 후 `closing-message`를 호출하고 종료 AI row를 sequence 4로 저장하는 흐름으로 갱신했다.
+- 운영 DB에 기존 4번 질문 row가 남는 상황을 방어하기 위해, `submitCompletesAtTotalQuestionCountEvenIfLegacyQuestionRowExists` 테스트를 추가했다.
+- `OpenApiIntegrationTest`, `ObservabilityIntegrationTest`, `SessionNpsApiIntegrationTest`, `ScenarioSchemaIntegrationTest`의 4문항 기대값을 3문항 기준으로 맞췄다.
+- focused 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.scenario.ScenarioFlowIntegrationTest --tests com.saynow.OpenApiIntegrationTest --tests com.saynow.common.observability.ObservabilityIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증 첫 실행에서 `SessionNpsApiIntegrationTest` helper가 4번째 발화를 제출해 실패했다. helper를 3문항으로 수정한 뒤 `./gradlew test --tests com.saynow.nps.SessionNpsApiIntegrationTest`가 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 재실행했고 통과했다.
+
+---
+
 # DB 시간대 한국 기준 적용 컨텍스트 노트
 
 ## 2026-06-26

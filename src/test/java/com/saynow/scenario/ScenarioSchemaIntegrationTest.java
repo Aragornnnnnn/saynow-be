@@ -110,7 +110,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, String.class);
 
         assertThat(scenarios).containsExactly(
-                "1|입주 첫날 — charlie와 첫 만남|4|FALSE|roommate",
+                "1|입주 첫날 — charlie와 첫 만남|3|FALSE|roommate",
                 "2|카페에서 수다떨면서 주말 약속 잡기|4|FALSE|roommate",
                 "3|서로 더 알아가는 밤 — 룸메 토크|4|FALSE|roommate");
 
@@ -121,8 +121,8 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, String.class);
 
         assertThat(firstScenarioContext)
-                .isEqualTo("입주 첫날 룸메이트 charlie와 서로를 소개하고, 공동생활 방식과 파티 초대에 대해 이야기합니다."
-                        + "|룸메이트와 첫 만남에서 자기소개, 공동생활 방식, 초대 수락이나 거절을 부드럽게 말한다.");
+                .isEqualTo("입주 첫날 룸메이트 Charlie와 처음 인사하고, 자기소개와 취미, 한국 추천 관광지에 대해 이야기합니다."
+                        + "|이름과 자기소개를 자연스럽게 말하고, 취미의 매력과 추천 장소의 이유를 영어로 설명한다.");
 
         List<Integer> questionCounts = jdbcTemplate.queryForList("""
                 SELECT COUNT(*)
@@ -134,7 +134,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 ORDER BY s.display_order
                 """, Integer.class);
 
-        assertThat(questionCounts).containsExactly(4, 4, 4);
+        assertThat(questionCounts).containsExactly(3, 4, 4);
 
         List<String> questions = jdbcTemplate.queryForList("""
                 SELECT s.id || '|' || q.sequence || '|' || q.question_en || '|' || q.question_ko
@@ -146,10 +146,9 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 """, String.class);
 
         assertThat(questions).containsExactly(
-                "1|1|Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?|야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?",
-                "1|2|Wait, I'm so curious — what made you decide to come all the way here? Like, why this country?|잠깐, 나 완전 궁금해 — 너 어쩌다 여기까지 오게 된 거야? 그러니까, 왜 이 나라야?",
-                "1|3|Okay, real talk — how should we split the cleaning and stuff? Wanna make a schedule, or just figure it out as we go? What works better for you?|자 진지하게 — 청소 같은 거 어떻게 나눌까? 스케줄 짤까, 그냥 그때그때 할까? 넌 어떻게 하는 게 좋아?",
-                "1|4|Oh, do you like parties? A bunch of us are going to a party tonight — you in?|아, 너 파티 좋아해? 오늘 밤에 우리 여럿이 파티 가는데 — 너도 갈래?",
+                "1|1|Hey, you're my roommate, right?! I'm Charlie, nice to meet you! What's your name? Tell me a little about yourself!|안녕 너 내 룸메이트지?! 난 charlie야. 만나서 반가워. 넌 이름이 뭐야? 너에 대해 소개해주라.",
+                "1|2|What are you into? What do you love about it?|취미는 뭐야? 그게 어떤 매력이 있어?",
+                "1|3|I'm obsessed with Korea! Tell me your must-visit spots and why I should go!|나 한국 엄청 좋아하는데, 추천할 만한 관광지와 그 이유를 알려줘!",
                 "2|1|We should totally hang out this weekend! Does Saturday or Sunday work better for you?|우리 이번 주말에 꼭 놀자! 토요일이랑 일요일 중에 언제가 더 좋아?",
                 "2|2|So what do you usually do for fun? Or is there anything you've been dying to try ever since you got here?|넌 보통 뭐하고 놀아? 아님 여기 와서 꼭 해보고 싶었던 거 있어?",
                 "2|3|Oh my god, I almost forgot to tell you — Dude, guess what — I finally got that internship I told you about! I'm freaking out, I'm so happy!|헐 너한테 말하는 거 까먹을 뻔 — 야, 있잖아 — 나 너한테 말했던 그 인턴십 드디어 됐어! 너무 신나, 진짜 행복해!",

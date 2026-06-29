@@ -155,7 +155,7 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
                         .contains("세션 피드백 생성을 완료했습니다.")
                         .contains("sessionId=" + sessionId)
                         .contains("nativeScore=82")
-                        .contains("turnCount=4"));
+                        .contains("turnCount=3"));
     }
 
     @Test
@@ -282,10 +282,9 @@ class ObservabilityIntegrationTest extends IntegrationTestSupport {
 
     private long completeSession(String accessToken) throws Exception {
         long sessionId = startSession(accessToken, 1);
-        submitUtterance(accessToken, sessionId, "I like pizza because it is spicy.");
-        submitUtterance(accessToken, sessionId, "I cook pasta on weekends.");
-        submitUtterance(accessToken, sessionId, "I ate ramen yesterday.");
-        submitUtterance(accessToken, sessionId, "I want to try tacos because they look fresh.");
+        submitUtterance(accessToken, sessionId, "Hi, I'm Joe. I'm studying business.");
+        submitUtterance(accessToken, sessionId, "I'm into hiking because it helps me clear my head.");
+        submitUtterance(accessToken, sessionId, "You should visit Gyeongju because it has old temples.");
         return sessionId;
     }
 

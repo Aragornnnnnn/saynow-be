@@ -172,10 +172,9 @@ class SessionNpsApiIntegrationTest extends IntegrationTestSupport {
 
     private void answerAllQuestions(String accessToken, long sessionId) throws Exception {
         for (String utterance : List.of(
-                "I like pizza because it is spicy.",
-                "I cook pasta on weekends.",
-                "I ate ramen yesterday.",
-                "I want to try tacos because they look fresh.")) {
+                "Hi, I'm Joe. I'm studying business.",
+                "I'm into hiking because it helps me clear my head.",
+                "You should visit Gyeongju because it has old temples.")) {
             mockMvc.perform(post("/api/v1/sessions/{sessionId}/utterances", sessionId)
                             .header(HttpHeaders.AUTHORIZATION, bearer(accessToken))
                             .contentType(MediaType.APPLICATION_JSON)

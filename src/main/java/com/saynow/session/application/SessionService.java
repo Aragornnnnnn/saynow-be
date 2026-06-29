@@ -192,10 +192,13 @@ public class SessionService {
                         session,
                         session.getScenario().getTotalQuestionCount())
                 .orElseThrow(() -> new ApiException(ErrorCode.SESSION_ALREADY_COMPLETED));
-        ScenarioQuestion nextQuestion = scenarioQuestionRepository
-                .findByScenarioAndSequence(session.getScenario(), currentTurn.getSequence() + 1)
-                .orElse(null);
         Scenario scenario = session.getScenario();
+        int nextSequence = currentTurn.getSequence() + 1;
+        ScenarioQuestion nextQuestion = nextSequence > scenario.getTotalQuestionCount()
+                ? null
+                : scenarioQuestionRepository
+                        .findByScenarioAndSequence(scenario, nextSequence)
+                        .orElse(null);
         return new SubmitUtteranceContext(
                 session.getId(),
                 scenario.getId(),

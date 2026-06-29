@@ -81,15 +81,15 @@ public class OpenApiResponseCustomizer {
                                                     "scenarioId", 1,
                                                     "displayOrder", 1,
                                                     "scenarioTitle", "입주 첫날 — charlie와 첫 만남",
-                                                    "briefing", "입주 첫날 룸메이트 charlie와 서로를 소개하고, 공동생활 방식과 파티 초대에 대해 이야기합니다.",
-                                                    "conversationGoal", "룸메이트와 첫 만남에서 자기소개, 공동생활 방식, 초대 수락이나 거절을 부드럽게 말한다.",
+                                                    "briefing", "입주 첫날 룸메이트 Charlie와 처음 인사하고, 자기소개와 취미, 한국 추천 관광지에 대해 이야기합니다.",
+                                                    "conversationGoal", "이름과 자기소개를 자연스럽게 말하고, 취미의 매력과 추천 장소의 이유를 영어로 설명한다.",
                                                     "completed", false,
                                                     "locked", false,
                                                     "lockReason", null,
                                                     "firstQuestionPreview", objectMap(
                                                             "questionId", 100,
-                                                            "aiQuestion", "Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?",
-                                                            "translatedQuestion", "야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?")))),
+                                                            "aiQuestion", "Hey, you're my roommate, right?! I'm Charlie, nice to meet you! What's your name? Tell me a little about yourself!",
+                                                            "translatedQuestion", "안녕 너 내 룸메이트지?! 난 charlie야. 만나서 반가워. 넌 이름이 뭐야? 너에 대해 소개해주라.")))),
                                     objectMap(
                                             "categoryId", 2,
                                             "categoryName", "수업",
@@ -102,15 +102,15 @@ public class OpenApiResponseCustomizer {
                     success(HttpStatus.CREATED, "시나리오 세션 시작 성공", objectMap(
                             "sessionId", 12,
                             "scenarioId", 1,
-                            "totalQuestionCount", 4,
+                            "totalQuestionCount", 3,
                             "currentTurn", objectMap(
                                     "turnId", 101,
                                     "sequence", 1,
-                                    "aiQuestion", "Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?",
-                                    "translatedQuestion", "야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?"),
+                                    "aiQuestion", "Hey, you're my roommate, right?! I'm Charlie, nice to meet you! What's your name? Tell me a little about yourself!",
+                                    "translatedQuestion", "안녕 너 내 룸메이트지?! 난 charlie야. 만나서 반가워. 넌 이름이 뭐야? 너에 대해 소개해주라."),
                             "progress", objectMap(
                                     "currentSequence", 1,
-                                    "totalQuestionCount", 4,
+                                    "totalQuestionCount", 3,
                                     "completed", false)
                     )),
                     errors(error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.SCENARIO_NOT_FOUND), error(ErrorCode.SCENARIO_LOCKED), error(ErrorCode.CATEGORY_LOCKED))),
@@ -125,28 +125,28 @@ public class OpenApiResponseCustomizer {
                             "nextTurn", objectMap(
                                     "turnId", 102,
                                     "sequence", 2,
-                                    "aiQuestion", "Nice. What made you decide to come all the way here?",
-                                    "translatedQuestion", "좋아. 너는 어쩌다 여기까지 오게 된 거야?"),
+                                    "aiQuestion", "Nice to meet you. What are you into? What do you love about it?",
+                                    "translatedQuestion", "만나서 반가워. 취미는 뭐야? 그게 어떤 매력이 있어?"),
                             "progress", objectMap(
                                     "currentSequence", 2,
-                                    "totalQuestionCount", 4,
+                                    "totalQuestionCount", 3,
                                     "completed", false)
                     ), Map.of(
                             "COMPLETED", objectMap(
                                     "submittedTurn", objectMap(
-                                            "turnId", 104,
-                                            "sequence", 4,
+                                            "turnId", 103,
+                                            "sequence", 3,
                                             "turnFeedbackStatus", "PREPARING",
-                                            "innerThought", "못 먹는 음식을 부드럽게 말해줘서 저녁 메뉴를 맞추기 쉽겠다.",
+                                            "innerThought", "한국에서 가볼 만한 곳을 이유까지 말해줘서 대화가 훨씬 살아난다.",
                                             "innerThoughtType", "GOOD"),
                                     "nextTurn", objectMap(
-                                            "turnId", 105,
-                                            "sequence", 5,
-                                            "aiQuestion", "Got it. I'll avoid fish, and we can share dinner tonight.",
-                                            "translatedQuestion", "알겠어. 생선은 피해서 오늘 저녁 같이 먹자."),
+                                            "turnId", 104,
+                                            "sequence", 4,
+                                            "aiQuestion", "That sounds amazing. I’ll definitely add it to my Korea list.",
+                                            "translatedQuestion", "정말 좋다. 한국에서 가볼 곳 리스트에 꼭 넣어둘게."),
                                     "progress", objectMap(
-                                            "currentSequence", 5,
-                                            "totalQuestionCount", 4,
+                                            "currentSequence", 4,
+                                            "totalQuestionCount", 3,
                                             "completed", true)))),
                     errors(error(ErrorCode.SESSION_NOT_FOUND), error(ErrorCode.SESSION_ALREADY_COMPLETED), error(ErrorCode.INVALID_REQUEST), error(ErrorCode.AUTH_REQUIRED), error(ErrorCode.FORBIDDEN), error(ErrorCode.AI_GENERATION_FAILED))),
             endpoint(SessionController.class, "abandonSession",
@@ -161,9 +161,9 @@ public class OpenApiResponseCustomizer {
                                     objectMap(
                                             "turnId", 101,
                                             "sequence", 1,
-                                            "originalQuestion", "Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?",
-                                            "translatedQuestion", "야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?",
-                                            "userUtterance", "I study business, and I like playing games after class.",
+                                            "originalQuestion", "Hey, you're my roommate, right?! I'm Charlie, nice to meet you! What's your name? Tell me a little about yourself!",
+                                            "translatedQuestion", "안녕 너 내 룸메이트지?! 난 charlie야. 만나서 반가워. 넌 이름이 뭐야? 너에 대해 소개해주라.",
+                                            "userUtterance", "Hi, I'm Joe. I'm studying business, and I like playing games after class.",
                                             "feedbackType", "GOOD",
                                             "koreanAnalogy", "한국어로 비유하자면 담백하게 이유를 붙인 말처럼 들려요.",
                                             "positiveFeedback", null,

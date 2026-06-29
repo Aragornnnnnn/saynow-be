@@ -1,3 +1,13 @@
+# 룸메이트 첫 만남 3문항 개편 체크리스트
+
+- [x] Scenario 1의 새 3문항 seed 요구사항을 확인한다.
+- [x] V20 migration으로 Scenario 1 질문 1~3, metadata, total count를 보정하고 기존 4번 질문 row는 참조가 없을 때만 제거한다.
+- [x] schema, flow, OpenAPI, observability 테스트 기대값을 3문항 기준으로 수정한다.
+- [x] focused 테스트와 전체 테스트를 실행한다.
+- [x] `git diff --check`와 변경 범위를 점검하고 커밋한다.
+
+---
+
 # DB 시간대 한국 기준 적용 체크리스트
 
 - [x] 현재 시간 필드, JPA auditing, `LocalDateTime.now()`, DB `CURRENT_TIMESTAMP` 사용 지점을 확인한다.
