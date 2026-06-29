@@ -12,6 +12,15 @@
 
 # 룸메이트 시나리오 seed 교체 체크리스트
 
+- [x] 잘못 만든 저녁 질문 보정 커밋을 revert한다.
+- [x] Scenario A 4번 질문을 파티 초대 질문으로 고정한다.
+- [x] Scenario A metadata에서 제거된 음식 질문 흔적을 정리한다.
+- [x] seed 검증 테스트와 OpenAPI 예시를 파티 질문 기준으로 맞춘다.
+- [x] 관련 테스트와 `git diff --check`를 실행한다.
+- [x] 변경 범위를 점검하고 의미 단위 커밋을 만든다.
+
+---
+
 - [x] 현재 scenario/category seed, API 예시, 통합 테스트 기대값을 확인한다.
 - [x] 새 룸메이트 카테고리와 시나리오 A/B/C 기대값으로 RED 테스트를 추가한다.
 - [x] RED 테스트가 기존 Free Talk seed 때문에 실패하는 것을 확인한다.

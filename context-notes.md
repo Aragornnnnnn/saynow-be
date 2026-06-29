@@ -24,6 +24,19 @@
 
 # 룸메이트 시나리오 seed 교체 컨텍스트 노트
 
+## 2026-06-29
+
+- 사용자가 Scenario A 4번은 파티 질문이 맞고 live DB 변경도 의도된 것이라고 확인했다.
+- 직전에 만든 `207ae28 fix: 룸메이트 첫 만남 시나리오 보정`은 파티 질문을 저녁 질문으로 되돌리는 잘못된 커밋이므로 `34095c2 Revert "fix: 룸메이트 첫 만남 시나리오 보정"`으로 되돌렸다.
+- 최종 정답은 Scenario A의 제거 대상이 저녁/못 먹는 음식 질문이고, 남기는 4번 질문은 파티 초대로 해석한다.
+- 파티 질문은 AI가 사용자에게 노출하는 영어 문장이므로 `Do you like party?` 대신 자연스러운 `do you like parties?` 표현으로 seed를 고정한다.
+- `V19__fix_roommate_first_day_party_question.sql`을 추가해 기존 배포 DB와 fresh DB 모두 Scenario A 4번을 파티 초대 질문으로 맞춘다.
+- Scenario A metadata는 음식 질문 흔적을 제거하고 공동생활 방식과 파티 초대 흐름으로 맞춘다.
+- focused 검증으로 `./gradlew test --tests com.saynow.scenario.ScenarioSchemaIntegrationTest --tests com.saynow.OpenApiIntegrationTest`를 실행했고 통과했다.
+- 전체 회귀 검증으로 `./gradlew test`를 실행했고 통과했다.
+
+---
+
 ## 2026-06-23
 
 - 사용자는 기존 시나리오 데이터를 새 카테고리 구조로 교체하라고 요청했다.

@@ -114,6 +114,16 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 "2|카페에서 수다떨면서 주말 약속 잡기|4|FALSE|roommate",
                 "3|서로 더 알아가는 밤 — 룸메 토크|4|FALSE|roommate");
 
+        String firstScenarioContext = jdbcTemplate.queryForObject("""
+                SELECT briefing || '|' || conversation_goal
+                FROM scenarios
+                WHERE id = 1
+                """, String.class);
+
+        assertThat(firstScenarioContext)
+                .isEqualTo("입주 첫날 룸메이트 charlie와 서로를 소개하고, 공동생활 방식과 파티 초대에 대해 이야기합니다."
+                        + "|룸메이트와 첫 만남에서 자기소개, 공동생활 방식, 초대 수락이나 거절을 부드럽게 말한다.");
+
         List<Integer> questionCounts = jdbcTemplate.queryForList("""
                 SELECT COUNT(*)
                 FROM scenario_questions q
@@ -139,7 +149,7 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 "1|1|Hey, you must be my roommate! I'm charlie. Okay, tell me everything — what are you studying, what are you into?|야 너 내 룸메지! 난 charlie야. 자, 다 얘기해봐 — 뭐 전공하고 뭐 좋아해?",
                 "1|2|Wait, I'm so curious — what made you decide to come all the way here? Like, why this country?|잠깐, 나 완전 궁금해 — 너 어쩌다 여기까지 오게 된 거야? 그러니까, 왜 이 나라야?",
                 "1|3|Okay, real talk — how should we split the cleaning and stuff? Wanna make a schedule, or just figure it out as we go? What works better for you?|자 진지하게 — 청소 같은 거 어떻게 나눌까? 스케줄 짤까, 그냥 그때그때 할까? 넌 어떻게 하는 게 좋아?",
-                "1|4|I'm making dinner tonight — wanna share? Oh wait, is there anything you really can't eat? I don't wanna make something you'll hate.|오늘 저녁 내가 하는데 — 같이 먹을래? 아 참, 너 진짜 못 먹는 거 있어? 싫어하는 거 만들기 싫어서.",
+                "1|4|Oh, do you like parties? A bunch of us are going to a party tonight — you in?|아, 너 파티 좋아해? 오늘 밤에 우리 여럿이 파티 가는데 — 너도 갈래?",
                 "2|1|We should totally hang out this weekend! Does Saturday or Sunday work better for you?|우리 이번 주말에 꼭 놀자! 토요일이랑 일요일 중에 언제가 더 좋아?",
                 "2|2|So what do you usually do for fun? Or is there anything you've been dying to try ever since you got here?|넌 보통 뭐하고 놀아? 아님 여기 와서 꼭 해보고 싶었던 거 있어?",
                 "2|3|Oh my god, I almost forgot to tell you — Dude, guess what — I finally got that internship I told you about! I'm freaking out, I'm so happy!|헐 너한테 말하는 거 까먹을 뻔 — 야, 있잖아 — 나 너한테 말했던 그 인턴십 드디어 됐어! 너무 신나, 진짜 행복해!",
