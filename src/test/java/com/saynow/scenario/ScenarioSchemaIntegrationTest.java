@@ -114,6 +114,16 @@ class ScenarioSchemaIntegrationTest extends IntegrationTestSupport {
                 "2|카페에서 수다떨면서 주말 약속 잡기|4|FALSE|roommate",
                 "3|서로 더 알아가는 밤 — 룸메 토크|4|FALSE|roommate");
 
+        String firstScenarioContext = jdbcTemplate.queryForObject("""
+                SELECT briefing || '|' || conversation_goal
+                FROM scenarios
+                WHERE id = 1
+                """, String.class);
+
+        assertThat(firstScenarioContext)
+                .isEqualTo("입주 첫날 룸메이트 charlie와 서로를 소개하고, 공동생활 방식과 식사 취향에 대해 이야기합니다."
+                        + "|룸메이트와 첫 만남에서 자기소개, 공동생활 방식, 음식 취향을 부드럽게 말한다.");
+
         List<Integer> questionCounts = jdbcTemplate.queryForList("""
                 SELECT COUNT(*)
                 FROM scenario_questions q
